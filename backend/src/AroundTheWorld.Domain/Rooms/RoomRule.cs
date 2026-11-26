@@ -17,6 +17,12 @@ public enum RoomRule
 
     /// <summary>The player is not in this room.</summary>
     NotInRoom,
+
+    /// <summary>The room's game is not being played, so there is no duel to answer.</summary>
+    NotPlaying,
+
+    /// <summary>The room's game is still being played, so it cannot be played again yet.</summary>
+    NotOver,
 }
 
 /// <summary>A room refused what was asked of it, by one of its rules; nothing changed.</summary>

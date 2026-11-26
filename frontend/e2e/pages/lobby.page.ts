@@ -89,6 +89,14 @@ export class LobbyPage {
     };
   }
 
+  async chooseChange(): Promise<void> {
+    await this.change.click();
+  }
+
+  async chooseStartRace(): Promise<void> {
+    await this.startRace.click();
+  }
+
   async chooseLeave(): Promise<void> {
     await this.leave.click();
   }

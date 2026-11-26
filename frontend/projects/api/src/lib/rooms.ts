@@ -52,6 +52,12 @@ export type ApiErrorCode =
   | 'room_full'
   | 'game_started'
   | 'not_in_room'
+  | 'not_host'
+  | 'not_enough_players'
+  | 'invalid_setup'
+  | 'invalid_answer'
+  | 'not_playing'
+  | 'not_over'
   | 'unknown';
 
 /** A refusal or a failure of the backend, with the `code` a screen branches on. */

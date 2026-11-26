@@ -1,5 +1,7 @@
+using AroundTheWorld.Application.Rooms;
 using AroundTheWorld.Application.Rooms.LeaveRoom;
 using AroundTheWorld.Application.Rooms.Reconnect;
+using AroundTheWorld.Application.Rooms.SaveSetup;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
@@ -21,6 +23,9 @@ public sealed class RoomHub(ISender sender) : Hub
 
     /// <summary>Attaches the connection to its player's room and sends it the room as it stands.</summary>
     public override Task OnConnectedAsync() => sender.Send(new ReconnectCommand(), Context.ConnectionAborted);
+
+    /// <summary>The host saves the game's setup to the room (L2-018 criterion 2).</summary>
+    public Task SaveSetup(GameSetupDto? setup) => sender.Send(new SaveSetupCommand(setup), Context.ConnectionAborted);
 
     /// <summary>The player leaves their room (L2-025 criterion 5).</summary>
     public Task LeaveRoom() => sender.Send(new LeaveRoomCommand(), Context.ConnectionAborted);

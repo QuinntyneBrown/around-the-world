@@ -4,7 +4,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
  * Table key (docs/design-system/components/table-key.html): the times tables as square keys,
  * ×2 to ×12, each on or off, in 4 columns or 6 from 576px. Each is a `<button aria-pressed>`
  * named "{n} times table", with a dot when on (L2-051 criterion 3). With `disabled` every key
- * is disabled and shown not pressed (L2-016 criterion 5). It sits on the `<div>` that groups
+ * is disabled and shown not pressed (L2-016 criterion 5); with `locked` every key is disabled and
+ * still shown on or off (L2-018 criterion 6). It sits on the `<div>` that groups
  * them (docs/adr/0012); the page names the group. It holds no rule: it emits the table pressed.
  */
 @Component({
@@ -20,5 +21,7 @@ export class TableKeys {
   /** The tables that are on. */
   readonly pressed = input.required<readonly number[]>();
   readonly disabled = input(false);
+  /** While a setup is being saved: every key is disabled and keeps showing whether it is on. */
+  readonly locked = input(false);
   readonly toggled = output<number>();
 }

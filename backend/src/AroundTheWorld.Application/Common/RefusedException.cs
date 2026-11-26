@@ -28,4 +28,8 @@ public static class ErrorCodes
     public const string NotHost = "not_host";
     public const string NotEnoughPlayers = "not_enough_players";
     public const string NotInRoom = "not_in_room";
+    public const string InvalidSetup = "invalid_setup";
+    public const string InvalidAnswer = "invalid_answer";
+    public const string NotPlaying = "not_playing";
+    public const string NotOver = "not_over";
 }

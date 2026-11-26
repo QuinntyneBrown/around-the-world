@@ -15,7 +15,8 @@ import {
  * - `backend`: API and hub requests answered from fixtures (no real backend or database), held
  *   back or left unanswered as an unreachable backend, and the record of what the game sent;
  * - `roomHub`: the room hub's WebSocket (`/hubs/room`), speaking SignalR's JSON protocol: it
- *   sends the room the spec sets, holds it back, refuses or drops connections, and records the
+ *   sends the room and the game the spec sets, holds it back, refuses or drops connections,
+ *   holds back or refuses a method, and records the
  *   tokens presented and the methods invoked (docs/adr/0032);
  * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
  * - `network`: the device's network, taken away and given back (`navigator.onLine`);
@@ -113,6 +114,16 @@ export interface FakeRoomHub {
   tokens(): string[];
   /** The hub methods the game invoked, in order. */
   invoked(): string[];
+  /** The hub methods the game invoked with the arguments it sent, in order (L2-040 criterion 1). */
+  invocations(): { target: string; args: Json[] }[];
+  /** The answers to the method wait until the returned function is called. */
+  holdBackMethod(target: string): () => void;
+  /** The method is refused with a hub error holding the code, as the backend refuses it. */
+  refusesMethod(target: string, code: string): void;
+  /** The method is answered again after `refusesMethod`. */
+  acceptsMethod(target: string): void;
+  /** Sends the game's new state (`GameChanged`) to every open connection, and to every later one. */
+  game(state: Json): void;
   /** How many connections are open now. */
   openConnections(): number;
 }
@@ -341,7 +352,10 @@ class RoomHubFixtures implements FakeRoomHub {
   private readonly held: WebSocketRoute[] = [];
   private readonly open = new Set<WebSocketRoute>();
   private readonly presented: string[] = [];
-  private readonly calls: string[] = [];
+  private readonly calls: { target: string; args: Json[] }[] = [];
+  private readonly heldMethods = new Map<string, (() => void)[]>();
+  private readonly refusedMethods = new Map<string, string>();
+  private gameState: Json | null = null;
 
   serves(room: Json): void {
     this.room = room;
@@ -374,7 +388,33 @@ class RoomHubFixtures implements FakeRoomHub {
   }
 
   invoked(): string[] {
-    return [...this.calls];
+    return this.calls.map(({ target }) => target);
+  }
+
+  invocations(): { target: string; args: Json[] }[] {
+    return this.calls.map((call) => ({ target: call.target, args: [...call.args] }));
+  }
+
+  holdBackMethod(target: string): () => void {
+    this.heldMethods.set(target, []);
+    return () => {
+      const waiting = this.heldMethods.get(target) ?? [];
+      this.heldMethods.delete(target);
+      for (const answer of waiting) answer();
+    };
+  }
+
+  refusesMethod(target: string, code: string): void {
+    this.refusedMethods.set(target, code);
+  }
+
+  acceptsMethod(target: string): void {
+    this.refusedMethods.delete(target);
+  }
+
+  game(state: Json): void {
+    this.gameState = state;
+    for (const socket of this.open) if (!this.held.includes(socket)) this.sendGame(socket);
   }
 
   openConnections(): number {
@@ -394,14 +434,20 @@ class RoomHubFixtures implements FakeRoomHub {
           type?: number;
           target?: string;
           invocationId?: string;
+          arguments?: Json[];
         };
         if (data.protocol !== undefined) {
           socket.send(`{}${RS}`);
           this.afterHandshake(socket);
         } else if (data.type === 1) {
-          this.calls.push(data.target ?? '');
+          const target = data.target ?? '';
+          this.calls.push({ target, args: data.arguments ?? [] });
           if (data.invocationId !== undefined) {
-            socket.send(JSON.stringify({ type: 3, invocationId: data.invocationId }) + RS);
+            const id = data.invocationId;
+            const answer = () => this.complete(socket, target, id);
+            const held = this.heldMethods.get(target);
+            if (held) held.push(answer);
+            else answer();
           }
         } else if (data.type === 7) {
           this.open.delete(socket);
@@ -409,6 +455,20 @@ class RoomHubFixtures implements FakeRoomHub {
         }
       }
     });
+  }
+
+  /** Completes an invocation, with the hub error the backend sends for a refusal. */
+  private complete(socket: WebSocketRoute, target: string, invocationId: string): void {
+    const code = this.refusedMethods.get(target);
+    const completion =
+      code === undefined
+        ? { type: 3, invocationId }
+        : {
+            type: 3,
+            invocationId,
+            error: `An unexpected error occurred invoking '${target}' on the server. HubException: ${code}`,
+          };
+    socket.send(JSON.stringify(completion) + RS);
   }
 
   private afterHandshake(socket: WebSocketRoute): void {
@@ -420,6 +480,14 @@ class RoomHubFixtures implements FakeRoomHub {
   private sendRoom(socket: WebSocketRoute): void {
     if (this.room === null) return;
     socket.send(JSON.stringify({ type: 1, target: 'RoomChanged', arguments: [this.room] }) + RS);
+    this.sendGame(socket);
+  }
+
+  private sendGame(socket: WebSocketRoute): void {
+    if (this.gameState === null) return;
+    socket.send(
+      JSON.stringify({ type: 1, target: 'GameChanged', arguments: [this.gameState] }) + RS,
+    );
   }
 
   private closeForGood(socket: WebSocketRoute): void {

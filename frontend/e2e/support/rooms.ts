@@ -66,3 +66,8 @@ export function joinedRoom(code: string, players: RoomPlayerFixture[], me: RoomP
     room: roomState(code, players),
   };
 }
+
+/** The host of a room made with `madeRoom`, as the room hub sends them. */
+export function hostOf(made: ReturnType<typeof madeRoom>): RoomPlayerFixture {
+  return made.room.players[0];
+}

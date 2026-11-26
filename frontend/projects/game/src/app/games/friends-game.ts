@@ -2,6 +2,7 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import {
   ROOM_CONNECTION,
   VISIT,
+  type GameSetup,
   type RoomEntry,
   type RoomLink,
   type RoomSession,
@@ -40,6 +41,10 @@ export class FriendsGame implements RoomSession {
         .finally(() => this.connection.close());
     });
     void this.connect();
+  }
+
+  saveSetup(setup: GameSetup): Promise<void> {
+    return this.connection.saveSetup(setup);
   }
 
   retry(): void {
