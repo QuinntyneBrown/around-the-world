@@ -71,6 +71,9 @@ export class DuelPage {
   private readonly session = inject(GAME_SESSION);
   private readonly way = inject(WAY_OF_ANSWERING);
   private readonly injector = inject(EnvironmentInjector);
+
+  /** Pause in a solo game; a game with friends offers Leave in its place (L2-033 criterion 4). */
+  protected readonly canPause = this.session.kind === 'solo';
   /** The duel in which speech recognition failed: the pad shows for it (L2-011 criterion 4). */
   private readonly failedDuel = signal<string | null>(null);
 
@@ -168,6 +171,12 @@ export class DuelPage {
   protected async pause(): Promise<void> {
     const { openPause } = await import('../../dialogs/pause/open-pause');
     openPause(this.injector);
+  }
+
+  /** In a game with friends: asks first, then leaves the game (L2-033 criterion 4). */
+  protected async leave(): Promise<void> {
+    const { openLeaveGame } = await import('../../dialogs/leave-game/open-leave-game');
+    openLeaveGame(this.injector);
   }
 
   /** The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8). */

@@ -16,13 +16,23 @@
         />
       </atw-duel-hud>
       <atw-world-ring [tourLength]="duel.tourLength" [desk]="duel.desk" [places]="duel.ring" />
-      <button
-        atw-icon-button
-        type="button"
-        icon="pause"
-        aria-label="Pause"
-        (click)="pause()"
-      ></button>
+      @if (canPause) {
+        <button
+          atw-icon-button
+          type="button"
+          icon="pause"
+          aria-label="Pause"
+          (click)="pause()"
+        ></button>
+      } @else {
+        <button
+          atw-icon-button
+          type="button"
+          icon="leave"
+          aria-label="Leave the game"
+          (click)="leave()"
+        ></button>
+      }
     </header>
     <div class="duel__progress">
       <p atw-pill>{{ duel.country }} · desk {{ duel.desk }} of {{ duel.tourLength }}</p>
