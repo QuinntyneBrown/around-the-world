@@ -76,6 +76,7 @@
 @media (max-height: 34rem) {
   :host {
     max-width: 16rem;
+    flex: none;
   }
 
   .number-pad__key {
