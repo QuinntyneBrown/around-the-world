@@ -4,13 +4,10 @@ using AroundTheWorld.Api.Hosting;
 using AroundTheWorld.Api.Hubs;
 using AroundTheWorld.Api.Rooms;
 using AroundTheWorld.Application;
-using AroundTheWorld.Application.Common;
-using AroundTheWorld.Application.Rooms;
 using AroundTheWorld.Infrastructure;
 using AroundTheWorld.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,20 +26,7 @@ builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddHostedService<IdleRoomSweeper>();
 builder.Services.AddHostedService<RoomTimers>();
 
-// The room's one real-time channel: WebSockets only, messages of at most 1 KB, no detail of the
-// server in an error, a limit on how often a connection sends a sticker (docs/adr/0035), and the
-// caller known from the token its connection presented (docs/adr/0032-joining-a-room-and-the-lobby.md).
-builder.Services
-    .AddSignalR(options =>
-    {
-        options.MaximumReceiveMessageSize = RateLimitPolicies.MaxBodyBytes;
-        options.EnableDetailedErrors = false;
-        options.AddFilter<HubRateLimitFilter>();
-        options.AddFilter<CurrentPlayerFilter>();
-    });
-builder.Services.AddScoped<HubCurrentPlayer>();
-builder.Services.AddScoped<ICurrentPlayer>(services => services.GetRequiredService<HubCurrentPlayer>());
-builder.Services.AddScoped<IRoomNotifier, HubRoomNotifier>();
+builder.Services.AddRealTime(builder.Configuration);
 
 var app = builder.Build();
 
@@ -62,6 +46,7 @@ app.UseStatusCodePages();
 app.UseWebSockets();
 app.UseRouting();
 app.UseCors();
+app.UseAuthentication();
 app.UseRateLimiter();
 app.UseBodySizeLimit();
 app.MapControllers().RequireOpenToAnyoneLimits();

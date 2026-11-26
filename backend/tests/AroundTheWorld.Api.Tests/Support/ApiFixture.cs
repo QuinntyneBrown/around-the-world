@@ -257,6 +257,61 @@ public sealed class FrontendOriginApiFixture : ApiFixture
     }
 }
 
+/// <summary>
+/// The backend with Azure SignalR Service set, as deployed (docs/adr/0037). The service's address
+/// is on localhost, where nothing answers, so the instance never connects to it and no test
+/// reaches Azure; the service's health API is answered by <see cref="ServiceHealth"/>.
+/// </summary>
+public sealed class AzureSignalRApiFixture : ApiFixture
+{
+    /// <summary>A connection string of the service's form, to an address where nothing answers. Not a secret.</summary>
+    public const string ConnectionString =
+        "Endpoint=http://localhost:1;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
+
+    /// <summary>The service's health API, answering what the test sets.</summary>
+    public ServiceHealthApi ServiceHealth { get; } = new();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Azure:SignalR:ConnectionString", ConnectionString);
+        builder.ConfigureTestServices(services => services
+            .AddHttpClient("azure-signalr-health")
+            .ConfigurePrimaryHttpMessageHandler(() => ServiceHealth));
+    }
+}
+
+/// <summary>Azure SignalR Service's health API, answering 200 or 503 as the test sets, and recording what it was asked.</summary>
+public sealed class ServiceHealthApi : HttpMessageHandler
+{
+    private readonly List<string> _asked = [];
+
+    /// <summary>Whether the service answers that it is healthy.</summary>
+    public bool Healthy { get; set; } = true;
+
+    /// <summary>The requests the probe sent, as method and address.</summary>
+    public IReadOnlyList<string> Asked
+    {
+        get
+        {
+            lock (_asked)
+            {
+                return [.. _asked];
+            }
+        }
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        lock (_asked)
+        {
+            _asked.Add($"{request.Method} {request.RequestUri}");
+        }
+
+        return Task.FromResult(new HttpResponseMessage(Healthy ? HttpStatusCode.OK : HttpStatusCode.ServiceUnavailable));
+    }
+}
+
 /// <summary>A code generator that draws the codes it was given, in order, then the last again.</summary>
 internal sealed class ScriptedCodes(IReadOnlyList<string> codes) : IRoomCodeGenerator
 {
@@ -413,7 +468,10 @@ internal sealed class RequestLogged<TRequest, TResponse>(RequestLog log, ICurren
     }
 }
 
-/// <summary>Real SignalR clients on a test server, over WebSockets, the hub's one transport.</summary>
+/// <summary>
+/// Real SignalR clients on a test server, over WebSockets, the hub's one transport. Each
+/// negotiates first, as the game's client does (docs/adr/0037).
+/// </summary>
 internal static class HubConnections
 {
     public static HubConnection Create(TestServer server, string hubPath) =>
@@ -421,7 +479,6 @@ internal static class HubConnections
             .WithUrl(new Uri(server.BaseAddress, hubPath), options =>
             {
                 options.Transports = HttpTransportType.WebSockets;
-                options.SkipNegotiation = true;
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
                 options.WebSocketFactory = (context, cancellationToken) =>
                     new ValueTask<System.Net.WebSockets.WebSocket>(

@@ -42,7 +42,10 @@ on the in-memory test server, and never reaches Azure (`L2-052` criterion 3).
 - **The device negotiates.** `SignalRRoomConnection` no longer skips the negotiation; it asks
   for WebSockets only and follows the redirect a negotiation answers with, to the service's
   address and access token (`L2-052` criterion 1). With no service set, the negotiation is the
-  instance's own and the WebSocket opens on the game's origin as before.
+  instance's own and the WebSocket opens on the game's origin as before. While an instance has
+  no connection to the service, the SDK refuses a negotiation with a 500 and its own short
+  message, which holds nothing of a room; the device treats it as `backend_unreachable`, and
+  the ready endpoint has taken the instance out of service by then.
 - **Two instances.** They share one room store and order two answers by the room's `Version`,
   and every instance runs the room's clock; the save that stands decides (ADR 0033). Azure
   SignalR Service delivers a room group's message to every player whichever instance sent it

@@ -10,6 +10,7 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | Setting | Environment variable | Purpose | Added by |
 |---|---|---|---|
 | `ConnectionStrings:RoomStore` | `ConnectionStrings__RoomStore` | Connection to the room store, an Azure SQL Database ([ADR 0009](../adr/0009-health-and-migrations.md)). Absent in a local or test run, where no room store is used. | Journey 01 |
+| `Azure:SignalR:ConnectionString` | `Azure__SignalR__ConnectionString` | Connection to Azure SignalR Service (`Endpoint=…;AccessKey=…;Version=1.0;`), a secret. When it holds a value the room hub's connections are served through the service, by WebSockets, and `/health/ready` also asks the service's health API (`L2-052`, [ADR 0037](../adr/0037-running-the-backend-deployed.md)). Absent in a local or test run, where the instance serves SignalR itself. | Journey 17 |
 | `Frontend:Origin` | `Frontend__Origin` | The origin of the `game` application (for example `https://play.example.org`), the only origin the CORS policy allows, for the API and the hub (`L2-044` criterion 4). Absent: no other origin is allowed, which is right when the game and the backend share one origin ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
 | `ForwardedHeaders:KnownProxies` | `ForwardedHeaders__KnownProxies` | The addresses of the hosting platform's ingress, comma-separated, whose `X-Forwarded-For` and `X-Forwarded-Proto` are read, one proxy deep; loopback is always known. Absent: no other proxy is believed ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
 | `ForwardedHeaders:KnownNetworks` | `ForwardedHeaders__KnownNetworks` | The same as CIDR ranges (for example the Container Apps environment's subnet, `10.0.0.0/23`), comma-separated. | Journey 17 |
@@ -53,4 +54,6 @@ A deployed system routes those two paths to `AroundTheWorld.Api` and every other
 `game` build, so the game needs no setting of its own. `/hubs/room` is a WebSocket
 ([ADR 0032](../adr/0032-joining-a-room-and-the-lobby.md)): whatever routes it must pass the
 WebSocket upgrade through and must not log the query string, which carries the connection
-token as `access_token`.
+token as `access_token`. With Azure SignalR Service set, the game first negotiates at
+`/hubs/room/negotiate` and is sent to the service's endpoint, so the Content Security Policy's
+`connect-src` names that endpoint as well ([ADR 0037](../adr/0037-running-the-backend-deployed.md)).

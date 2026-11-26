@@ -18,10 +18,10 @@ public sealed class HubCurrentPlayer : ICurrentPlayer
 }
 
 /// <summary>
-/// Reads the connection token once, when a connection opens: SignalR's access token, which the
-/// browser's WebSockets transport sends as the query parameter <c>access_token</c>, or a bearer
-/// header from a client that can send one (docs/adr/0031). Each hub request's scope then knows
-/// its caller. A refusal is sent back as a hub error whose message is its <c>code</c> and
+/// Reads the connection token once, when a connection opens, from the connection's user, whose
+/// claim <see cref="RoomTokenAuthentication"/> made of SignalR's access token (docs/adr/0031) or
+/// Azure SignalR Service carried from the negotiation (docs/adr/0037). Each hub request's scope
+/// then knows its caller. A refusal is sent back as a hub error whose message is its <c>code</c> and
 /// nothing of the server (L2-044 criterion 3).
 /// </summary>
 public sealed class CurrentPlayerFilter : IHubFilter
@@ -45,7 +45,7 @@ public sealed class CurrentPlayerFilter : IHubFilter
 
     public Task OnConnectedAsync(HubLifetimeContext context, Func<HubLifetimeContext, Task> next)
     {
-        context.Context.Items[TokenKey] = PresentedToken(context.Context.GetHttpContext());
+        context.Context.Items[TokenKey] = context.Context.User?.FindFirst(RoomTokenAuthentication.TokenClaim)?.Value;
         context.ServiceProvider.GetRequiredService<HubCurrentPlayer>().Use(context.Context);
         return next(context);
     }
@@ -54,22 +54,5 @@ public sealed class CurrentPlayerFilter : IHubFilter
     {
         context.ServiceProvider.GetRequiredService<HubCurrentPlayer>().Use(context.Context);
         return next(context, exception);
-    }
-
-    private static string? PresentedToken(HttpContext? http)
-    {
-        if (http is null)
-        {
-            return null;
-        }
-
-        var query = http.Request.Query["access_token"].ToString();
-        if (query.Length > 0)
-        {
-            return query;
-        }
-
-        var header = http.Request.Headers.Authorization.ToString();
-        return header.StartsWith("Bearer ", StringComparison.Ordinal) ? header["Bearer ".Length..] : null;
     }
 }
