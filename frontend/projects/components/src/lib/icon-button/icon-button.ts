@@ -13,8 +13,10 @@ import { Icon, type IconName } from '../icon/icon';
   templateUrl: './icon-button.html',
   styleUrl: './icon-button.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'icon-btn' },
+  host: { class: 'icon-btn', '[class.icon-btn--on-code]': 'onCode()' },
 })
 export class IconButton {
   readonly icon = input.required<IconName>();
+  /** On the room code's colour, as "Copy room link" (docs/mocks/pages/lobby/). */
+  readonly onCode = input(false);
 }

@@ -9,32 +9,47 @@
       (click)="leave()"
     ></button>
   </header>
-  @if (entry(); as entry) {
+  @if (room(); as room) {
     <main atw-screen-body columns="side">
       <aside atw-stack gap="lg">
-        <section atw-room-code [code]="entry.code"></section>
+        <section atw-room-code [code]="room.code"></section>
         <section atw-panel>
           <div atw-panel-head heading="The game" headingId="game-title" [level]="2"></div>
           <dl atw-summary [rows]="setup()"></dl>
         </section>
         <div atw-stack gap="sm" class="lobby__start">
-          <button
-            atw-toy-button
-            type="button"
-            size="xl"
-            [block]="true"
-            [disabled]="alone()"
-            aria-describedby="start-hint"
-          >
-            Start the race
-          </button>
-          <p id="start-hint" class="lobby__hint" role="status">
-            @if (alone()) {
-              Waiting for at least one friend…
-            } @else {
-              {{ players().length }} kids ready
-            }
-          </p>
+          @if (lost()) {
+            <atw-alert tone="danger" icon="alert" heading="We lost the room" [urgent]="true">
+              <p>The connection dropped and we couldn’t get back in.</p>
+              <button atw-text-button slot="actions" type="button" icon="retry" (click)="retry()">
+                Try again
+              </button>
+              <a atw-text-button slot="actions" routerLink="/">Go home</a>
+            </atw-alert>
+          } @else if (isHost()) {
+            <button
+              atw-toy-button
+              type="button"
+              size="xl"
+              [block]="true"
+              [disabled]="true"
+              aria-describedby="start-hint"
+            >
+              Start the race
+            </button>
+            <p id="start-hint" class="lobby__hint" role="status">
+              @if (alone()) {
+                Waiting for at least one friend…
+              } @else {
+                {{ players().length }} kids ready
+              }
+            </p>
+          } @else {
+            <div atw-panel size="sm" [tint]="true" role="status">
+              <p class="lobby__wait-title">You’re in!</p>
+              <p class="lobby__wait-text">Waiting for {{ hostNickname() }} to start…</p>
+            </div>
+          }
         </div>
       </aside>
       <section atw-stack aria-labelledby="class-title">
@@ -49,6 +64,26 @@
           </p>
         </div>
         <ul atw-player-list [players]="players()" [capacity]="capacity"></ul>
+      </section>
+    </main>
+  } @else {
+    <main atw-screen-body columns="side" aria-busy="true">
+      <p class="visually-hidden" role="status">Getting the room…</p>
+      <aside atw-stack gap="lg" aria-hidden="true">
+        <atw-skeleton shape="panel" class="lobby__code-placeholder" />
+        <div atw-panel>
+          <div atw-stack>
+            <atw-skeleton shape="title" />
+            <atw-skeleton />
+            <atw-skeleton />
+            <atw-skeleton />
+          </div>
+        </div>
+        <atw-skeleton shape="block" class="lobby__start-placeholder" />
+      </aside>
+      <section atw-stack aria-hidden="true">
+        <atw-skeleton shape="title" />
+        <ul atw-player-list [players]="[]" [loading]="true"></ul>
       </section>
     </main>
   }

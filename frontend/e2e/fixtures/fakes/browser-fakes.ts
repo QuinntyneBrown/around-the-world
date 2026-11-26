@@ -5,7 +5,8 @@
  * the spec tells it to. WebGL is Chromium's own (SwiftShader when there is no GPU): the fakes
  * only count the contexts the game opens, and take WebGL away when the spec asks. Sound is
  * never heard: each sound the game plays is recorded by its file's name, and the audio
- * elements the game makes are counted until it lets them go. A use the
+ * elements the game makes are counted until it lets them go. The clipboard keeps what the game
+ * copied, or refuses to copy when the spec asks. A use the
  * spec did not set up is recorded as a problem, and the fixture fails the spec with it.
  *
  * This function is serialised into the page, so it must not close over anything.
@@ -51,6 +52,10 @@ export interface BrowserFakesState {
   played: string[];
   /** How many audio elements the game made that still hold a source. */
   openSounds(): number;
+  /** Whether a copy to the clipboard works; false refuses it, as a locked-down browser does. */
+  clipboardWorks: boolean;
+  /** What the game copied to the clipboard, in order. */
+  copied: string[];
 }
 
 declare global {
@@ -82,6 +87,8 @@ export function installBrowserFakes(): void {
     openContexts: () => 0,
     played: [],
     openSounds: () => 0,
+    clipboardWorks: true,
+    copied: [],
   };
   Object.defineProperty(window, '__atwFakes', { value: fakes, configurable: false });
 
@@ -98,6 +105,22 @@ export function installBrowserFakes(): void {
   });
 
   const notAllowed = () => new DOMException('Permission denied', 'NotAllowedError');
+
+  // ---- Clipboard ------------------------------------------------------------------------
+  // CDK Clipboard copies the text of a hidden textarea it selects with execCommand('copy').
+  // The fake keeps that text instead of reaching the system's clipboard.
+  const execCommand = document.execCommand.bind(document);
+  document.execCommand = (command: string, showUi?: boolean, value?: string): boolean => {
+    if (command !== 'copy') return execCommand(command, showUi, value);
+    if (!fakes.clipboardWorks) return false;
+    const focused = document.activeElement;
+    const text =
+      focused instanceof HTMLTextAreaElement
+        ? focused.value
+        : ([...document.querySelectorAll('textarea')].pop()?.value ?? '');
+    fakes.copied.push(text);
+    return true;
+  };
 
   // ---- Microphone -----------------------------------------------------------------------
   const opened: MediaStreamTrack[] = [];

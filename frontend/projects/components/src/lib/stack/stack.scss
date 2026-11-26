@@ -26,3 +26,8 @@
 :host(.stack--flush) {
   gap: var(--space-0);
 }
+
+:host(.stack--narrow) {
+  width: 100%;
+  max-width: var(--layout-panel-narrow);
+}

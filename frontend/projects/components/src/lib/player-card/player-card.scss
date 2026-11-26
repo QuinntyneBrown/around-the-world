@@ -63,3 +63,9 @@
     place-items: center;
   }
 }
+
+.player-card__text--loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

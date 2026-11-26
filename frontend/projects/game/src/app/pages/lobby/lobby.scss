@@ -1,5 +1,6 @@
 // The Lobby's own layout (docs/mocks/pages/lobby/): the start control at the foot of its
-// column, its hint under it, and the count beside "In the classroom".
+// column, its hint under it, the count beside "In the classroom", the words of the panel a
+// player who is not the host waits in, and the size of the placeholders while the room arrives.
 .lobby__start {
   margin-top: auto;
 }
@@ -12,4 +13,20 @@
 .lobby__count {
   font: var(--text-h4);
   color: var(--color-fg-muted);
+}
+
+.lobby__wait-title {
+  font: var(--text-h4);
+}
+
+.lobby__wait-text {
+  color: var(--color-fg-muted);
+}
+
+.lobby__code-placeholder {
+  height: 12rem;
+}
+
+.lobby__start-placeholder {
+  height: var(--control-height-xl);
 }

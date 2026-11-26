@@ -1,8 +1,8 @@
 import { expect, test } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
-import { HomePage } from '../pages/home.page';
 import { LobbyPage } from '../pages/lobby.page';
+import { RoomPage } from '../pages/room.page';
 import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
 import { madeRoom, problem } from '../support/rooms';
 
@@ -20,10 +20,12 @@ test.describe('Make a room', () => {
     page,
     device,
     backend,
+    roomHub,
   }) => {
     // Given a child who picked Nia, "Cosmic Gecko", and a backend that makes room BOLT
     await device.keeps(NIA);
     backend.answer('POST', ROOMS, madeRoom('BOLT', NIA), 201);
+    roomHub.serves(madeRoom('BOLT', NIA).room);
     const release = backend.holdBack('POST', ROOMS);
     const solo = new SoloOrFriendsPage(page);
     await solo.open();
@@ -73,18 +75,22 @@ test.describe('Make a room', () => {
     await expect(lobby.setupTerms).toHaveText(['Maths', 'Tour', 'Answer by']);
     await expect(lobby.setupValues).toHaveText(['×2 to ×10', '12 desks', 'Shouting it!']);
 
-    // And the connection token is kept nowhere on the device (L2-015 criterion 4)
+    // And the connection token is kept nowhere on the device (L2-015 criterion 4), and the
+    // room's connection presented it (docs/adr/0032)
     expect(JSON.stringify(await device.kept())).not.toContain(madeRoom('BOLT', NIA).token);
+    expect(roomHub.tokens()).toEqual([madeRoom('BOLT', NIA).token]);
   });
 
   test('a host who answers with the number pad sees it in the Lobby', async ({
     page,
     device,
     backend,
+    roomHub,
   }) => {
     // Given a child who answers with the number pad
     await device.keeps({ ...NIA, wayOfAnswering: 'numberPad' });
     backend.answer('POST', ROOMS, madeRoom('MOON', NIA), 201);
+    roomHub.serves(madeRoom('MOON', NIA).room);
 
     // When they make a room
     const solo = new SoloOrFriendsPage(page);
@@ -97,14 +103,16 @@ test.describe('Make a room', () => {
     await expect(lobby.setupValues).toHaveText(['×2 to ×10', '12 desks', 'The number pad']);
   });
 
-  test('"Leave the room" opens Solo Or Friends, and the room is gone from the visit', async ({
+  test('"Leave the room" opens Solo Or Friends, tells the room, and the room is gone from the visit', async ({
     page,
     device,
     backend,
+    roomHub,
   }) => {
     // Given a host in the Lobby of room BOLT
     await device.keeps(NIA);
     backend.answer('POST', ROOMS, madeRoom('BOLT', NIA), 201);
+    roomHub.serves(madeRoom('BOLT', NIA).room);
     const solo = new SoloOrFriendsPage(page);
     await solo.open();
     await solo.chooseMakeRoom();
@@ -118,19 +126,27 @@ test.describe('Make a room', () => {
     await expect(page).toHaveURL(/\/play$/);
     await expect(solo.makeRoom).toHaveText('Make a room');
 
-    // And the browser's Back no longer opens the room, which the visit has dropped: Home opens
+    // And the room was told, and the connection closed with its handlers (L2-048 criterion 2)
+    expect(roomHub.invoked()).toEqual(['LeaveRoom']);
+    await expect.poll(() => roomHub.openConnections()).toBe(0);
+
+    // And the browser's Back no longer opens the room, which the visit has dropped: the room's
+    // address opens Room with its code filled in (docs/adr/0032)
     await page.goBack();
-    await expect(new HomePage(page).play).toBeVisible();
+    await expect(new RoomPage(page).heading).toHaveText('Join a room');
+    await expect(new RoomPage(page).field).toHaveValue('BOLT');
   });
 
-  test('a reload in the Lobby opens Home, since the room lives only in this visit', async ({
+  test('a reload in the Lobby opens Room with the code filled in, since the room lives only in this visit', async ({
     page,
     device,
     backend,
+    roomHub,
   }) => {
     // Given a host in the Lobby of room BOLT
     await device.keeps(NIA);
     backend.answer('POST', ROOMS, madeRoom('BOLT', NIA), 201);
+    roomHub.serves(madeRoom('BOLT', NIA).room);
     const solo = new SoloOrFriendsPage(page);
     await solo.open();
     await solo.chooseMakeRoom();
@@ -139,9 +155,11 @@ test.describe('Make a room', () => {
     // When the page is reloaded
     await page.reload();
 
-    // Then Home opens (L2-030 criterion 7)
-    await expect(page).toHaveURL(/\/$/);
-    await expect(new HomePage(page).play).toBeVisible();
+    // Then the Lobby's address, the room's link, opens Room with the code filled in, as on any
+    // device not in the room (L2-024 criterion 4, docs/adr/0032)
+    await expect(page).toHaveURL(/\/room\/BOLT$/);
+    await expect(new RoomPage(page).heading).toHaveText('Join a room');
+    await expect(new RoomPage(page).field).toHaveValue('BOLT');
   });
 
   test('a rate-limited address is told to wait, "Make a room" stays disabled and Play solo works', async ({
@@ -184,6 +202,7 @@ test.describe('Make a room', () => {
     page,
     device,
     backend,
+    roomHub,
   }) => {
     // Given a child on Solo Or Friends and a backend that cannot be reached
     await device.keeps(NIA);
@@ -204,6 +223,7 @@ test.describe('Make a room', () => {
 
     // When the backend answers again and they choose "Try again"
     backend.answer('POST', ROOMS, madeRoom('CAKE', NIA), 201);
+    roomHub.serves(madeRoom('CAKE', NIA).room);
     await solo.chooseTryAgain();
 
     // Then the room is made and its Lobby opens

@@ -14,6 +14,10 @@ import {
  * - `model`: a fake on-device model that answers as the spec tells it to;
  * - `backend`: API and hub requests answered from fixtures (no real backend or database), held
  *   back or left unanswered as an unreachable backend, and the record of what the game sent;
+ * - `roomHub`: the room hub's WebSocket (`/hubs/room`), speaking SignalR's JSON protocol: it
+ *   sends the room the spec sets, holds it back, refuses or drops connections, and records the
+ *   tokens presented and the methods invoked (docs/adr/0032);
+ * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
  * - `network`: the device's network, taken away and given back (`navigator.onLine`);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
@@ -88,6 +92,36 @@ export interface FakeBackend {
   requests(): { method: string; path: string; body: Json }[];
   /** Takes over the hub's WebSocket at a path (e.g. `/hubs/room`). */
   hub(path: string, handler: (socket: WebSocketRoute) => void): void;
+}
+
+/**
+ * The room hub (docs/adr/0032-joining-a-room-and-the-lobby.md): each connection is answered in
+ * SignalR's JSON protocol, as the backend's `RoomHub` answers it.
+ */
+export interface FakeRoomHub {
+  /** Each connection, once its handshake is done, receives this room (`RoomChanged`). */
+  serves(room: Json): void;
+  /** New connections wait for the room until the returned function is called. */
+  holdBack(): () => void;
+  /** Every new connection is closed at once for good, as for a token that names no player. */
+  refuses(): void;
+  /** Sends the room's new state to every open connection, and to every later one. */
+  changes(room: Json): void;
+  /** Closes every open connection for good, as when the room cannot be got back. */
+  drop(): void;
+  /** The connection tokens the connections presented, in order. */
+  tokens(): string[];
+  /** The hub methods the game invoked, in order. */
+  invoked(): string[];
+  /** How many connections are open now. */
+  openConnections(): number;
+}
+
+export interface FakeClipboard {
+  /** Copying fails, as in a browser that refuses the clipboard. */
+  refuses(): Promise<void>;
+  /** What the game copied, in order. */
+  copied(): Promise<string[]>;
 }
 
 /** The player's record as the game keeps it on the device (ADR 0011). */
@@ -177,6 +211,8 @@ interface Fixtures {
   microphone: FakeMicrophone;
   model: FakeModel;
   backend: FakeBackend;
+  roomHub: FakeRoomHub;
+  clipboard: FakeClipboard;
   network: FakeNetwork;
 }
 
@@ -196,6 +232,7 @@ interface FakesPatch {
   modelWhenNoReply?: 'problem' | 'hold' | 'fail';
   modelReplies?: string[];
   webglSupported?: boolean;
+  clipboardWorks?: boolean;
 }
 
 function applyPatch(patch: FakesPatch): void {
@@ -206,6 +243,7 @@ function applyPatch(patch: FakesPatch): void {
   if (patch.modelWhenNoReply !== undefined) fakes.modelWhenNoReply = patch.modelWhenNoReply;
   if (patch.modelReplies !== undefined) fakes.modelReplies.push(...patch.modelReplies);
   if (patch.webglSupported !== undefined) fakes.webglSupported = patch.webglSupported;
+  if (patch.clipboardWorks !== undefined) fakes.clipboardWorks = patch.clipboardWorks;
 }
 
 /** Changes the fakes now (when a page is open) and again on every page loaded after. */
@@ -290,6 +328,110 @@ class BackendFixtures implements FakeBackend {
 
   hub(path: string, handler: (socket: WebSocketRoute) => void): void {
     this.hubs.set(path, handler);
+  }
+}
+
+/** The record separator that ends each message of SignalR's JSON protocol. */
+const RS = '\u001e';
+const ROOM_HUB = '/hubs/room';
+
+class RoomHubFixtures implements FakeRoomHub {
+  private room: Json | null = null;
+  private mode: 'serve' | 'hold' | 'refuse' = 'serve';
+  private readonly held: WebSocketRoute[] = [];
+  private readonly open = new Set<WebSocketRoute>();
+  private readonly presented: string[] = [];
+  private readonly calls: string[] = [];
+
+  serves(room: Json): void {
+    this.room = room;
+    this.mode = 'serve';
+  }
+
+  holdBack(): () => void {
+    this.mode = 'hold';
+    return () => {
+      this.mode = 'serve';
+      for (const socket of this.held.splice(0)) this.sendRoom(socket);
+    };
+  }
+
+  refuses(): void {
+    this.mode = 'refuse';
+  }
+
+  changes(room: Json): void {
+    this.room = room;
+    for (const socket of this.open) if (!this.held.includes(socket)) this.sendRoom(socket);
+  }
+
+  drop(): void {
+    for (const socket of [...this.open]) this.closeForGood(socket);
+  }
+
+  tokens(): string[] {
+    return [...this.presented];
+  }
+
+  invoked(): string[] {
+    return [...this.calls];
+  }
+
+  openConnections(): number {
+    return this.open.size;
+  }
+
+  /** Speaks SignalR's JSON protocol on one connection of the game's. */
+  handle(socket: WebSocketRoute): void {
+    this.presented.push(new URL(socket.url()).searchParams.get('access_token') ?? '');
+    this.open.add(socket);
+    socket.onClose(() => this.open.delete(socket));
+    socket.onMessage((message) => {
+      for (const record of String(message).split(RS)) {
+        if (record === '') continue;
+        const data = JSON.parse(record) as {
+          protocol?: string;
+          type?: number;
+          target?: string;
+          invocationId?: string;
+        };
+        if (data.protocol !== undefined) {
+          socket.send(`{}${RS}`);
+          this.afterHandshake(socket);
+        } else if (data.type === 1) {
+          this.calls.push(data.target ?? '');
+          if (data.invocationId !== undefined) {
+            socket.send(JSON.stringify({ type: 3, invocationId: data.invocationId }) + RS);
+          }
+        } else if (data.type === 7) {
+          this.open.delete(socket);
+          void socket.close();
+        }
+      }
+    });
+  }
+
+  private afterHandshake(socket: WebSocketRoute): void {
+    if (this.mode === 'refuse') this.closeForGood(socket);
+    else if (this.mode === 'hold') this.held.push(socket);
+    else this.sendRoom(socket);
+  }
+
+  private sendRoom(socket: WebSocketRoute): void {
+    if (this.room === null) return;
+    socket.send(JSON.stringify({ type: 1, target: 'RoomChanged', arguments: [this.room] }) + RS);
+  }
+
+  private closeForGood(socket: WebSocketRoute): void {
+    socket.send(
+      JSON.stringify({
+        type: 7,
+        error: 'Connection closed with an error.',
+        allowReconnect: false,
+      }) + RS,
+    );
+    this.open.delete(socket);
+    void socket.close();
   }
 }
 
@@ -450,6 +592,19 @@ export const test = base.extend<Fixtures>({
       holdBack: () => pictures.holdBack(CLASSROOM_SCENES),
       refuse: () => pictures.refuse(CLASSROOM_SCENES),
       openContexts: () => page.evaluate(() => window.__atwFakes.openContexts()),
+    });
+  },
+
+  roomHub: async ({ backend }, use) => {
+    const hub = new RoomHubFixtures();
+    backend.hub(ROOM_HUB, (socket) => hub.handle(socket));
+    await use(hub);
+  },
+
+  clipboard: async ({ page }, use) => {
+    await use({
+      refuses: () => setFake(page, { clipboardWorks: false }),
+      copied: () => page.evaluate(() => [...window.__atwFakes.copied]),
     });
   },
 
