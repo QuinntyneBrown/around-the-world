@@ -19,11 +19,12 @@ box "Frontend — game" #E0F2FE
   participant "GameSetupPage" as page
 end box
 box "Frontend — components" #E0F2FE
-  participant "MathsToggles" as toggles
+  participant "ToggleChips, TableKeys, Choices, Segmented" as toggles
 end box
 box "Frontend — domain" #E0F2FE
   participant "GameSetupRules" as rules
   participant "StoredPlayerChoices" as choices
+  participant "SoloGame" as game
 end box
 actor -> page : Open Game Setup after "Play solo" (titled "Set up your game")
 page -> choices : Read setup
@@ -41,16 +42,16 @@ opt child changes a choice
   toggles --> page : Choice pressed
   page -> rules : toggleKind or toggleTable
   alt it is the last one on
-    rules --> page : Setup unchanged (L2-016 criterion 3)
-    page --> actor : "Keep at least one kind of maths on. Turn another on first."
+    rules --> page : Setup unchanged, refused (L2-016 criterion 3)
+    page --> actor : "Keep at least one kind of maths on." or "Keep at least one times table on."
   else
     rules --> page : Setup with the choice toggled
   end
-  page -> choices : setSetup(setup)
+  page -> choices : changeSetup(setup)
   choices --> page : Kept on the device
   page --> actor : New state shown
 end
 actor -> page : Go!
-page -> page : Start the solo game with the setup (L2-018 criterion 1)
-page --> actor : Mic Check when needed, then Duel
+page -> game : start(setup) (L2-018 criterion 1, ADR 0016)
+page --> actor : Duel's loading state (Mic Check first when journey 07 builds it)
 @enduml

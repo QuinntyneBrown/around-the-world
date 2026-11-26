@@ -22,3 +22,5 @@ requirements and designs leave.
 | [0013](0013-pictures-arriving-and-failing.md) | Home's and Pick Your Kid's loading and error states follow their pictures | Accepted |
 | [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted |
 | [0015](0015-critical-path-in-ci.md) | CI runs the behaviour specs tagged `@critical` | Accepted |
+| [0016](0016-solo-game-route-group.md) | The solo game is a lazy route group that holds Game Setup and the game screens | Accepted |
+| [0017](0017-game-setup-rules-and-states.md) | Game Setup's rules, how the setup is kept, and the states a solo game reaches | Accepted |

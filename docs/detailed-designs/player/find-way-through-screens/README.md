@@ -26,9 +26,10 @@ has its route here and is designed by `platform/operate-backend` (`L2-054` crite
 
 ## Description
 
-Journey 02 built the routes `/`, `/kid` and `/play`, and Home without its corner buttons; the
-rest of the slice is not built yet. Until journey 03 builds Solo Or Friends, `/play` shows that
-screen's loading state with its top bar and Back. The sound button arrives with journey 10, the
+Journey 02 built the routes `/`, `/kid` and `/play`, and Home without its corner buttons.
+Journey 03 built Solo Or Friends and the solo group with `/setup` and `/duel`, guarded by
+`inGameGuard`; Duel shows its loading state until journey 04 deals the first flash card
+(`docs/adr/0016-solo-game-route-group.md`). The rest of the slice is not built yet. The sound button arrives with journey 10, the
 settings button with journey 07, and Home's error state with the 3D classroom in journey 09
 (`docs/adr/0013-pictures-arriving-and-failing.md`). The components below are the ones the
 design introduces. The slice
@@ -44,7 +45,7 @@ those `docs/mocks/manifest.json` gives; no requirement fixes them.
 | `/` | `HomePage` | opening the game; "Home" on the Podium, on Not Found and on Something Went Wrong | no Back | none |
 | `/kid` | `PickYourKidPage` | "Play" on Home with no kid kept; "Change kid" on Home | Home | none |
 | `/play` | `SoloOrFriendsPage` | "I'm {kid}!"; "Play" or "Play again" on Home with a kid kept; "Play with friends" on the Podium | Pick Your Kid | none |
-| `/setup` (solo) | `GameSetupPage` | "Play solo"; "Play solo instead" on Room | Solo Or Friends | none |
+| `/setup` (solo group) | `GameSetupPage` | "Play solo"; "Play solo instead" on Room | Solo Or Friends | none |
 | `/room` | `RoomPage` | "Join a room"; a room's link | Solo Or Friends | none |
 | `/room/:code` | `LobbyPage` | "Make a room"; "Join" on Room; "Play again" on the Podium in a game with friends | Solo Or Friends | `inRoomGuard` |
 | `/setup` (room group) | `GameSetupPage` for the host | "Change" in the Lobby | the Lobby | `inRoomGuard` |
@@ -55,12 +56,15 @@ those `docs/mocks/manifest.json` gives; no requirement fixes them.
 
 The column "Back opens" is `L2-030` criterion 8. Mic Check, Duel, World Map and the Podium are
 the four game screens; the solo group and the room group each load them. `/setup`, `/mic`,
-`/duel`, `/map` and `/podium` each serve a solo game and a game with friends; how the router
-chooses between the two groups for one path is `<TO SUPPLY>`. The address of a room's link is
+`/duel`, `/map` and `/podium` each serve a solo game and a game with friends; the router
+chooses between the two groups with `canMatch`: the room group matches when the visit holds a
+room, and the solo group otherwise (`docs/adr/0016-solo-game-route-group.md`). The address of a room's link is
 designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo game only.
 
 - **Solo group and room group** — two lazy parent routes that load the same four game
-  screens. "Go!" on Game Setup enters the solo group. The solo group provides `SoloGame` behind `GAME_SESSION`; the room group provides
+  screens. The solo group also holds the solo Game Setup, so "Go!" starts the game on the
+  group's own `GAME_SESSION` and then opens the first game screen. `provideRouter` takes
+  `withAutoCleanupInjectors()`, so leaving a group destroys its injector. The solo group provides `SoloGame` behind `GAME_SESSION`; the room group provides
   `FriendsGame` behind `GAME_SESSION` and binds `ROOM_CONNECTION`. Duel, World Map and Podium
   read `GAME_SESSION` and do not know which kind of game is played. A child who plays only a
   solo game never loads the room group, so the SignalR client is never downloaded (`L2-047`
