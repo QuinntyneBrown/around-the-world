@@ -59,7 +59,7 @@ diagrams show frontend libraries only. In a game with friends the server applies
   of the players the screens name (the five kids, `L2-035` criterion 7), the device's player's
   place, their passport pages, the count of countries reached and the tour length.
 - **`GameClock`** — clock in `domain`'s `tour/` (ADR 0020). It gives the game time against
-  which the time limit is measured; Pause (journey 08) will hold it.
+  which the time limit is measured; Pause holds it (ADR 0027).
 - **`SoloGame`** — game service in `domain`'s `tour/`, provided behind `GAME_SESSION` by the
   solo group (ADR 0016). When `Tour` reports the tour over it starts no further duel, and World
   Map shows the last move with its message as every other (`tour/travel-round-ring`). When the
