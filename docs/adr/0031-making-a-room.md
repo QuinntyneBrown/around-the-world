@@ -114,6 +114,13 @@ drops the room from the visit and opens Solo Or Friends; telling the backend is 
 - `offline` — the page reads `Network.online`, a signal over the browser's `navigator.onLine`
   and its `online` and `offline` events, bound by the route as `BrowserNetwork` and released
   with it. The banner is a status at the top of the screen; "Play solo" stays.
+  For "Play solo" to work with no network the solo game's code must already be on the device,
+  and nothing kept it there: offline, the router could not fetch Game Setup's chunk. Solo Or
+  Friends therefore fetches the solo group's route file, every screen in it and the
+  classmates' agents (`warmSoloGame`) when it opens, without running anything; the solo game is
+  one of its two next screens. The 3D classroom, the sounds and the pictures keep their own
+  fallbacks (ADR 0028, ADR 0029, ADR 0013). A service worker that keeps the whole game is
+  journey 18's to decide.
 - The alerts sit below the two buttons, across the card, in Mode card's new `note` slot (the
   mocks put them inside the two-column grid of buttons, where they took one column).
 

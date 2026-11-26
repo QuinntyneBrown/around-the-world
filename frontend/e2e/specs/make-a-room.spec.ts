@@ -1,4 +1,6 @@
 import { expect, test } from '../fixtures/test';
+import { DuelPage } from '../pages/duel.page';
+import { GameSetupPage } from '../pages/game-setup.page';
 import { HomePage } from '../pages/home.page';
 import { LobbyPage } from '../pages/lobby.page';
 import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
@@ -176,5 +178,102 @@ test.describe('Make a room', () => {
     await page.goBack();
     await expect(solo.makeRoom).toBeEnabled();
     await expect(solo.roomAlert).toHaveCount(0);
+  });
+
+  test('when the backend cannot be reached the child is told, stays, and "Try again" makes the room', async ({
+    page,
+    device,
+    backend,
+  }) => {
+    // Given a child on Solo Or Friends and a backend that cannot be reached
+    await device.keeps(NIA);
+    backend.unreachable('POST', ROOMS);
+    const solo = new SoloOrFriendsPage(page);
+    await solo.open();
+
+    // When they choose "Make a room"
+    await solo.chooseMakeRoom();
+
+    // Then they stay and are told the room could not be made (L2-022 criterion 3)
+    await expect(solo.roomAlertTitle).toHaveText('We couldn’t make your room');
+    await expect(solo.roomAlert).toContainText(
+      'Something went wrong on our side. Try again, or play solo while you wait.',
+    );
+    await expect(page).toHaveURL(/\/play$/);
+    await expect(solo.playSolo).toBeVisible();
+
+    // When the backend answers again and they choose "Try again"
+    backend.answer('POST', ROOMS, madeRoom('CAKE', NIA), 201);
+    await solo.chooseTryAgain();
+
+    // Then the room is made and its Lobby opens
+    await expect(new LobbyPage(page).code).toHaveText('CAKE');
+    expect(backend.requests()).toHaveLength(2);
+  });
+
+  for (const [refusal, status, answer] of [
+    ['no free code', 503, problem(503, 'no_free_code', 'No room code is free right now.')],
+    ['a code the screen has no words for', 400, problem(400, 'invalid_kid', 'Server detail')],
+    ['a failure with no code', 500, { title: 'Internal Server Error', status: 500 }],
+  ] as const) {
+    test(`${refusal} shows the generic message and none of the backend's words`, async ({
+      page,
+      device,
+      backend,
+    }) => {
+      // Given the backend refuses to make the room
+      await device.keeps(NIA);
+      backend.answer('POST', ROOMS, answer, status);
+      const solo = new SoloOrFriendsPage(page);
+      await solo.open();
+
+      // When the child chooses "Make a room"
+      await solo.chooseMakeRoom();
+
+      // Then the generic message is shown, and nothing the backend wrote (L2-054 criterion 2)
+      await expect(solo.roomAlertTitle).toHaveText('We couldn’t make your room');
+      await expect(solo.tryAgain).toBeVisible();
+      await expect(page.getByText(answer.title)).toHaveCount(0);
+    });
+  }
+
+  test('with no network a banner says so, the friends buttons wait and Play solo works', async ({
+    page,
+    device,
+    network,
+  }) => {
+    // Given a child on Solo Or Friends who answers with the number pad
+    await device.keeps({ ...NIA, wayOfAnswering: 'numberPad' });
+    const solo = new SoloOrFriendsPage(page);
+    await solo.open();
+    await expect(solo.makeRoom).toBeEnabled();
+    await solo.settle();
+
+    // When the device loses its network
+    await network.offline();
+
+    // Then a banner says so, as a status (L2-022 criterion 6)
+    await expect(solo.offlineBanner).toHaveText('You’re offline. You can still play solo.');
+    await expect(solo.offlineBanner).toHaveRole('status');
+
+    // And "Make a room" and "Join a room" are disabled, and the card says why
+    await expect(solo.makeRoom).toBeDisabled();
+    await expect(solo.joinRoom).toBeDisabled();
+    await expect(solo.friendsHint).toHaveText('Playing with friends needs the internet.');
+
+    // When the network comes back
+    await network.online();
+
+    // Then the banner goes and "Make a room" is offered again
+    await expect(solo.offlineBanner).toHaveCount(0);
+    await expect(solo.makeRoom).toBeEnabled();
+
+    // And with no network "Play solo" still opens Game Setup, and "Go!" deals a flash card
+    // (L2-054 criterion 3)
+    await network.offline();
+    await solo.choosePlaySolo();
+    await expect(page).toHaveURL(/\/setup$/);
+    await new GameSetupPage(page).chooseGo();
+    await expect(new DuelPage(page).sum).toHaveText(/\d+ × \d+/);
   });
 });
