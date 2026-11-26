@@ -1,5 +1,5 @@
 import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withAutoCleanupInjectors } from '@angular/router';
 import { DEVICE_STORAGE, PICTURE_LOADER, PLAYER_CHOICES, PLAYER_STORAGE, VISIT } from '@atw/api';
 import {
   deviceStorage,
@@ -18,7 +18,8 @@ import { VisitState } from './visit/visit-state';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // Leaving a route group destroys what it provided, such as a game (docs/adr/0016).
+    provideRouter(routes, withAutoCleanupInjectors()),
     { provide: NicknameGenerator, useFactory: () => new NicknameGenerator() },
     { provide: DEVICE_STORAGE, useFactory: deviceStorage },
     { provide: PLAYER_STORAGE, useClass: LocalPlayerStorage },

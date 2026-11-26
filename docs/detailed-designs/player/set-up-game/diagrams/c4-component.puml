@@ -5,7 +5,8 @@ title Components — Set up a game
 
 Container_Boundary(game, "game application and its libraries") {
   Component(page, "GameSetupPage", "Angular page in game", "Orchestrates the screen; Go! in a solo game, Save for a host, with Saving… and the alert when it did not save")
-  Component(toggles, "MathsToggles, TourLengthPicker, CardSpeedPicker", "Presentation components", "Show the choices, emit the choice pressed")
+  Component(toggles, "ToggleChips, TableKeys, Choices, Segmented", "Presentation components in components", "Show the choices, emit the choice pressed")
+  Component(session, "SoloGame", "GameSession behind GAME_SESSION, provided by the solo group", "Holds the solo game started with the setup")
   Component(rules, "GameSetupRules", "Pure helper in domain tour/", "Defaults, last one stays on, Easy, All, tables off with Times")
   Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Keeps the setup on the device")
   Component(conn, "RoomConnection", "SignalR client behind ROOM_CONNECTION", "Sends the host's setup to the room")
@@ -22,6 +23,7 @@ Rel(page, toggles, "Renders")
 Rel(page, rules, "Applies each choice with")
 Rel(page, choices, "Reads and writes the setup")
 Rel(page, conn, "saveSetup(setup)")
+Rel(page, session, "start(setup) on Go!")
 Rel(conn, hub, "SaveSetup", "SignalR")
 Rel(hub, validator, "Sends SaveSetupCommand through")
 Rel(validator, handler, "Passes a valid command to")

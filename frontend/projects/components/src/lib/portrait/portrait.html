@@ -7,6 +7,7 @@
       [class.portrait--md]="size() === 'md'"
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
+      [class.portrait--round]="round()"
     />
   }
   @case ('failed') {
@@ -16,6 +17,7 @@
       [class.portrait--md]="size() === 'md'"
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
+      [class.portrait--round]="round()"
       [attr.data-kid]="kid()"
       [attr.role]="alt() ? 'img' : null"
       [attr.aria-label]="alt() || null"
@@ -30,6 +32,7 @@
       [class.portrait--md]="size() === 'md'"
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
+      [class.portrait--round]="round()"
       [attr.data-kid]="kid()"
       [src]="src()"
       [alt]="alt()"

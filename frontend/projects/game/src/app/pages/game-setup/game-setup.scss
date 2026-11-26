@@ -1,0 +1,14 @@
+// Game Setup's own layout: the hints under the choices (the hint of
+// docs/design-system/assets/components.css), and "Go!" at the foot of its column.
+.hint {
+  margin-top: var(--space-3);
+  color: var(--color-fg-muted);
+
+  strong {
+    color: var(--color-fg-default);
+  }
+}
+
+.game-setup__go {
+  margin-top: auto;
+}

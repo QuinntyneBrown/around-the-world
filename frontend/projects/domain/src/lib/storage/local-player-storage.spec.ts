@@ -43,6 +43,12 @@ function storageWith(storage: Storage | null): LocalPlayerStorage {
 
 const NONE: PlayerRecord = { kid: null, nickname: null };
 const TURBO_YAK = { adjective: 9, animal: 9 };
+const A_SETUP = {
+  kinds: ['times', 'minus'],
+  tables: [3, 7],
+  tourLength: 6,
+  cardSpeed: 'lightning',
+} as const;
 
 describe('LocalPlayerStorage', () => {
   it.each([
@@ -71,6 +77,16 @@ describe('LocalPlayerStorage', () => {
       { kid: 'pip', nickname: TURBO_YAK },
     ],
     ['a kid with no nickname', '{"version":1,"kid":"nia"}', { kid: 'nia', nickname: TURBO_YAK }],
+    [
+      'a kept setup',
+      `{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"setup":${JSON.stringify(A_SETUP)}}`,
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 }, setup: A_SETUP },
+    ],
+    [
+      'a setup that Game Setup would not offer',
+      '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"setup":{"kinds":[]}}',
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 } },
+    ],
   ])('reads %s', (_case, text, expected) => {
     const memory = new MemoryStorage();
     if (text !== null) memory.setItem(PLAYER_KEY, text);
@@ -96,6 +112,17 @@ describe('LocalPlayerStorage', () => {
       version: 1,
       kid: 'kenji',
       nickname: { adjective: 4, animal: 1 },
+    });
+  });
+
+  it('writes the setup once the child has changed it', () => {
+    const memory = new MemoryStorage();
+    storageWith(memory).write({ kid: 'zuri', nickname: TURBO_YAK, setup: A_SETUP });
+    expect(JSON.parse(memory.getItem(PLAYER_KEY) ?? '')).toEqual({
+      version: 1,
+      kid: 'zuri',
+      nickname: TURBO_YAK,
+      setup: A_SETUP,
     });
   });
 

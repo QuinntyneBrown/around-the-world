@@ -1,0 +1,47 @@
+// The duel-hud block of docs/design-system/assets/components.css, on the host element.
+:host {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-ledge-1);
+}
+
+.duel-hud__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.duel-hud__vs {
+  flex: none;
+  font: var(--text-h4);
+  color: var(--color-fg-muted);
+}
+
+// While loading: a portrait's and a timer bar's shapes.
+.duel-hud__portrait {
+  flex: none;
+  width: 2.75rem;
+  aspect-ratio: 1;
+}
+
+.duel-hud__timer {
+  height: var(--space-3);
+}
+
+@media (min-width: 36rem) {
+  .duel-hud__portrait {
+    width: 3.5rem;
+  }
+}
+
+@media (min-width: 62rem) {
+  :host {
+    max-width: 42rem;
+  }
+}

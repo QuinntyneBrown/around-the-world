@@ -15,32 +15,42 @@ title Class structure — Set up a game
 
 package "Frontend" {
   class "GameSetup" as FGameSetup {
-    +kinds: ReadonlySet<MathsKind>
-    +tables: ReadonlySet<number>
+    +kinds: readonly MathsKind[]
+    +tables: readonly number[]
     +tourLength: 6 | 12 | 24
     +cardSpeed: CardSpeed
   }
   class GameSetupRules {
     +defaults(): GameSetup
-    +toggleKind(setup, kind): GameSetup
-    +toggleTable(setup, table): GameSetup
+    +toggleKind(setup, kind): SetupChange
+    +toggleTable(setup, table): SetupChange
     +easy(setup): GameSetup
     +all(setup): GameSetup
     +tablesEnabled(setup): boolean
+    +tablesInPlay(setup): number[]
+    +read(value): GameSetup | null
     +describeTour(length): TourDescription
     +secondsPerCard(speed): number
+  }
+  class SetupChange {
+    +setup: GameSetup
+    +refused: 'last-kind' | 'last-table' | null
   }
   class GameSetupPage {
     -setup: Signal<GameSetup>
     +go(): void
     +save(): Promise<void>
   }
+  interface GameSession {
+    +hasGame: Signal<boolean>
+    +start(setup: GameSetup): void
+  }
   interface RoomConnection {
     +saveSetup(setup: GameSetup): Promise<void>
   }
   interface PlayerChoices {
     +setup: Signal<GameSetup>
-    +setSetup(setup: GameSetup): void
+    +changeSetup(setup: GameSetup): void
   }
 }
 package "Backend" {
@@ -89,6 +99,8 @@ package "Backend" {
 GameSetupPage ..> GameSetupRules : applies
 GameSetupPage --> PlayerChoices : reads / writes
 GameSetupPage --> RoomConnection : saves through
+GameSetupPage --> GameSession : starts (solo)
+GameSetupRules ..> SetupChange : returns
 GameSetupRules ..> FGameSetup : returns
 RoomConnection ..> SaveSetupCommand : becomes
 SaveSetupCommandValidator ..> SaveSetupCommand : validates

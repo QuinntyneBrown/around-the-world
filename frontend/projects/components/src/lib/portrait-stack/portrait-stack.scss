@@ -1,0 +1,7 @@
+// The portrait-stack block of docs/design-system/assets/components.css, on the host element.
+// Each portrait overlaps the one before it by --space-3 (Portrait's own rule); the padding
+// gives that space back to the first.
+:host {
+  display: flex;
+  padding-inline-start: var(--space-3);
+}

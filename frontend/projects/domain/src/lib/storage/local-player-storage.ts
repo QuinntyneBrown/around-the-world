@@ -6,6 +6,7 @@ import {
   type PlayerRecord,
   type PlayerStorage,
 } from '@atw/api';
+import { readSetup } from '../tour/game-setup';
 import { NicknameGenerator } from './nickname-generator';
 
 /** The one key the game keeps on the device (docs/adr/0011-player-record-on-the-device.md). */
@@ -29,11 +30,16 @@ export class LocalPlayerStorage implements PlayerStorage {
     if (stored === null) return DEFAULTS;
 
     const kid = isKidId(stored['kid']) ? stored['kid'] : null;
+    // A setup Game Setup would not offer reads as the defaults (docs/adr/0017).
+    const setup = readSetup(stored['setup']);
+    const withSetup = setup ? { setup } : {};
     const kept = stored['nickname'];
-    if (this.nicknames.isValid(kept)) return { kid, nickname: { ...kept } };
-    if ((kept === undefined || kept === null) && kid === null) return { kid, nickname: null };
+    if (this.nicknames.isValid(kept)) return { kid, nickname: { ...kept }, ...withSetup };
+    if ((kept === undefined || kept === null) && kid === null) {
+      return { kid, nickname: null, ...withSetup };
+    }
 
-    const replaced: PlayerRecord = { kid, nickname: this.nicknames.generate() };
+    const replaced: PlayerRecord = { kid, nickname: this.nicknames.generate(), ...withSetup };
     this.write(replaced);
     return replaced;
   }
@@ -42,10 +48,21 @@ export class LocalPlayerStorage implements PlayerStorage {
     const nickname: Nickname | null = record.nickname
       ? { adjective: record.nickname.adjective, animal: record.nickname.animal }
       : null;
+    // The setup is kept only once the child has changed it (docs/adr/0017).
+    const setup = record.setup
+      ? {
+          setup: {
+            kinds: [...record.setup.kinds],
+            tables: [...record.setup.tables],
+            tourLength: record.setup.tourLength,
+            cardSpeed: record.setup.cardSpeed,
+          },
+        }
+      : {};
     try {
       this.storage?.setItem(
         PLAYER_KEY,
-        JSON.stringify({ version: VERSION, kid: record.kid, nickname }),
+        JSON.stringify({ version: VERSION, kid: record.kid, nickname, ...setup }),
       );
     } catch {
       // A full or blocked storage: the choice lasts for this visit only.

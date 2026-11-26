@@ -1,0 +1,17 @@
+// The code-letters block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.code-letters__letter {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-canvas);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  font: var(--text-h2);
+  color: var(--color-fg-accent);
+}
