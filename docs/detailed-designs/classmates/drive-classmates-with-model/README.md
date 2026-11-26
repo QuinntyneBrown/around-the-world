@@ -25,32 +25,38 @@ the profiles, the class and the decision made from a profile.
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
-runs wholly on the device and has no backend part. The on-device model runs inside the browser;
-no flash card, profile or model output is sent to `AroundTheWorld.Api` or to any other origin
-(`L2-021` criterion 7).
+The slice runs wholly on the device and has no backend part. The on-device model runs inside the
+browser; no flash card, profile or model output is sent to `AroundTheWorld.Api` or to any other
+origin (`L2-021` criterion 7). The decisions this design once left open are recorded in
+`docs/adr/0030-classmates-with-the-on-device-model.md`.
 
 Contract in the `api` library (`@atw/api`):
 
 - **`ClassmateModel`** (`CLASSMATE_MODEL`) — contract of the on-device model as the game sees
   it. `isReady(): Promise<boolean>` answers whether the model is present and already
   downloaded. `openSession(profile): Promise<ClassmateModelSession>` opens a session primed
-  with one profile. A `ClassmateModelSession` has `decide(card, signal): Promise<ModelDecision
-  | null>` and `destroy()`.
+  with one profile (`ClassmateModelProfile`: skill level, characteristics and preferred kinds of
+  maths). A `ClassmateModelSession` has `decide(card, signal): Promise<ModelDecision | null>`
+  and `destroy()`.
 - **`ModelDecision`** — `answer` (whole number from 0 to 999) and `afterMs` (time to answer).
   It has no text field.
 
 In the `domain` library (`@atw/domain`), folder `classmates/`; nothing outside this folder
 touches the browser's on-device model:
 
-- **`OnDeviceModelSession`** — implementation of `ClassmateModelSession` over the Prompt API.
-  - *Readiness.* `isReady` returns true only when the Prompt API exists and reports the model
-    as available. A model that is absent, downloadable or downloading counts as not ready, and
-    the game then opens no session, because opening one starts a download (`L2-021`
-    criteria 4 and 5). Whether the game ever fetches the model for a later visit, outside play,
-    is `<TO SUPPLY>`.
-  - *Priming.* The session is created with an initial prompt built by `ClassmatePrompt` from
-    the classmate's profile (`L2-021` criterion 1).
+- **`LazyClassmateModel`** — the `ClassmateModel` the solo group binds. `isReady()` answers
+  false at once when the browser has no `LanguageModel`; otherwise it imports
+  `on-device-model` dynamically and asks it. `openSession` imports it the same way. It holds
+  none of the Prompt API code, which stays in its own lazy chunk.
+- **`OnDeviceClassmateModel`** and **`OnDeviceModelSession`** (`on-device-model`) — the
+  implementation over the Prompt API.
+  - *Readiness.* `isReady` returns true only when `LanguageModel.availability()` answers
+    `available` for English text in and out. A model that is absent, downloadable or
+    downloading, or a failure, counts as not ready, and the game then opens no session, because
+    opening one starts a download (`L2-021` criteria 4 and 5). The game never fetches the model,
+    in play or outside it (ADR 0030).
+  - *Priming.* The session is created with a system prompt built by `ClassmatePrompt` from the
+    classmate's profile (`L2-021` criterion 1).
   - *Deciding.* `decide(card, signal)` prompts a clone of the primed session with the flash
     card and a JSON Schema response constraint of two whole-number properties, `answer` and
     `afterMs`. It destroys the clone afterwards, so a session's context does not grow over a
@@ -60,55 +66,64 @@ touches the browser's on-device model:
   - *Destroying.* `destroy()` aborts every pending prompt and destroys the session.
 - **`parseModelDecision(text)`** — pure helper. It returns a `ModelDecision` only when the
   text is JSON holding exactly a whole-number `answer` from 0 to 999 and a whole-number
-  `afterMs` above 0. Everything else returns `null` and is discarded (`L2-021` criterion 2).
-  The text itself is not kept, logged or passed on (`L2-042` criterion 1). The unit of the
-  time and its upper bound are `<TO SUPPLY>`.
+  `afterMs` of milliseconds from 1 to 10,000 (the time of a Chill card, the longest).
+  Everything else returns `null` and is discarded (`L2-021` criterion 2). The text itself is
+  not kept, logged or passed on (`L2-042` criterion 1).
 - **`ClassmatePrompt`** — pure helper that builds the two texts given to the model. The
   priming text holds the classmate's profile only: skill level, characteristics and preferred
-  kinds of maths. The card text holds the flash card only. Neither holds the child's nickname,
-  the child's voice, anything the child said, or the child's answers (`L2-042` criterion 3).
-  The wording of both texts is `<TO SUPPLY>`.
+  kinds of maths, and how to reply. The card text holds the flash card only, as `7 × 8 = ?`.
+  Neither holds the child's nickname, the child's voice, anything the child said, or the
+  child's answers (`L2-042` criterion 3). The wording is in ADR 0030.
 - **`ClassmateAgent`** — designed in `classmates/play-solo`; this slice adds the model to it.
-  For each flash card the agent first makes its decision from the profile, which fixes the
-  time at which the classmate would answer. When it holds a session, it also asks the session
-  to decide.
+  `useSession(session)` hands it its session. For each flash card the agent first makes its
+  decision from the profile, which fixes the time at which the classmate would answer. When it
+  holds a session, `decideWithModel(card, signal, notBeforeMs)` also asks the session.
   - A valid `ModelDecision` that arrives before the profile's time replaces the profile's
     decision. The classmate then answers the model's `answer` at the model's `afterMs`, or at
     once when that time has already passed.
   - When the profile's time comes with no valid model decision, the classmate answers from its
     profile and `SoloGame` aborts the prompt (`L2-021` criterion 3).
-  - The floor of 800 ms **(to confirm)** and the rule that keeps a classmate from winning
-    every duel (`L2-020` criterion 5) apply to a model decision exactly as to a profile
-    decision.
+  - The floor of 800 ms and the rule that keeps a classmate from winning every duel (`L2-020`
+    criterion 5, `ClassPace`) apply to a model decision exactly as to a profile decision.
   - Whether the answer is correct, the freeze and the winner of the duel are decided by
     `Duel` (`tour/play-duel`) from the number the agent passes on, never by the model.
 
+In the `domain` library, folder `tour/`:
+
+- **`SoloGame`** — the solo game behind `GAME_SESSION`, which the solo group binds (ADR 0016).
+  It starts the tour without waiting for the model. After the first flash card is showing, it
+  asks `CLASSMATE_MODEL.isReady()`. When the model is ready it opens one session for each
+  classmate, one after another in desk order, and hands each to that classmate's agent
+  (`L2-021` criterion 1); the first session that cannot be opened stops the opening. A session
+  that arrives while its classmate's duel is open, before the profile's time, is asked about
+  that card at once. Until a session arrives, and whenever none does, the agent plays from its
+  profile. Nothing on any screen says whether the model is in use (`L2-021` criterion 4). The
+  sessions live for the tour, not for the Duel screen: `SoloGame` keeps them while World Map is
+  shown between the duels of one tour. When the tour ends (the Podium opens), or the child
+  leaves it for Home from the Podium or from Pause, `SoloGame` calls `destroy()` on every
+  session (`L2-021` criterion 6). A new tour started with "Play again" on the Podium opens its
+  sessions the same way, after its first flash card is showing.
+- The model decides only the duels the child is in. A classmates' duel watched on World Map is
+  worked out at once from the two profiles (`ClassmatesDuel`, `L2-021` criterion 8).
+
 In the `game` application:
 
-- **`SoloGame`** — starts the tour without waiting for the model. After the first flash card
-  is showing, it asks `CLASSMATE_MODEL.isReady()`. When the model is ready it opens one session
-  for each classmate and hands each to that classmate's agent (`L2-021` criterion 1); until a
-  session arrives, and whenever none does, the agent plays from its profile. Nothing on any
-  screen says whether the model is in use (`L2-021` criterion 4). The sessions live for the
-  tour, not for the Duel screen: `SoloGame` keeps them while World Map is shown between the
-  duels of one tour. When the tour ends, or the child leaves it for Home from the Podium or
-  from Pause, `SoloGame` calls `destroy()` on every session (`L2-021` criterion 6). A new
-  tour started with "Play again" on the Podium opens its sessions the same way, after its
-  first flash card is showing.
-- **Loading.** `OnDeviceModelSession`, `ClassmatePrompt` and `parseModelDecision` are imported
-  dynamically by `SoloGame` and are in none of the initial chunks (`L2-047` criterion 2). The
-  solo game route binds `CLASSMATE_MODEL`.
+- **Loading.** The solo group binds `CLASSMATE_MODEL` to `LazyClassmateModel`.
+  `OnDeviceClassmateModel`, `OnDeviceModelSession`, `ClassmatePrompt` and `parseModelDecision`
+  are imported dynamically and are in none of the initial chunks (`L2-047` criterion 2).
 
 Desk 1 of a tour is the traveller's own empty desk, so a tour of 24 desks has 23 classmates
-and so 23 sessions (`L2-007` criterion 4). Whether a low-power device holds 23 sessions at
-once, and whether a limit on sessions applies, is `<TO SUPPLY>`.
+and so at most 23 sessions (`L2-007` criterion 4). They are opened one after another rather than
+at once, and a device that refuses one plays the rest of the class from profiles (ADR 0030).
 
-A classmate's reaction in a duel is one of the kid's fixed animations or one of the six
-stickers (`L2-042` criterion 2). The reaction is chosen from the outcome of the duel and never
-from model output. Whether classmates send stickers in a solo game is `<TO SUPPLY>`.
+A classmate's reaction in a duel is one of the kid's fixed animations (`L2-042` criterion 2).
+The reaction is chosen from the outcome of the duel and never from model output. Classmates
+send no stickers in a solo game (ADR 0030).
 
-In end-to-end tests a fixture binds a fake `ClassmateModel` that answers as the spec tells it
-to, and every feature also runs with the model reported as not ready.
+In end-to-end tests the fixture's fake `LanguageModel` answers from a list, holds each prompt
+until the spec replies, fails every prompt, or is missing; it counts the sessions and records
+what it was asked. Every feature also runs with the model reported as not ready, which is the
+fixture's default.
 
 This slice adds nothing a child can see, so no mock draws it. A solo game is played on the
 screens of `docs/mocks/pages/duel/` and `docs/mocks/pages/world-map/`, and each state of both
@@ -121,7 +136,7 @@ level-1 (L1) requirement, cited by identifier.
 
 | L2 ID | Refines (L1) | Requirement |
 |-------|--------------|-------------|
-| `L2-021` | `L1-006` | Classmates driven by the browser's on-device model: where the browser provides an on-device language model, each classmate's agent shall use it to decide its answer and when to give it, from its profile and the flash card, through its own model session; a decision that is not a whole-number answer from 0 to 999 and a time to answer shall be discarded; the flash card shall never be held back for the model; where the browser has no on-device model, or the model is not downloaded, every classmate shall play from its profile alone and nothing shall tell the child that anything is missing; the game shall never start or wait for a download; every model session shall be destroyed when the solo tour ends or the child leaves it (Home from the Podium or from Pause), and shall be kept while World Map is shown between the duels of one tour; no flash card, profile or model output shall leave the device; the rules of the duel shall never be decided by the model. |
+| `L2-021` | `L1-006` | Classmates driven by the browser's on-device model: where the browser provides an on-device language model, each classmate's agent shall use it to decide its answer and when to give it, from its profile and the flash card, through its own model session; a decision that is not a whole-number answer from 0 to 999 and a time to answer shall be discarded; the flash card shall never be held back for the model; where the browser has no on-device model, or the model is not downloaded, every classmate shall play from its profile alone and nothing shall tell the child that anything is missing; the game shall never start or wait for a download; every model session shall be destroyed when the solo tour ends or the child leaves it (Home from the Podium or from Pause), and shall be kept while World Map is shown between the duels of one tour; no flash card, profile or model output shall leave the device; the rules of the duel shall never be decided by the model; a classmates' duel watched on World Map shall be worked out from the two profiles alone. |
 | `L2-042` | `L1-012` | Nothing a language model writes is shown to a child: only a whole-number answer and a time to answer shall be taken from the model's output, and no text from it shall be shown, spoken or stored; a classmate's reaction shall be one of the kid's fixed animations or one of the six stickers; the model's prompt shall hold only the classmate's profile and the flash card, and never the child's nickname, voice or anything they said. |
 
 ## Diagrams
@@ -142,7 +157,7 @@ no backend container, because the slice makes no request to `AroundTheWorld.Api`
 
 ### Components
 
-`SoloGame` opens one `OnDeviceModelSession` for each classmate and hands it to that
+`SoloGame` opens one `OnDeviceModelSession` for each classmate, through `LazyClassmateModel`, and hands it to that
 classmate's `ClassmateAgent`. `ClassmatePrompt` builds what goes in, and `parseModelDecision`
 is the only way anything comes out.
 

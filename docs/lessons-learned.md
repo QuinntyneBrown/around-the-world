@@ -654,3 +654,74 @@ the lessons that fit.
   the release when the child goes home.
 - *Split a loop from what it draws* (09, 4): the hop's fade is tested on `ClassroomScene` with
   fake frames, without WebGL.
+
+## Journey 11: Let Gemini Nano drive the classmates
+
+**What slowed it.**
+
+- The design put `SoloGame` in the `game` application and had it import the model code itself,
+  but `SoloGame` has lived in `domain`'s `tour/` since journey 04. Binding `CLASSMATE_MODEL` to a
+  small `LazyClassmateModel` in the solo group, as `LazyVoiceAnswer` is bound, kept the Prompt
+  API code in a 2.4 kB chunk of its own and the initial bundle at 271.87 kB, unchanged.
+- The fixture's fake model failed a spec as soon as the game prompted more often than the spec
+  had answered, and a spec cannot know the card before the game deals it. A prompt held until
+  the spec replies (`model.holds()`, `reply`) let a spec read the card first and then answer it,
+  and doubles as the slow model.
+- A model session can arrive in the middle of its classmate's duel. Keeping the profile's
+  answer as a pending timer on the duel (`profileAnswer`) let a late session still be asked
+  about the open card, and let the profile's time abort the prompt.
+- The four slices were written test-first in one spec file, but the code for all four went in
+  together, because the race between the profile's timer and the model's promise is one
+  method; each slice's spec was then proved by breaking `askModel` by hand (seven of eleven
+  specs failed as expected).
+
+**New lessons.**
+
+1. When a browser resource answers later than the game's clock, keep the clock's own decision
+   as a pending timer and let the late answer replace it only while that timer is pending:
+   nothing ever waits, and the abort is the timer firing.
+2. Give a fake a mode that holds each request until the spec answers it: the spec can read
+   what the game showed before it answers, and the same mode is the slow or silent case.
+3. Make the fake record what a browser API was given (`model.asked()`), so a spec proves that
+   nothing of the child reaches it, rather than trusting the prompt builder's unit test alone.
+4. Let a fake refuse the call that would start a download or a permission prompt, and record
+   it as a problem: every spec then proves the game never makes it.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the build showed the model code in its
+  own lazy chunk and `main` unchanged at 271.87 kB.
+- *Check a fake once by hand* (01, 2): a `SoloGame` that never asked the model failed seven of
+  the eleven new specs; restored at once.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; nothing on screen
+  changes, and no component was added or extended.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0030 fills
+  the design's gaps.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the chunk table shows the
+  Prompt API code only in its lazy chunk.
+- *Drive states through the fixture* (02, 3): extended with the model's holds, replies,
+  failures, absence and record of what it was asked.
+- *Tag one spec per feature `@critical`* (02, 5): a classmate answers what the model decides.
+- *Put the page in the group that provides its service* (03, 1): `CLASSMATE_MODEL` is bound in
+  the solo group, so leaving the game destroys every session with it.
+- *Measure the initial bundle against the base commit* (03, 2): 271.87 kB before and after.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s model tests prove the order of the
+  sessions, the floor, the abort, the late session and "Play again".
+- *Drive game time from the wall clock* (04, 1): a model's time is scheduled on `GameClock`, so
+  a held clock holds it as it holds a profile's.
+- *Prefer signals and outputs to `effect()`* (04, 2): no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let a rule with chance take a `RandomSource`* (04, 5): `Math.random` fixed through the
+  fixture sets the profile's answer each spec races the model against.
+- *Let the game service decide when the screen changes* (05, 2): `SoloGame` drops the sessions
+  where it ends the tour, with no new listener.
+- *A new game service method should reuse the start path* (06, 4): "Play again" and "Go!"
+  open their sessions through the same `openSessions`.
+- *Start and stop a browser resource with its owner* (07, 2): the sessions live as long as the
+  tour, and the solo group's injector destroys any left.
+- *Give a fake every answer the browser can give* (07, 3): available, downloadable, missing,
+  slow, failing and nonsense replies.
+- *Put a browser resource behind a count the fixture can read* (09, 1): `sessions()` counts what
+  is still open, proving the release on the Podium and on "Go home".

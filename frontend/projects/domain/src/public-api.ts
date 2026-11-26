@@ -3,6 +3,7 @@
  * voice/, sound/ and storage/, and the cast in cast/. It depends on @atw/api only.
  */
 export * from './lib/cast/kids';
+export * from './lib/classmates/lazy-classmate-model';
 export * from './lib/questions/flash-card-maker';
 export * from './lib/questions/random-source';
 export * from './lib/sound/browser-sound';

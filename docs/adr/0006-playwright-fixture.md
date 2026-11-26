@@ -20,7 +20,11 @@ off localhost or a page error (`AGENTS.md`, E2E).
   (`answers`, `downloadable`, `sessions`). Journey 07 adds `voice.silence()`, `voice.fail()`
   and `voice.listening()`, `microphone.ask()` (the browser's question held open) and
   `microphone.openStreams()`, and the fake recognizer offers on-device recognition
-  (`processLocally`, docs/adr/0025-answering-by-voice.md). By default the microphone is not expected and the
+  (`processLocally`, docs/adr/0025-answering-by-voice.md). Journey 11 adds `model.holds()`
+  with `reply`, `waiting` and `aborted` (a slow model), `model.fails()`, `model.missing()` and
+  `model.asked()`; `sessions()` also counts what is still open, and a session created while the
+  model is not downloaded, which would start a download, is a problem
+  (docs/adr/0030-classmates-with-the-on-device-model.md). By default the microphone is not expected and the
   model is unavailable, so a classmate plays from its profile.
 - The overridden `page` fixture routes every request: off localhost is refused, `/api/` and
   `/hubs/` are answered only from the `backend` fixture (`answer`, `hub`), and any other
