@@ -10,6 +10,7 @@ export * from './lib/storage/local-player-storage';
 export * from './lib/storage/nickname-generator';
 export * from './lib/storage/stored-player-choices';
 export * from './lib/tour/classmates-duel';
+export * from './lib/tour/classroom-states';
 export * from './lib/tour/countries';
 export * from './lib/tour/duel';
 export * from './lib/tour/game-clock';

@@ -2,8 +2,9 @@
  * The fakes that run inside the page, installed by the shared fixture before any script of
  * the game runs: a speech recognizer that says what the spec tells it to, a microphone whose
  * permission the spec sets, and an on-device model (Chrome's `LanguageModel`) that answers as
- * the spec tells it to. A use the spec did not set up is recorded as a problem, and the
- * fixture fails the spec with it.
+ * the spec tells it to. WebGL is Chromium's own (SwiftShader when there is no GPU): the fakes
+ * only count the contexts the game opens, and take WebGL away when the spec asks. A use the
+ * spec did not set up is recorded as a problem, and the fixture fails the spec with it.
  *
  * This function is serialised into the page, so it must not close over anything.
  */
@@ -25,6 +26,10 @@ export interface BrowserFakesState {
   listening(): number;
   /** How many microphone tracks the game opened and has not stopped. */
   openTracks(): number;
+  /** Whether the browser gives a WebGL context; false draws no 3D classroom. */
+  webglSupported: boolean;
+  /** How many WebGL contexts the game opened that are not lost. */
+  openContexts(): number;
 }
 
 declare global {
@@ -46,6 +51,8 @@ export function installBrowserFakes(): void {
     fail: () => 0,
     listening: () => 0,
     openTracks: () => 0,
+    webglSupported: true,
+    openContexts: () => 0,
   };
   Object.defineProperty(window, '__atwFakes', { value: fakes, configurable: false });
 
@@ -262,4 +269,22 @@ export function installBrowserFakes(): void {
     writable: true,
     value: FakeLanguageModel,
   });
+
+  // ---- WebGL ------------------------------------------------------------------------------
+  const contexts: WebGLRenderingContext[] = [];
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+    configurable: true,
+    writable: true,
+    value: function (this: HTMLCanvasElement, kind: string, options?: unknown) {
+      const webgl = kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl';
+      if (webgl && !fakes.webglSupported) return null;
+      const context = getContext.call(this, kind, options);
+      if (webgl && context && !contexts.includes(context as WebGLRenderingContext)) {
+        contexts.push(context as WebGLRenderingContext);
+      }
+      return context;
+    },
+  });
+  fakes.openContexts = () => contexts.filter((context) => !context.isContextLost()).length;
 }
