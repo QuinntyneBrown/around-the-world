@@ -147,8 +147,9 @@ Decided in ADR 0024:
   the places shown count the five kids only. As a winner such a classmate is "A classmate" and
   has no cheer.
 - The first traveller's passport counts desk 1, where the tour starts; every other stamp is a
-  desk reached by a hop, so a passport of n countries has the first n countries stamped while
-  the child has not sat down, as the mocks draw.
+  desk reached by a hop. A child who has not sat down so has France and every desk from Japan to
+  the one they stand beside; Egypt is reached by the hop past the last desk. The mocks were
+  redrawn so.
 - World Map shows the hop or the sit that ends the tour with its message, as every other move,
   and the Podium opens after it.
 - Who may choose "Play again" in a room, and what the other players see until then, is decided
