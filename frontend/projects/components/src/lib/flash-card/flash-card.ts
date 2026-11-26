@@ -15,7 +15,8 @@ export type FlashCardTone = 'quiet' | 'plain' | 'right' | 'wrong' | 'timeUp';
  * politely (L2-031 criterion 4). With `answer` it shows the answer box, "?" while no digit is
  * entered (L2-010 criterion 1). `frozen` outlines and shakes the card once and freezes the
  * answer box (L2-004 criterion 5); a right answer outlines it in green (L2-033 criterion 2).
- * Other content, such as the pill after a lost duel, goes in its foot.
+ * Other content, such as the pill after a lost duel, goes in its foot. A new card flips in;
+ * under reduced motion the flip and the shake are quick fades (L2-038 criteria 2 and 4).
  */
 @Component({
   selector: 'atw-flash-card',

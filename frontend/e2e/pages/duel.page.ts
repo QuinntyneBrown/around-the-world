@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { motionOf, type Motion } from '../support/motion';
 
 /** How each sign of a flash card works out its answer. */
 const OPERATIONS: Record<string, (left: number, right: number) => number> = {
@@ -196,6 +197,16 @@ export class DuelPage {
       box.y + box.height <= size.height &&
       box.x + box.width <= size.width
     );
+  }
+
+  /** How the flash card moves: its flip, its shake, or the fade of reduced motion (L2-038). */
+  cardMotion(): Promise<Motion> {
+    return motionOf(this.flashCard);
+  }
+
+  /** How the passport stamp lands: tilted and scaled, or upright and fading (L2-038). */
+  stampMotion(): Promise<Motion> {
+    return motionOf(this.stamp);
   }
 
   /** Whether the page scrolls either way. */

@@ -11,6 +11,16 @@
   background: var(--color-bg-surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-ledge-2);
+  // A new card flips in within 300 ms (L2-038 criterion 2). Duel makes a card for each new
+  // flash card, so each one flips (docs/adr/0029-motion-and-sound.md).
+  animation: flip-in var(--duration-base) var(--ease-standard) 1 backwards;
+}
+
+@keyframes flip-in {
+  from {
+    opacity: 0;
+    transform: perspective(60rem) rotateY(-80deg);
+  }
 }
 
 .flash-card__sum {
@@ -54,7 +64,8 @@
   font-weight: inherit;
 }
 
-// A right answer rings the card in green; a wrong one in red, with one shake (L2-004 5).
+// A right answer rings the card in green; a wrong one in red, with one shake (L2-004 5). The
+// shake is a second animation on its own property, so it never replays the flip.
 :host(.flash-card--right) {
   box-shadow:
     var(--shadow-ledge-2),
@@ -65,7 +76,9 @@
   box-shadow:
     var(--shadow-ledge-2),
     inset 0 0 0 var(--border-width-stamp) var(--color-danger-solid);
-  animation: shake var(--duration-slow) var(--ease-standard) 1;
+  animation:
+    flip-in var(--duration-base) var(--ease-standard) 1 backwards,
+    shake var(--duration-slow) var(--ease-standard) 1;
 }
 
 @keyframes shake {
@@ -80,9 +93,29 @@
   }
 }
 
+// Reduced motion: no flip and no shake, but a quick fade in their place, and nothing moves
+// across the screen (L2-038 criterion 4).
 @media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: fade-in var(--duration-fade) var(--ease-standard) 1 backwards;
+  }
+
   :host(.flash-card--frozen) {
-    animation: none;
+    animation:
+      fade-in var(--duration-fade) var(--ease-standard) 1 backwards,
+      fade-back var(--duration-fade) var(--ease-standard) 1;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-back {
+    from {
+      opacity: 0.5;
+    }
   }
 }
 
