@@ -29,6 +29,9 @@ export function openPause(injector: Injector): void {
     width: '100%',
     height: '100%',
     restoreFocus: true,
+    // The browser's Back is held by the game screens' guard, which restores the history with a
+    // popstate of its own; that must not close the dialog it opened.
+    closeOnNavigation: false,
   });
   ref.closed.subscribe((result) => {
     if (result !== 'home') session.resume();

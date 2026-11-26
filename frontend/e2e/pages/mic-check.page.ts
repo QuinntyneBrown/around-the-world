@@ -25,7 +25,7 @@ export class MicCheckPage {
   readonly useNumberPad: Locator;
   readonly tapInstead: Locator;
 
-  constructor(page: Page) {
+  constructor(private readonly page: Page) {
     this.heading = page.locator('.topbar__title');
     this.back = page.locator('.topbar').getByRole('link', { name: 'Back' });
     this.listener = page.locator('.listener');
@@ -45,6 +45,10 @@ export class MicCheckPage {
     this.letsGo = page.getByRole('button', { name: 'Let’s go!' });
     this.useNumberPad = page.getByRole('button', { name: 'Use number pad' });
     this.tapInstead = page.getByRole('button', { name: 'Too noisy? Tap answers instead' });
+  }
+
+  async open(): Promise<void> {
+    await this.page.goto('/mic');
   }
 
   /** The words of every choice the step offers, Back aside. */

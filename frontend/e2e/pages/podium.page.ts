@@ -25,7 +25,7 @@ export class PodiumPage {
   readonly playAgain: Locator;
   readonly home: Locator;
 
-  constructor(page: Page) {
+  constructor(private readonly page: Page) {
     this.headline = page.locator('.podium__headline');
     this.cheer = page.locator('.podium__cheer');
     this.steps = page.locator('.podium__steps');
@@ -36,6 +36,10 @@ export class PodiumPage {
     this.stampTiles = this.stamps.locator('.stamp');
     this.playAgain = page.getByRole('button', { name: 'Play again' });
     this.home = page.getByRole('link', { name: 'Home' });
+  }
+
+  async open(): Promise<void> {
+    await this.page.goto('/podium');
   }
 
   /** The places on the steps in place order (1st, 2nd, 3rd), as a screen reader reads them. */
