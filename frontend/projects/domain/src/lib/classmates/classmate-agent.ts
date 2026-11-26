@@ -1,4 +1,4 @@
-import { type FlashCard } from '@atw/api';
+import { type ClassmateModelSession, type FlashCard } from '@atw/api';
 import { FlashCardMaker } from '../questions/flash-card-maker';
 import { type RandomSource } from '../questions/random-source';
 import { FLOOR_MS } from './class-pace';
@@ -31,15 +31,48 @@ const CHARACTER: Record<Characteristic, { chance: number; time: number }> = {
 const STEPS = 1000;
 
 /**
- * Answers flash cards on behalf of one classmate, from its profile alone (L2-020,
- * docs/adr/0019-classmate-profiles.md). It decides only an answer and when it comes; the duel
+ * Answers flash cards on behalf of one classmate, from its profile (L2-020,
+ * docs/adr/0019-classmate-profiles.md), and, while it holds a model session, from the on-device
+ * model too (L2-021, docs/adr/0030). It decides only an answer and when it comes; the duel
  * decides what the answer does.
  */
 export class ClassmateAgent {
+  /** The classmate's on-device model session, while the tour has one (L2-021, ADR 0030). */
+  private session: ClassmateModelSession | null = null;
+
   constructor(
     readonly profile: ClassmateProfile,
     private readonly random: RandomSource,
   ) {}
+
+  /** Hands the agent its model session, or takes it away with null. */
+  useSession(session: ClassmateModelSession | null): void {
+    this.session = session;
+  }
+
+  /** Whether the agent holds a model session. */
+  get hasSession(): boolean {
+    return this.session !== null;
+  }
+
+  /**
+   * The model's decision on the card, held at or above the floor and `notBeforeMs` exactly as a
+   * profile's (L2-020 criterion 5); null with no session, or when the model gives none.
+   */
+  async decideWithModel(
+    card: FlashCard,
+    signal: AbortSignal,
+    notBeforeMs = FLOOR_MS,
+  ): Promise<ClassmateDecision | null> {
+    const session = this.session;
+    if (!session) return null;
+    const decision = await session.decide(card, signal);
+    if (!decision || signal.aborted) return null;
+    return {
+      answer: decision.answer,
+      afterMs: Math.max(FLOOR_MS, notBeforeMs, decision.afterMs),
+    };
+  }
 
   /** The chance this classmate answers the card correctly. */
   chanceOfRight(card: FlashCard): number {
