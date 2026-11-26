@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { expect, test, type FakeVoice } from '../fixtures/test';
+import { expect, test, type FakeClock, type FakeVoice } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
 import { MicCheckPage } from '../pages/mic-check.page';
@@ -339,6 +339,154 @@ test.describe('Answering by voice', () => {
     await expect.poll(() => voice.listening()).toBe(1);
   });
 });
+
+test.describe('Switching between voice and the number pad', () => {
+  test('"Use number pad" shows the pad and stops listening; "Shout instead" listens again', async ({
+    page,
+    device,
+    clock,
+    microphone,
+    voice,
+  }) => {
+    // Given a child on Duel with voice, and the clock held
+    await device.keeps(ZURI);
+    await microphone.grant();
+    await clock.hold();
+    const duel = await duelByVoice(page, voice);
+    const card = await duel.card();
+
+    // When the child chooses "Use number pad"
+    await duel.useNumberPad.click();
+
+    // Then the pad shows for the same card, recognition stops, and the pad is kept (L2-011 1)
+    await expect(duel.numberPad).toBeVisible();
+    await expect(duel.answerBox).toHaveText('?');
+    await expect(duel.shout).toHaveCount(0);
+    expect(await duel.card()).toEqual(card);
+    await expect.poll(() => voice.listening()).toBe(0);
+    expect((await device.kept())?.wayOfAnswering).toBe('numberPad');
+
+    // When the child chooses "Shout instead"
+    await duel.shoutInstead.click();
+
+    // Then the pad hides and recognition starts, for the same card (L2-011 criterion 2)
+    await expect(duel.numberPad).toHaveCount(0);
+    await expect(duel.shout).toBeVisible();
+    expect(await duel.card()).toEqual(card);
+    await expect.poll(() => voice.listening()).toBe(1);
+    expect((await device.kept())?.wayOfAnswering).toBe('voice');
+
+    // And a shouted answer wins
+    await voice.say(String(card.answer));
+    await expect(duel.result).toHaveText(`= ${card.answer} You got it!`);
+
+    // And once the duel is decided, the switch is not offered (L2-011 criterion 5)
+    await expect(duel.switchWay).toHaveCount(0);
+  });
+
+  test('where the browser has no speech recognition, the pad shows and "Shout instead" is not offered', async ({
+    page,
+    device,
+    voice,
+  }) => {
+    // Given a browser with no speech recognition
+    await device.keeps(ZURI);
+    await voice.unsupported();
+
+    // When the child reaches a duel
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+
+    // Then the number pad is the way of answering, and nothing switches it (L2-011 criterion 3)
+    const duel = new DuelPage(page);
+    await expect(duel.numberPad).toBeVisible();
+    await expect(duel.switchWay).toHaveCount(0);
+  });
+
+  test('when recognition fails during a duel, the pad shows for that duel only', async ({
+    page,
+    device,
+    clock,
+    microphone,
+    voice,
+  }) => {
+    // Given a child on Duel with voice, and the clock held
+    await device.keeps(ZURI);
+    await microphone.grant();
+    await clock.hold();
+    const duel = await duelByVoice(page, voice);
+    const card = await duel.card();
+    await expect.poll(() => voice.listening()).toBe(1);
+
+    // When speech recognition fails during the duel
+    await voice.fail('network');
+
+    // Then the pad shows for the same card, the screen says so, and no switch is offered
+    await expect(duel.numberPad).toBeVisible();
+    expect(await duel.card()).toEqual(card);
+    await expect(duel.voiceFailed).toHaveText(
+      'Bolt stopped hearing, so tap your answer for this one.',
+    );
+    await expect(duel.switchWay).toHaveCount(0);
+    await expect(duel.announcement).toHaveText(`New card: ${card.left} × ${card.right}.`);
+
+    // When the child wins with the pad and the next duel starts
+    await duel.answerWithPad(card.answer);
+    await nextDuel(page, clock);
+
+    // Then the next duel starts with voice again (docs/adr/0025)
+    await expect(duel.shout).toBeVisible();
+    await expect.poll(() => voice.listening()).toBe(1);
+    expect((await device.kept())?.wayOfAnswering).toBe('voice');
+  });
+
+  test('a refused mic on "Shout instead" gives the pad for the rest of the visit', async ({
+    page,
+    device,
+    clock,
+    microphone,
+  }) => {
+    // Given a child who keeps the number pad, so Mic Check is skipped, and a mic that is refused
+    await device.keeps({ ...ZURI, wayOfAnswering: 'numberPad' });
+    await microphone.deny();
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const card = await duel.card();
+
+    // When the child chooses "Shout instead" and the browser refuses the mic
+    await duel.shoutInstead.click();
+
+    // Then the pad stays for the card, and "Shout instead" is gone (L2-011 criteria 4 and 6)
+    await expect(duel.voiceFailed).toBeVisible();
+    await expect(duel.numberPad).toBeVisible();
+    await expect(duel.switchWay).toHaveCount(0);
+
+    // When the child wins and the next duel starts
+    await duel.answerWithPad(card.answer);
+    await nextDuel(page, clock);
+
+    // Then the pad is the way of answering and "Shout instead" is not offered (L2-011 6)
+    await expect(duel.numberPad).toBeVisible();
+    await expect(duel.voiceFailed).toHaveCount(0);
+    await expect(duel.switchWay).toHaveCount(0);
+  });
+});
+
+/** After a won duel at desk 2: the stamp, World Map, then the duel at desk 3 (ADR 0022). */
+async function nextDuel(page: Page, clock: FakeClock): Promise<void> {
+  const duel = new DuelPage(page);
+  await expect(duel.result).toContainText('You got it!');
+  await clock.pass(1000);
+  await expect(duel.stamp).toBeVisible();
+  await clock.pass(1200);
+  await expect(page).toHaveURL(/\/map$/);
+  await clock.pass(1600);
+  await expect(duel.heading).toHaveText('Duel at Japan');
+}
 
 /** The words of a whole number under 1000, as a child says them: "twenty-four". */
 function inWords(value: number): string {
