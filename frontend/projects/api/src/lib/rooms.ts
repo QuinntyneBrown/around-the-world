@@ -58,6 +58,7 @@ export type ApiErrorCode =
   | 'invalid_answer'
   | 'not_playing'
   | 'not_over'
+  | 'server_error'
   | 'unknown';
 
 /** A refusal or a failure of the backend, with the `code` a screen branches on. */

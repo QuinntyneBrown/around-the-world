@@ -32,4 +32,7 @@ public static class ErrorCodes
     public const string InvalidAnswer = "invalid_answer";
     public const string NotPlaying = "not_playing";
     public const string NotOver = "not_over";
+
+    /// <summary>A failure that is not a refusal: the backend itself went wrong (docs/adr/0037).</summary>
+    public const string ServerError = "server_error";
 }
