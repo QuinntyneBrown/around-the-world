@@ -1,6 +1,12 @@
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { GAME_SESSION, WAY_OF_ANSWERING, type DuelState, type GameSession } from '@atw/api';
+import {
+  CLASSROOM_RENDERER,
+  GAME_SESSION,
+  WAY_OF_ANSWERING,
+  type DuelState,
+  type GameSession,
+} from '@atw/api';
 import { DuelPage } from './duel';
 
 /**
@@ -32,6 +38,8 @@ describe('DuelPage', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: GAME_SESSION, useValue: session },
+        // The 3D classroom is the behaviour specs' business; here it never arrives.
+        { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
         // The number pad is the way of answering, so nothing listens.
         {
           provide: WAY_OF_ANSWERING,
@@ -95,6 +103,7 @@ describe('DuelPage', () => {
       TestBed.configureTestingModule({
         providers: [
           { provide: GAME_SESSION, useValue: session },
+          { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
           {
             provide: WAY_OF_ANSWERING,
             useValue: { way: signal('numberPad'), voiceOffered: signal(false) },

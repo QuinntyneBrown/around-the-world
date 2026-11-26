@@ -10,7 +10,7 @@ export interface ShownStanding {
 
 /**
  * World Map (docs/mocks/pages/world-map/): the line at the top, the message, the room from
- * above and the standings.
+ * above (the 3D classroom under the drawn room's labels) and the standings.
  */
 export class WorldMapPage {
   readonly heading: Locator;
@@ -22,6 +22,10 @@ export class WorldMapPage {
   readonly standings: Locator;
   readonly standingsItems: Locator;
   readonly yourEntry: Locator;
+  readonly classroom: Locator;
+  readonly classroomDrawn: Locator;
+  readonly stillPicture: Locator;
+  readonly mapResting: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { level: 1 });
@@ -33,6 +37,12 @@ export class WorldMapPage {
     this.standings = page.getByRole('list', { name: 'Standings, by desks travelled' });
     this.standingsItems = this.standings.locator('.standings__item');
     this.yourEntry = this.standings.locator('.standings__item[aria-current="true"]');
+    this.classroom = page.locator('canvas.world-map__canvas');
+    this.classroomDrawn = page.locator('canvas.world-map__canvas--drawn');
+    this.stillPicture = page.getByRole('img', { name: 'A picture of the classroom' });
+    this.mapResting = page
+      .locator('.world-map__room .alert[role="status"]')
+      .filter({ hasText: 'The map is having a rest' });
   }
 
   async open(): Promise<void> {
@@ -76,6 +86,14 @@ export class WorldMapPage {
     return this.page
       .locator('.world-map__room .art-tag-text')
       .evaluateAll((texts) => texts.map((text) => text.textContent?.trim() ?? ''));
+  }
+
+  /**
+   * Whether the room is the drawn picture in full, or only its labels over the 3D classroom.
+   */
+  async roomDrawing(): Promise<'full' | 'labels'> {
+    const floors = await this.page.locator('.world-map__room .art-floor').count();
+    return floors > 0 ? 'full' : 'labels';
   }
 
   /** Whether the view shows the whole room or zooms to the child's own kid. */

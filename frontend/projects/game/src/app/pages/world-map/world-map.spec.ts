@@ -1,6 +1,6 @@
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { GAME_SESSION, type GameSession, type TourState } from '@atw/api';
+import { CLASSROOM_RENDERER, GAME_SESSION, type GameSession, type TourState } from '@atw/api';
 import { WorldMapPage } from './world-map';
 
 /**
@@ -29,7 +29,13 @@ describe('WorldMapPage', () => {
       resume: () => undefined,
       leave: () => Promise.resolve(),
     };
-    TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: GAME_SESSION, useValue: session },
+        // The 3D classroom is the behaviour specs' business; here it never arrives.
+        { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
+      ],
+    });
     const fixture = TestBed.createComponent(WorldMapPage);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;

@@ -94,8 +94,10 @@ game's resources stay.
   it when destroyed, so the microphone is released while World Map is shown.
 - **`ClassroomRenderer.dispose()`** — owned by the page. `ThreeClassroomRenderer` cancels its
   `requestAnimationFrame` loop, then disposes every geometry, material, texture and render
-  target, and the renderer. `HomePage`, `DuelPage` and `WorldMapPage` are the three pages that
-  host the classroom (`L2-036` criterion 6), and each calls it when destroyed. The `world`
+  target, and the renderer, and loses its WebGL context. `HomePage`, `DuelPage` and
+  `WorldMapPage` are the three pages that host the classroom (`L2-036` criterion 6), each on a
+  `<canvas atwClassroom>` whose directive calls it when the page is destroyed, and when a
+  renderer arrives after the page is gone (`docs/adr/0028`). The `world`
   chunk stays loaded, so the next page that hosts the classroom imports nothing again.
 - **`OnDeviceModelSession.destroy()`** — owned by the tour. `SoloGame` opens the classmates'
   model sessions when a solo tour starts and keeps them while World Map is shown between the

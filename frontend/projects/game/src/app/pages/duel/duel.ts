@@ -31,7 +31,12 @@ import {
   type DuelHudPlayer,
   type PadKey,
 } from '@atw/components';
-import { kidById } from '@atw/domain';
+import { ClassroomStates, kidById } from '@atw/domain';
+import {
+  ClassroomCanvas,
+  sameClassroom,
+  type ClassroomStatus,
+} from '../../classroom/classroom-canvas';
 import { Listening } from '../../voice/listening';
 import { DuelWords } from './duel-words';
 
@@ -45,11 +50,14 @@ import { DuelWords } from './duel-words';
  * "Shout it!" while the child may answer, and listens exactly then; the quiet pill at the
  * bottom switches between voice and the pad (docs/detailed-designs/answering/answer-by-voice/).
  * Pause stops the game's clock and opens its dialog, whose code loads on the first press; while
- * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md).
+ * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md). The 3D classroom is
+ * drawn behind the scrim once it arrives, the duellists thinking, then cheering or "so close";
+ * the still picture stays on a device that cannot draw it (docs/adr/0028).
  */
 @Component({
   selector: 'atw-duel-page',
   imports: [
+    ClassroomCanvas,
     DuelHud,
     FlashCard,
     IconButton,
@@ -78,6 +86,15 @@ export class DuelPage {
   private readonly failedDuel = signal<string | null>(null);
 
   protected readonly duel = this.session.duel;
+  /** The classroom behind the card: the tour's ring, the duellists doing what the moment asks. */
+  protected readonly classroom = computed(
+    () => {
+      const tour = this.session.tour();
+      return tour ? ClassroomStates.ofTour(tour, this.duel()) : null;
+    },
+    { equal: sameClassroom },
+  );
+  protected readonly scene = signal<ClassroomStatus>('loading');
   /** The digits typed, and the card they were typed for. */
   private readonly typed = signal<{ card?: Card; digits: string }>({
     digits: '',

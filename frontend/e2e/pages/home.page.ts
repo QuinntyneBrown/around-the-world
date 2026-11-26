@@ -1,6 +1,9 @@
 import { type Locator, type Page } from '@playwright/test';
 
-/** Home (docs/mocks/pages/home/): the classroom, the game's name, Play and the kid chip. */
+/**
+ * Home (docs/mocks/pages/home/): the classroom (the 3D classroom over its still picture), the
+ * game's name, Play and the kid chip.
+ */
 export class HomePage {
   readonly title: Locator;
   readonly play: Locator;
@@ -13,6 +16,9 @@ export class HomePage {
   readonly noNamesLine: Locator;
   readonly status: Locator;
   readonly settings: Locator;
+  readonly classroom: Locator;
+  readonly classroomDrawn: Locator;
+  readonly classroomResting: Locator;
 
   constructor(private readonly page: Page) {
     this.title = page.locator('h1.home__title');
@@ -26,6 +32,11 @@ export class HomePage {
     this.noNamesLine = page.getByText('No names, no sign-up. You pick a kid and get a game name.');
     this.status = page.getByRole('status');
     this.settings = page.locator('.home__corner').getByRole('button', { name: 'Settings' });
+    this.classroom = page.locator('canvas.home__canvas');
+    this.classroomDrawn = page.locator('canvas.home__canvas--drawn');
+    this.classroomResting = page
+      .getByRole('status')
+      .filter({ hasText: 'The 3D classroom is having a rest' });
   }
 
   async open(): Promise<void> {

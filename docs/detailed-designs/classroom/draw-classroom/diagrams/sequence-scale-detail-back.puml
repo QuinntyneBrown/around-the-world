@@ -20,18 +20,19 @@ box "Frontend — world" #E0F2FE
   participant "ClassroomScene" as scene
 end box
 loop each animation frame
-  renderer -> scaler : frame(now)
-  scaler -> scaler : Measure frames a second
-  alt 30 or more frames a second
-    scaler -> scaler : Clear the time spent below 30
-  else below 30 for less than 2 seconds
-    scaler -> scaler : Keep measuring
-  else below 30 for 2 seconds (L2-036 criterion 4)
-    scaler --> renderer : Step detail down one level
-    renderer -> renderer : Lower the resolution
-    renderer -> scene : setDetail(level): shadows, level of detail
+  renderer -> scaler : frame(ms since the last frame)
+  alt a gap of more than a second (the page was hidden)
+    scaler -> scaler : Start a new 2-second window
+  else the window is not yet 2 seconds long
+    scaler -> scaler : Keep counting frames
+  else 2 seconds measured at 30 or more frames a second, or the last step
+    scaler -> scaler : Start a new window
+  else 2 seconds measured below 30 frames a second (L2-036 criterion 4)
+    scaler --> renderer : The next step (docs/adr/0028)
+    renderer -> renderer : Set the resolution; shadow map on or off; keep the step for the next screen
+    renderer -> scene : applyStep(step): blob shadows or shadow map, small decorations
     scene --> renderer : Detail scaled back
-    scaler -> scaler : Start measuring again
+    scaler -> scaler : Start a new window
   end
   renderer -> scene : Draw the frame
   scene --> renderer : Frame drawn

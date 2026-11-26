@@ -1,5 +1,11 @@
 <atw-screen [fill]="true" class="duel">
   <img class="duel__scene" src="img/scene-duel.jpg" alt="" />
+  <canvas
+    class="duel__canvas"
+    [class.duel__canvas--drawn]="scene() === 'drawn'"
+    [atwClassroom]="classroom()"
+    (status)="scene.set($event)"
+  ></canvas>
   <div class="duel__scrim"></div>
   @if (duel(); as duel) {
     <header class="duel__hud">

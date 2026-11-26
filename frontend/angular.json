@@ -109,6 +109,21 @@
           }
         }
       }
+    },
+    "world": {
+      "projectType": "library",
+      "root": "projects/world",
+      "sourceRoot": "projects/world/src",
+      "prefix": "atw",
+      "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "game:build:development",
+            "tsConfig": "projects/world/tsconfig.spec.json"
+          }
+        }
+      }
     }
   },
   "schematics": {
