@@ -1,0 +1,100 @@
+// The flash-card block of docs/design-system/assets/components.css, on the host element.
+:host {
+  position: relative;
+  width: 100%;
+  max-width: var(--layout-card-max);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-5) var(--space-5) var(--space-6);
+  text-align: center;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-ledge-2);
+}
+
+.flash-card__sum {
+  font: var(--text-card);
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+// While the card is dealt, a skeleton one line of the sum tall.
+.flash-card__sum--dealing {
+  height: 1lh;
+  width: 60%;
+}
+
+.flash-card__foot {
+  margin-top: var(--space-4);
+  min-height: 4rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.flash-card__result {
+  font: var(--text-h2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flash-card__result--right {
+  color: var(--color-success-fg);
+}
+
+.flash-card__result--wrong {
+  color: var(--color-danger-fg);
+  font: var(--text-h3);
+}
+
+.flash-card__result--quiet {
+  color: var(--color-fg-muted);
+  font: var(--text-h3);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    padding: var(--space-8);
+  }
+
+  .flash-card__sum {
+    font-size: var(--font-size-8xl);
+  }
+
+  .flash-card__foot {
+    min-height: 5rem;
+  }
+}
+
+@media (min-width: 62rem) {
+  .flash-card__sum {
+    font-size: var(--font-size-9xl);
+  }
+}
+
+@media (max-height: 42rem) {
+  :host {
+    padding: var(--space-3) var(--space-5);
+  }
+
+  .flash-card__sum {
+    font-size: var(--font-size-6xl);
+  }
+
+  .flash-card__foot {
+    min-height: 3rem;
+    margin-top: var(--space-2);
+  }
+
+  .flash-card__result {
+    font: var(--text-h4);
+  }
+}

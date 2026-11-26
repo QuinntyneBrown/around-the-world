@@ -1,0 +1,15 @@
+// The cluster block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+:host(.cluster--tight) {
+  gap: var(--space-1);
+}
+
+:host(.cluster--between) {
+  justify-content: space-between;
+}
