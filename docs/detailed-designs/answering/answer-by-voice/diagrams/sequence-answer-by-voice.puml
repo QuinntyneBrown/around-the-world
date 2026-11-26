@@ -17,11 +17,12 @@ skinparam package {
 actor "Child" as child
 box "Frontend — game application" #E0F2FE
   participant "DuelPage" as page
-  participant "WayOfAnswering" as way
+  participant "Listening\n[atwListening]" as listening
+  participant "KeptWayOfAnswering\n(WayOfAnswering)" as way
   participant "SoloGame\n(GameSession)" as solo
 end box
 box "Frontend — domain library" #E0F2FE
-  participant "SpeechVoiceAnswer\n(VoiceAnswer)" as voice
+  participant "LazyVoiceAnswer and\nSpeechVoiceAnswer (VoiceAnswer)" as voice
   participant "spokenNumber" as parser
 end box
 participant "Speech recognition\n(browser)" as sr
@@ -29,8 +30,9 @@ participant "Speech recognition\n(browser)" as sr
 solo --> page : DuelState, card 6 × 4, own player in the duel, not frozen
 page -> way : way()
 way --> page : voice
-page -> voice : start()
-voice -> sr : Start recognition
+page -> listening : Show the "Shout it!" pill, which creates the directive
+listening -> voice : listen(listener), start()
+voice -> sr : Start recognition on the device (processLocally, en-US, final results)
 page --> child : "Shout it!" on the flash card (L2-009 criterion 4)
 alt the child says something that is not a number (L2-009 criterion 2)
   child -> sr : "um, hang on"
@@ -43,7 +45,8 @@ else the child says a number
   sr --> voice : Transcript
   voice -> parser : spokenNumber(transcript)
   parser --> voice : 24 (L2-009 criterion 1)
-  voice --> page : heard 24
+  voice --> listening : heard(24)
+  listening --> page : heard 24
   page -> solo : answer(24)
   alt 24 is correct
     solo --> page : DuelState, outcome won
@@ -52,11 +55,13 @@ else the child says a number
   end
 end
 opt the player is frozen, is watching, or the duel is decided or paused (L2-009 criterion 5)
-  page -> voice : stop()
+  page -> listening : Hide the "Shout it!" pill, which destroys the directive
+  listening -> voice : stop listening, stop()
   voice -> sr : Stop recognition
 end
 opt the Duel screen is destroyed (L2-048 criterion 1)
-  page -> voice : stop()
-  voice -> sr : Stop recognition, close the microphone's stream
+  page -> listening : Destroyed with the page
+  listening -> voice : stop listening, stop()
+  voice -> sr : Stop recognition
 end
 @enduml
