@@ -1,6 +1,6 @@
 # 0034. Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium
 
-- **Status:** Accepted
+- **Status:** Accepted; where a player not in the duel watches it is amended by ADR 0035
 - **Date:** 2026-11-26
 
 ## Context
@@ -32,7 +32,7 @@ The screens follow the duel as a solo game's do (ADR 0022): the winner's "You go
 then the passport stamp for 1.2 s after a hop, then World Map with the move; the loser's quiet
 pill opens World Map, which also opens by itself 2.2 s after the decision (`L2-033`
 criterion 12); a player not in the duel watches it on World Map, which shows each move as it is
-decided. A new card opens Duel for the two players in its duel. When the tour is over, World Map
+decided (amended by ADR 0035: they watch it on Duel, and World Map shows each move). A new card opens Duel for the two players in its duel. When the tour is over, World Map
 shows the last move for its message's time (1.6 s) and the Podium opens. "Back to the card" on
 World Map returns to Duel only while the device's player is in an open duel; the server's game
 cannot be played on at once as a solo game's classmates are. Watching a duel on Duel and its

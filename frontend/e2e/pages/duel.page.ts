@@ -59,6 +59,12 @@ export class DuelPage {
   readonly scrim: Locator;
   readonly classroom: Locator;
   readonly classroomDrawn: Locator;
+  /** The six stickers a watching player can send (L2-028 criterion 2). */
+  readonly stickerBar: Locator;
+  readonly stickers: Locator;
+  /** Where the stickers received show, at the edge of the screen (L2-028 criterion 7). */
+  readonly stickerRegion: Locator;
+  readonly stickerPops: Locator;
 
   constructor(private readonly page: Page) {
     this.scene = page.locator('img.duel__scene');
@@ -80,6 +86,10 @@ export class DuelPage {
       .locator('.flash-card')
       .getByRole('status')
       .filter({ hasText: 'Bolt stopped hearing' });
+    this.stickerBar = page.getByRole('group', { name: 'Send a sticker' });
+    this.stickers = this.stickerBar.getByRole('button');
+    this.stickerRegion = page.locator('.sticker-region');
+    this.stickerPops = this.stickerRegion.locator('.sticker-pop');
     this.heading = page.getByRole('heading', { level: 1 });
     this.announcement = page.locator('.duel__stage > [role="status"]');
     this.flashCard = page.locator('.flash-card');
@@ -106,6 +116,44 @@ export class DuelPage {
 
   async open(): Promise<void> {
     await this.page.goto('/duel');
+  }
+
+  /** Sends the sticker with these words. */
+  async sendSticker(words: string): Promise<void> {
+    await this.stickerBar.getByRole('button', { name: words, exact: true }).click();
+  }
+
+  /** The stickers showing, top to bottom: each one's kid, words and sender. */
+  shownStickers(): Promise<{ kid: string; words: string; from: string }[]> {
+    return this.stickerPops.evaluateAll((pops) =>
+      pops.map((pop) => {
+        const from = pop.querySelector('.sticker-pop__from')?.textContent?.trim() ?? '';
+        const all = pop.textContent?.trim() ?? '';
+        return {
+          kid: pop.getAttribute('data-kid') ?? '',
+          words: all.slice(0, all.length - from.length).trim(),
+          from,
+        };
+      }),
+    );
+  }
+
+  /** Whether any sticker showing overlaps the flash card (L2-028 criterion 7). */
+  async stickersCoverTheCard(): Promise<boolean> {
+    await this.settled();
+    const card = await this.flashCard.boundingBox();
+    if (!card) throw new Error('The flash card is not shown');
+    for (const pop of await this.stickerPops.all()) {
+      const box = await pop.boundingBox();
+      if (!box) continue;
+      const apart =
+        box.x >= card.x + card.width ||
+        box.x + box.width <= card.x ||
+        box.y >= card.y + card.height ||
+        box.y + box.height <= card.y;
+      if (!apart) return true;
+    }
+    return false;
   }
 
   /** A duellist's name and role, as the duel strip shows them. */

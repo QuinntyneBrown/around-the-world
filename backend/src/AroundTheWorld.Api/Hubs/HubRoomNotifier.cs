@@ -27,5 +27,8 @@ public sealed class HubRoomNotifier(IHubContext<RoomHub> hub) : IRoomNotifier
     public Task GameChangedAsync(Guid roomId, GameStateDto game, CancellationToken cancellationToken) =>
         hub.Clients.Group(Group(roomId)).SendAsync(RoomHub.GameChanged, game, cancellationToken);
 
+    public Task StickerShownAsync(Guid roomId, StickerShownDto sticker, CancellationToken cancellationToken) =>
+        hub.Clients.Group(Group(roomId)).SendAsync(RoomHub.StickerShown, sticker, cancellationToken);
+
     private static string Group(Guid roomId) => $"room:{roomId:N}";
 }

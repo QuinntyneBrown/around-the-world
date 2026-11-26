@@ -957,3 +957,64 @@ the lessons that fit.
   with `WithFirstSaveRacedBy` over the hub.
 - *Fake a real-time channel at its protocol* (13, 4): the fake hub completes, holds and refuses
   invocations as SignalR does.
+
+## Journey 15: Watch a duel and send a sticker
+
+**What slowed it.**
+
+- ADR 0034 had a player not in the duel watch it on World Map, as a solo player who has sat down
+  does, while `L2-028` criterion 1 has them watch it on Duel. `FriendsView` had to publish the
+  duel with the role `watching` and send everyone to Duel while a card is open; journey 14's
+  spec that pinned the old screen was changed with the requirement (ADR 0035).
+- The mocks put the stickers 8.5 rem above the bottom of Duel. A spec that measured the stickers
+  against the flash card at 360, 390 and 768 px failed at all three: under 992 px the watching
+  player's bar wraps into two or three rows and the card leaves no room above it. The region now
+  passes over the bar there, and the bar still takes a press through it; a screenshot of each
+  size, taken by a throwaway line and then removed, showed where the room was.
+- A spec that asserted "no switch" by counting the footer's buttons broke as soon as the sticker
+  bar joined the footer; it now names the two switches.
+- The stack's bound was built with the buffer in slice 2, so slice 3's stacked spec was green
+  on its first run; it was broken by hand (four shown) and failed as expected.
+
+**New lessons.**
+
+1. When a spec says something must not cover something else, measure the two boxes at a
+   phone, a tablet and a desktop in the behaviour spec: a mock drawn at one size can hide the
+   overlap at the others.
+2. Keep a per-connection limit in the hub connection's own `Context.Items`: it needs no
+   dictionary, nothing to forget on disconnect, and cannot grow with the connections made.
+3. A message that should leave in silence (a sticker the server ignores) is proved by a later
+   message that does arrive: SignalR keeps one connection's order, so when the later one is
+   received, anything sent before it would have been too.
+4. Let a short-lived thing on screen (a sticker) live on the game's clock that already ticks,
+   in a fixed-size buffer worked by a pure helper, rather than a timer of its own.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` stayed at 252.46 kB and the stickers are in Duel's lazy chunk.
+- *Check a fake once by hand* (01, 2): the bound (four shown) was broken by hand and failed the
+  stacked spec; the backend's limit test failed with all five stickers before the filter.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): StickerBar, StickerPop and
+  StickerRegion added, reusing Portrait; marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0035
+  fills the design's gaps and amends ADR 0034.
+- *A link or button block is an attribute component* (02, 2): the bar on `<div>`, a pop on
+  `<p>`, the region on `<div>`.
+- *Drive states through the fixture* (02, 3): `roomHub.sticker(id, from)` sends `StickerShown`.
+- *Tag one spec per feature `@critical`* (02, 5): a watching player sends a sticker and everyone
+  sees it.
+- *Drive game time from the wall clock* (04, 1): a sticker leaves after `clock.pass(2000)`.
+- *Prefer signals and outputs to `effect()`* (04, 2): the stickers showing are a `computed` over
+  the buffer and the game's clock; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsView.screen` sends a
+  watching player to Duel.
+- *Give a fake every answer the browser can give* (07, 3): the voice and microphone fakes prove
+  that a watching player who answers by voice opens no microphone.
+- *Fake a real-time channel at its protocol* (13, 4): `StickerShown` is a SignalR record like
+  `GameChanged`.
+- *Say whether a test helper waits for any or the next* (14, 5): `WaitForStickerAsync` takes any
+  received, and the tests then compare every sticker received.

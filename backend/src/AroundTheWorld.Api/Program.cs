@@ -27,13 +27,14 @@ builder.Services.AddHostedService<IdleRoomSweeper>();
 builder.Services.AddHostedService<RoomTimers>();
 
 // The room's one real-time channel: WebSockets only, messages of at most 1 KB, no detail of the
-// server in an error, and the caller known from the token its connection presented
-// (docs/adr/0032-joining-a-room-and-the-lobby.md).
+// server in an error, a limit on how often a connection sends a sticker (docs/adr/0035), and the
+// caller known from the token its connection presented (docs/adr/0032-joining-a-room-and-the-lobby.md).
 builder.Services
     .AddSignalR(options =>
     {
         options.MaximumReceiveMessageSize = RateLimitPolicies.MaxBodyBytes;
         options.EnableDetailedErrors = false;
+        options.AddFilter<HubRateLimitFilter>();
         options.AddFilter<CurrentPlayerFilter>();
     });
 builder.Services.AddScoped<HubCurrentPlayer>();

@@ -87,7 +87,7 @@
           </atw-flash-card>
         }
       }
-      @if (open() && !byVoice()) {
+      @if (open() && !byVoice() && !watching()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>
@@ -99,6 +99,9 @@
     </main>
   }
   <footer class="duel__foot">
+    @if (watching()) {
+      <div atw-sticker-bar [stickers]="stickerChoices" (chosen)="sendSticker($event)"></div>
+    }
     @switch (switchTo()) {
       @case ('numberPad') {
         <button
@@ -118,4 +121,15 @@
       }
     }
   </footer>
+  <div atw-sticker-region [watching]="watching()">
+    @for (sticker of stickers(); track sticker.key) {
+      <p
+        atw-sticker-pop
+        [kid]="sticker.kid"
+        [picture]="sticker.picture"
+        [words]="sticker.words"
+        [from]="sticker.from"
+      ></p>
+    }
+  </div>
 </atw-screen>

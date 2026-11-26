@@ -14,6 +14,7 @@ import {
   type DuelState,
   type Duellist,
   type FlashCard as Card,
+  type StickerId,
   type VoiceError,
 } from '@atw/api';
 import {
@@ -26,13 +27,17 @@ import {
   Screen,
   Shout,
   StampCard,
+  StickerBar,
+  StickerPop,
+  StickerRegion,
   TextButton,
   TimerBar,
   WorldRing,
   type DuelHudPlayer,
   type PadKey,
+  type StickerChoice,
 } from '@atw/components';
-import { ClassroomStates, kidById } from '@atw/domain';
+import { ClassroomStates, kidById, STICKERS, stickerById } from '@atw/domain';
 import {
   ClassroomCanvas,
   sameClassroom,
@@ -69,6 +74,9 @@ import { DuelWords } from './duel-words';
     Screen,
     Shout,
     StampCard,
+    StickerBar,
+    StickerPop,
+    StickerRegion,
     TextButton,
     TimerBar,
     WorldRing,
@@ -128,6 +136,21 @@ export class DuelPage {
       !this.session.paused()
     );
   });
+  /** The six stickers a watching player can send (L2-028 criteria 2 and 6). */
+  protected readonly stickerChoices: readonly StickerChoice[] = STICKERS.map((sticker) => ({
+    ...sticker,
+    picture: sticker.kid === 'bolt' ? '' : kidById(sticker.kid).picture,
+  }));
+  /** The stickers received, with the sender's kid, the words and the sender (L2-028 3 and 7). */
+  protected readonly stickers = computed(() =>
+    this.session.stickers().map((shown) => ({
+      key: shown.key,
+      kid: shown.kid,
+      picture: kidById(shown.kid).picture,
+      words: stickerById(shown.sticker).words,
+      from: shown.from,
+    })),
+  );
   /** Whether the device listens now: by voice, playing and not frozen (L2-009 criterion 5). */
   protected readonly listening = computed(
     () => this.byVoice() && this.playing() && !this.duel()?.frozen,
@@ -141,10 +164,12 @@ export class DuelPage {
   /** What the answer box shows: the entry, the wrong answer while frozen, or nothing. */
   protected readonly answerBox = computed(() => {
     const duel = this.duel();
-    if (!duel || duel.outcome !== 'open' || this.byVoice()) return null;
+    if (!duel || duel.outcome !== 'open' || duel.role === 'watching' || this.byVoice()) return null;
     return duel.frozen ? String(duel.wrongAnswer ?? '') : this.entry();
   });
   protected readonly open = computed(() => this.duel()?.outcome === 'open');
+  /** A player of a game with friends who is not in the duel watches it (L2-028 criterion 1). */
+  protected readonly watching = computed(() => this.duel()?.role === 'watching');
   protected readonly sum = computed(() => {
     const duel = this.duel();
     return duel ? DuelWords.sum(duel.card) : undefined;
@@ -202,6 +227,11 @@ export class DuelPage {
   /** The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8). */
   protected moveOn(): void {
     this.session.continue();
+  }
+
+  /** A watching player sends a sticker, as its id (L2-028 criterion 3). */
+  protected sendSticker(sticker: StickerId): void {
+    this.session.sendSticker(sticker);
   }
 
   /** A number the child shouted (L2-009 criteria 1 and 3). */

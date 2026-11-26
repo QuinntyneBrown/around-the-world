@@ -106,7 +106,16 @@ describe('FriendsView', () => {
         'world-map',
       ],
       ['a player in the open duel', state(), NIA, 0, null, 'duel'],
-      ['a player not in the open duel', state(), MILO, 0, null, 'world-map'],
+      ['a player not in the open duel, who watches it (L2-028 1)', state(), MILO, 0, null, 'duel'],
+      [
+        'a player not in a card that timed out (L2-028 8)',
+        state({ phase: 'timeUp' }),
+        MILO,
+        0,
+        null,
+        'duel',
+      ],
+      ['a player not in the decided duel, at once', hostHopped(), MILO, 0, null, 'world-map'],
       ['a player in a card that timed out', state({ phase: 'timeUp' }), HOST, 0, null, 'duel'],
       ['the winner who hopped, during "You got it!"', hostHopped(), HOST, 999, null, 'duel'],
       ['the winner who hopped, during the stamp', hostHopped(), HOST, 2199, null, 'duel'],
@@ -195,8 +204,17 @@ describe('FriendsView', () => {
       expect(FriendsView.duel(seen(hostHopped(), NIA, 1000), names)!.hop).toBeNull();
     });
 
-    it('is null for a player not in it, and while the race is starting', () => {
-      expect(FriendsView.duel(seen(state(), MILO), names)).toBeNull();
+    it('is watched by a player not in it, who is never frozen (L2-028 1)', () => {
+      const frozenHost = state();
+      const duel = { ...frozenHost.duel!, travellerFrozenMs: 1000, travellerWrong: 23 };
+      const watched = FriendsView.duel(seen({ ...frozenHost, duel }, MILO), names)!;
+      expect(watched.role).toBe('watching');
+      expect(watched.traveller.name).toBe('nickname 0-0');
+      expect(watched.frozen).toBe(false);
+      expect(watched.wrongAnswer).toBeNull();
+    });
+
+    it('is null while the race is starting', () => {
       expect(
         FriendsView.duel(seen(state({ phase: 'starting', duel: null }), HOST), names),
       ).toBeNull();

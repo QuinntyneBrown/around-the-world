@@ -2,6 +2,7 @@ import { InjectionToken } from '@angular/core';
 import { type GameSetup } from './game-setup';
 import { type GameState } from './game-state';
 import { type RoomState } from './rooms';
+import { type StickerId, type StickerMessage } from './sticker';
 
 /** What a room's connection tells the game. */
 export interface RoomEvents {
@@ -9,6 +10,8 @@ export interface RoomEvents {
   changed(room: RoomState): void;
   /** The room's game as it stands: on connecting, and on every change the server decides. */
   gameChanged(game: GameState): void;
+  /** A sticker a player of the room sent, as its id and the sender's player id (L2-028 3). */
+  stickerShown(sticker: StickerMessage): void;
   /** The connection is gone and could not be got back (L2-029 criterion 6). */
   lost(): void;
 }
@@ -33,6 +36,8 @@ export interface RoomConnection {
   start(): Promise<void>;
   /** Sends the player's answer, a number and nothing else (L2-026 criterion 1). */
   answer(value: number): Promise<void>;
+  /** Sends a sticker as its id and nothing else (L2-028 criterion 3, L2-040 criterion 1). */
+  sendSticker(sticker: StickerId): Promise<void>;
   /** "Play again" from the Podium: the room returns to its Lobby (L2-035 criterion 3). */
   playAgain(): Promise<void>;
   /** Tells the room the player leaves it (L2-025 criterion 5); rejects when it cannot. */

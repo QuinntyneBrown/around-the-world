@@ -31,6 +31,8 @@ describe('DuelPage', () => {
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
       watchMoments: () => () => undefined,
+      stickers: signal([]),
+      sendSticker: () => undefined,
       kind: 'solo',
       paused: signal(false),
       pause: () => undefined,
@@ -101,6 +103,7 @@ describe('DuelPage', () => {
         duel: signal(EGYPT),
         tour: signal(null),
         result: signal(null),
+        stickers: signal([]),
         kind,
         paused: signal(false),
       } as unknown as GameSession;

@@ -40,4 +40,5 @@ requirements and designs leave.
 | [0031](0031-making-a-room.md) | Making a room: the code, the token, the rate limit, the room's life and Solo Or Friends' states | Accepted; `initial` warning and the redirect of a room's address superseded by 0032 |
 | [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted |
 | [0033](0033-deciding-a-game-on-the-server.md) | Deciding a game with friends on the server: the order of answers, the clock, the class, the shared rules and the room's life | Accepted |
-| [0034](0034-playing-with-friends-on-the-device.md) | Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium | Accepted |
+| [0034](0034-playing-with-friends-on-the-device.md) | Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium | Accepted; where a player not in the duel watches it amended by 0035 |
+| [0035](0035-watching-a-duel-and-stickers.md) | Watching a duel and stickers: where a watching player is, the six ids, the picture, the bound and the rate | Accepted |

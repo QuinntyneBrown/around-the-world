@@ -80,6 +80,10 @@ class FakeConnection implements RoomConnection {
     this.calls.push(`answer ${value}`);
   }
 
+  async sendSticker(sticker: number): Promise<void> {
+    this.calls.push(`sendSticker ${sticker}`);
+  }
+
   async playAgain(): Promise<void> {
     this.calls.push('playAgain');
   }
@@ -192,6 +196,82 @@ describe('FriendsGame', () => {
 
     expect(connection.calls.filter((call) => call.startsWith('answer'))).toEqual(['answer 24']);
     friends.leave();
+  });
+
+  describe('stickers (L2-028 criteria 3 and 7, ADR 0035)', () => {
+    const PLAYERS: RoomState = {
+      ...ROOM,
+      status: 'playing',
+      players: [
+        { id: 'me', kid: 'zuri', nickname: { adjective: 0, animal: 0 }, position: 0, host: true },
+        { id: 'them', kid: 'nia', nickname: { adjective: 8, animal: 4 }, position: 1, host: false },
+        { id: 'pip', kid: 'pip', nickname: { adjective: 5, animal: 5 }, position: 2, host: false },
+      ],
+    };
+    /** The duel of "them" and "pip", which the device's player watches. */
+    const WATCHED: GameState = {
+      ...GAME,
+      traveller: 'them',
+      duel: { ...GAME.duel!, traveller: 'them', deskHolder: 'pip' },
+    };
+
+    async function watching() {
+      const made = game();
+      await settle();
+      made.connection.events!.changed(PLAYERS);
+      made.connection.events!.gameChanged(WATCHED);
+      return made;
+    }
+
+    it('sends a sticker as its id only while the device’s player watches the duel', async () => {
+      const { friends, connection } = await watching();
+      friends.sendSticker(2);
+      connection.events!.gameChanged(GAME);
+      friends.sendSticker(3);
+
+      expect(connection.calls.filter((call) => call.startsWith('sendSticker'))).toEqual([
+        'sendSticker 2',
+      ]);
+      friends.leave();
+    });
+
+    it('shows each sticker with the sender’s kid and name, "You" for the device’s own', async () => {
+      const { friends, connection } = await watching();
+
+      connection.events!.stickerShown({ sticker: 2, from: 'me' });
+      connection.events!.stickerShown({ sticker: 5, from: 'pip' });
+
+      expect(friends.stickers().map(({ sticker, kid, from }) => ({ sticker, kid, from }))).toEqual([
+        { sticker: 2, kid: 'zuri', from: 'You' },
+        {
+          sticker: 5,
+          kid: 'pip',
+          from: new NicknameGenerator().words({ adjective: 5, animal: 5 }),
+        },
+      ]);
+      friends.leave();
+    });
+
+    it('shows no sticker from a player not in the room, nor one that is not of the six', async () => {
+      const { friends, connection } = await watching();
+
+      connection.events!.stickerShown({ sticker: 2, from: 'someone' });
+      connection.events!.stickerShown({ sticker: 7, from: 'pip' });
+
+      expect(friends.stickers()).toEqual([]);
+      friends.leave();
+    });
+
+    it('shows none before a game is held', async () => {
+      const { friends, connection } = game();
+      await settle();
+      connection.events!.changed(PLAYERS);
+
+      connection.events!.stickerShown({ sticker: 2, from: 'pip' });
+
+      expect(friends.stickers()).toEqual([]);
+      friends.leave();
+    });
   });
 
   it('opens Duel for its first card, and the Lobby when "Play again" returns the room to it', async () => {

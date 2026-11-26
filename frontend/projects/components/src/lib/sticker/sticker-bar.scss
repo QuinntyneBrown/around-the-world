@@ -1,0 +1,116 @@
+// The sticker-bar and sticker blocks of docs/design-system/assets/components.css: the six
+// stickers, each a toy button on its kid's tag colours, wrapping 2, 3, then 6 across.
+:host {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--space-2) + var(--toy-depth)) var(--space-2);
+  max-width: 100%;
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + var(--toy-depth));
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+}
+
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--kid-tag-bg);
+  color: var(--kid-tag-fg);
+  box-shadow: 0 var(--toy-depth) 0 0 var(--kid-deep);
+  font: var(--text-name);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.sticker:active {
+  transform: translateY(calc(var(--toy-depth) - var(--toy-depth-pressed)));
+  box-shadow: 0 var(--toy-depth-pressed) 0 0 var(--kid-deep);
+}
+
+.sticker:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sticker--bolt {
+  background: var(--palette-art-metal-light);
+  color: var(--palette-art-outline);
+  box-shadow: 0 var(--toy-depth) 0 0 var(--palette-art-desk-leg);
+}
+
+.sticker--bolt:active {
+  box-shadow: 0 var(--toy-depth-pressed) 0 0 var(--palette-art-desk-leg);
+}
+
+.sticker__bolt {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--palette-art-floor);
+}
+
+.sticker__robot {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.sticker__metal-light {
+  fill: var(--palette-art-metal-light);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.sticker__metal {
+  fill: var(--palette-art-metal);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.sticker__eye {
+  fill: var(--palette-green-400);
+}
+
+.sticker__line {
+  fill: none;
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+@media (min-width: 36rem) {
+  :host {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 62rem) {
+  :host {
+    display: flex;
+  }
+}
+
+// A wide screen held low: one row, so the flash card keeps its room (L2-050).
+@media (max-height: 34rem) and (min-width: 48rem) {
+  :host {
+    display: flex;
+  }
+
+  .sticker {
+    flex: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker {
+    transition: none;
+  }
+}

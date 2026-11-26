@@ -93,6 +93,9 @@ internal sealed record GameStateBody(
 }
 
 /// <summary>Reads a refusal: a ProblemDetails with a <c>code</c> and no detail of the server.</summary>
+/// <summary>A sticker as every player of the room is sent it: its id and the sender's player id (ADR 0035).</summary>
+internal sealed record StickerShownBody(int Sticker, string From);
+
 internal static class Problems
 {
     public static async Task AssertCodeAsync(HttpResponseMessage response, string code)
