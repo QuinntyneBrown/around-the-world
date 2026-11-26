@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test';
 import { HomePage } from '../pages/home.page';
 import { LobbyPage } from '../pages/lobby.page';
 import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
-import { madeRoom } from '../support/rooms';
+import { madeRoom, problem } from '../support/rooms';
 
 /**
  * Journey 12: make a room as host (L2-022, L2-024 criteria 1 and 5, L2-025 criterion 1, L2-040,
@@ -140,5 +140,41 @@ test.describe('Make a room', () => {
     // Then Home opens (L2-030 criterion 7)
     await expect(page).toHaveURL(/\/$/);
     await expect(new HomePage(page).play).toBeVisible();
+  });
+
+  test('a rate-limited address is told to wait, "Make a room" stays disabled and Play solo works', async ({
+    page,
+    device,
+    backend,
+  }) => {
+    // Given a child on Solo Or Friends whose address has made too many rooms
+    await device.keeps(NIA);
+    backend.answer('POST', ROOMS, problem(429, 'rate_limited'), 429);
+    const solo = new SoloOrFriendsPage(page);
+    await solo.open();
+
+    // When they choose "Make a room"
+    await solo.chooseMakeRoom();
+
+    // Then they stay on Solo Or Friends and are told to wait (L2-022 criterion 4)
+    await expect(page).toHaveURL(/\/play$/);
+    await expect(solo.roomAlertTitle).toHaveText('Whoa, slow down a moment');
+    await expect(solo.roomAlert).toContainText(
+      'That’s a lot of rooms! Wait a little, then try again.',
+    );
+
+    // And "Make a room" is disabled, and a press asks the backend nothing more
+    await expect(solo.makeRoom).toHaveText('Make a room');
+    await expect(solo.makeRoom).toBeDisabled();
+    expect(backend.requests()).toHaveLength(1);
+
+    // And "Play solo" still works (L2-054 criterion 3)
+    await solo.choosePlaySolo();
+    await expect(page).toHaveURL(/\/setup$/);
+
+    // And Solo Or Friends opened again offers "Make a room" again (docs/adr/0031)
+    await page.goBack();
+    await expect(solo.makeRoom).toBeEnabled();
+    await expect(solo.roomAlert).toHaveCount(0);
   });
 });
