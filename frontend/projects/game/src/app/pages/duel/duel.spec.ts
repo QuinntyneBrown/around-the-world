@@ -1,6 +1,6 @@
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { GAME_SESSION, type DuelState, type GameSession } from '@atw/api';
+import { GAME_SESSION, WAY_OF_ANSWERING, type DuelState, type GameSession } from '@atw/api';
 import { DuelPage } from './duel';
 
 /**
@@ -24,7 +24,16 @@ describe('DuelPage', () => {
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
     };
-    TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: GAME_SESSION, useValue: session },
+        // The number pad is the way of answering, so nothing listens.
+        {
+          provide: WAY_OF_ANSWERING,
+          useValue: { way: signal('numberPad'), voiceOffered: signal(false) },
+        },
+      ],
+    });
     const fixture = TestBed.createComponent(DuelPage);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;

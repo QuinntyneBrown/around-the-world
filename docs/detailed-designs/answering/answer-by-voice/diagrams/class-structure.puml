@@ -15,20 +15,26 @@ title Class structure — Answer by voice
 
 interface VoiceAnswer {
   +available: boolean
-  +listening: Signal<boolean>
-  +heard: Observable<number>
-  +heardSpeech: Observable<void>
-  +failed: Observable<VoiceError>
   +requestMicrophone(): Promise<MicrophoneAnswer>
   +start(): void
   +stop(): void
+  +listen(listener: VoiceListener): () => void
+}
+interface VoiceListener {
+  +heard(value: number): void
+  +heardSpeech(): void
+  +noSpeech(): void
+  +failed(error: VoiceError): void
 }
 class VoiceError {
-  +code: string
+  +code: 'refused' | 'failed'
+}
+class LazyVoiceAnswer {
+  -loaded: SpeechVoiceAnswer | null
+  -wanted: boolean
 }
 class SpeechVoiceAnswer {
   -recognition: SpeechRecognition | null
-  -stream: MediaStream | null
   +start(): void
   +stop(): void
   -onResult(transcript: string): void
@@ -37,12 +43,24 @@ class SpeechVoiceAnswer {
 class spokenNumber <<function>> {
   +spokenNumber(transcript: string): number | null
 }
-class WayOfAnswering {
+interface WayOfAnswering {
+  +kept: Signal<AnswerWay>
   +way: Signal<AnswerWay>
   +voiceOffered: Signal<boolean>
+  +micCheckNeeded: Signal<boolean>
   +use(way: AnswerWay): void
+  +finishMicCheck(outcome: MicCheckOutcome): void
+  +loseVoice(): void
 }
-interface PlayerChoices
+class KeptWayOfAnswering
+interface PlayerChoices {
+  +wayOfAnswering: Signal<AnswerWay>
+  +changeWayOfAnswering(way: AnswerWay): void
+}
+interface Visit {
+  +micCheckDone: Signal<boolean>
+  +voiceLost: Signal<boolean>
+}
 enum AnswerWay {
   voice
   numberPad
@@ -52,21 +70,30 @@ interface GameSession {
   +answer(value: number): void
 }
 class DuelPage {
-  -voice: VoiceAnswer
   -way: WayOfAnswering
   -session: GameSession
   -mayAnswer: Signal<boolean>
-  -voiceFailedInDuel: Signal<boolean>
-  +onUseNumberPad(): void
-  +onShoutInstead(): void
+  -failedDuel: Signal<string | null>
+  #useNumberPad(): void
+  #shoutInstead(): void
+}
+class Listening <<directive [atwListening]>> {
+  +heard: output<number>
+  +failed: output<VoiceError>
 }
 
+LazyVoiceAnswer ..|> VoiceAnswer
+LazyVoiceAnswer ..> SpeechVoiceAnswer : imports dynamically
 SpeechVoiceAnswer ..|> VoiceAnswer
 SpeechVoiceAnswer ..> spokenNumber : parses with
-VoiceAnswer ..> VoiceError : reports
-DuelPage ..> VoiceAnswer : injects VOICE_ANSWER
+VoiceAnswer ..> VoiceListener : tells
+VoiceListener ..> VoiceError
+DuelPage *-- Listening : on the "Shout it!" pill
+Listening ..> VoiceAnswer : injects VOICE_ANSWER
 DuelPage ..> GameSession : injects GAME_SESSION
-DuelPage --> WayOfAnswering
-WayOfAnswering --> AnswerWay
-WayOfAnswering ..> PlayerChoices : keeps the way on the device through
+DuelPage ..> WayOfAnswering : injects WAY_OF_ANSWERING
+KeptWayOfAnswering ..|> WayOfAnswering
+KeptWayOfAnswering --> AnswerWay
+KeptWayOfAnswering ..> PlayerChoices : keeps the way on the device through
+KeptWayOfAnswering ..> Visit : remembers the visit through
 @enduml

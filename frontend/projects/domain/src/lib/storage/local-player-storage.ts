@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import {
   DEVICE_STORAGE,
+  type AnswerWay,
   isKidId,
   type Nickname,
   type PlayerRecord,
@@ -14,6 +15,10 @@ export const PLAYER_KEY = 'atw.player';
 const VERSION = 1;
 
 const DEFAULTS: PlayerRecord = { kid: null, nickname: null };
+
+function isAnswerWay(value: unknown): value is AnswerWay {
+  return value === 'voice' || value === 'numberPad';
+}
 
 /**
  * `PlayerStorage` on the browser's storage. It never throws: whatever it cannot read gives the
@@ -32,7 +37,11 @@ export class LocalPlayerStorage implements PlayerStorage {
     const kid = isKidId(stored['kid']) ? stored['kid'] : null;
     // A setup Game Setup would not offer reads as the defaults (docs/adr/0017).
     const setup = readSetup(stored['setup']);
-    const withSetup = setup ? { setup } : {};
+    const way = isAnswerWay(stored['wayOfAnswering']) ? stored['wayOfAnswering'] : null;
+    const withSetup: Pick<PlayerRecord, 'setup' | 'wayOfAnswering'> = {
+      ...(setup ? { setup } : {}),
+      ...(way ? { wayOfAnswering: way } : {}),
+    };
     const kept = stored['nickname'];
     if (this.nicknames.isValid(kept)) return { kid, nickname: { ...kept }, ...withSetup };
     if ((kept === undefined || kept === null) && kid === null) {
@@ -59,10 +68,12 @@ export class LocalPlayerStorage implements PlayerStorage {
           },
         }
       : {};
+    // The way of answering is kept only once the child has chosen it (docs/adr/0025).
+    const way = record.wayOfAnswering ? { wayOfAnswering: record.wayOfAnswering } : {};
     try {
       this.storage?.setItem(
         PLAYER_KEY,
-        JSON.stringify({ version: VERSION, kid: record.kid, nickname, ...setup }),
+        JSON.stringify({ version: VERSION, kid: record.kid, nickname, ...setup, ...way }),
       );
     } catch {
       // A full or blocked storage: the choice lasts for this visit only.

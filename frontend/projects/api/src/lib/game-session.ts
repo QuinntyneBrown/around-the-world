@@ -24,12 +24,15 @@ export interface GameSession {
   readonly tour: Signal<TourState | null>;
   /** How the tour ended, once it is over and the Podium opens; null until then (L2-035). */
   readonly result: Signal<TourResult | null>;
-  /** Starts a game with the setup (L2-018 criterion 1). */
-  start(setup: GameSetup): void;
+  /**
+   * Starts a game with the setup (L2-018 criterion 1). With `micCheck` the game waits at the
+   * screen `mic-check` and deals no card until `continue()` (L2-012 criterion 8).
+   */
+  start(setup: GameSetup, options?: { readonly micCheck?: boolean }): void;
   /** Gives the device's player's answer to the duel (L2-010); it is ignored when it cannot count. */
   answer(value: number): void;
   /**
-   * Moves the game on at the child's word: the pill after a lost duel opens World Map, and
+   * Moves the game on at the child's word: leaving Mic Check deals the first card, the pill after a lost duel opens World Map, and
    * "Back to the card" on World Map returns to Duel at once, or opens the Podium after the last
    * duel (L2-033 8, L2-034 12, L2-035 8).
    */

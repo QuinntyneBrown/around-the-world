@@ -18,3 +18,5 @@ export * from './lib/tour/passport';
 export * from './lib/tour/solo-game';
 export * from './lib/tour/standings';
 export * from './lib/tour/tour';
+export * from './lib/voice/kept-way-of-answering';
+export * from './lib/voice/lazy-voice-answer';

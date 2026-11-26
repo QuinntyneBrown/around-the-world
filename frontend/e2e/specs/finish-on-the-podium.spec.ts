@@ -18,6 +18,8 @@ const zuriWith = (tourLength: 6 | 12 | 24) => ({
   kid: 'zuri',
   nickname: { adjective: 0, animal: 0 },
   setup: { kinds: ['times'], tables: [2, 3, 4, 5], tourLength, cardSpeed: 'normal' },
+  // The number pad is the way of answering, so Mic Check is skipped (L2-012 criterion 13).
+  wayOfAnswering: 'numberPad' as const,
 });
 
 /** The waits after a duel the child wins as the traveller: "You got it!", the stamp, the message. */

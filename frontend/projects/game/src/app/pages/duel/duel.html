@@ -35,6 +35,14 @@
           [emphasis]="line().emphasis"
           [tone]="line().tone"
         >
+          @if (listening()) {
+            <p atw-shout atwListening (heard)="shouted($event)" (failed)="voiceStopped($event)"></p>
+          }
+          @if (voiceFailed() && open()) {
+            <p class="text-sm text-muted" role="status">
+              Bolt stopped hearing, so tap your answer for this one.
+            </p>
+          }
           @if (pill(); as words) {
             <button atw-text-button type="button" [pill]="true" [sunken]="true" (click)="moveOn()">
               {{ words }}
@@ -42,7 +50,7 @@
           }
         </atw-flash-card>
       }
-      @if (open()) {
+      @if (open() && !byVoice()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>
@@ -53,5 +61,24 @@
       <atw-flash-card status="Getting the first card ready…" result="Get ready…" />
     </main>
   }
-  <footer class="duel__foot"></footer>
+  <footer class="duel__foot">
+    @switch (switchTo()) {
+      @case ('numberPad') {
+        <button
+          atw-text-button
+          type="button"
+          icon="keypad"
+          [pill]="true"
+          (click)="switchWay('numberPad')"
+        >
+          Use number pad
+        </button>
+      }
+      @case ('voice') {
+        <button atw-text-button type="button" icon="mic" [pill]="true" (click)="switchWay('voice')">
+          Shout instead
+        </button>
+      }
+    }
+  </footer>
 </atw-screen>

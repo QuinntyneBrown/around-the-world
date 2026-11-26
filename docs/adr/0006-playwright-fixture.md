@@ -17,7 +17,10 @@ off localhost or a page error (`AGENTS.md`, E2E).
   replaces `SpeechRecognition`/`webkitSpeechRecognition`, `navigator.mediaDevices.getUserMedia`,
   the microphone's permission query and Chrome's `LanguageModel`. The spec drives them through
   the fixtures `voice` (`say`, `unsupported`), `microphone` (`grant`, `deny`) and `model`
-  (`answers`, `downloadable`, `sessions`). By default the microphone is not expected and the
+  (`answers`, `downloadable`, `sessions`). Journey 07 adds `voice.silence()`, `voice.fail()`
+  and `voice.listening()`, `microphone.ask()` (the browser's question held open) and
+  `microphone.openStreams()`, and the fake recognizer offers on-device recognition
+  (`processLocally`, docs/adr/0025-answering-by-voice.md). By default the microphone is not expected and the
   model is unavailable, so a classmate plays from its profile.
 - The overridden `page` fixture routes every request: off localhost is refused, `/api/` and
   `/hubs/` are answered only from the `backend` fixture (`answer`, `hub`), and any other

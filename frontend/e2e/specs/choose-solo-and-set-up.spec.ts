@@ -10,15 +10,25 @@ import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
  * L2-030, L2-031).
  */
 
-const ZURI = { version: 1, kid: 'zuri', nickname: { adjective: 0, animal: 0 } };
+// A child who answers with the number pad, so Mic Check is skipped (L2-012 criterion 13).
+const ZURI = {
+  version: 1,
+  kid: 'zuri',
+  nickname: { adjective: 0, animal: 0 },
+  wayOfAnswering: 'numberPad' as const,
+};
 const KID_PICTURES = /\/img\/kid-\w+\.jpg$/;
 const DEFAULT_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 test.describe('Solo Or Friends', () => {
   test('@critical a child chooses Play solo and Go! with the defaults, and Duel deals a card', async ({
     page,
+    voice,
   }) => {
-    // Given a new child picks Zuri from Home
+    // Given a browser with no speech recognition, so Mic Check is skipped (L2-012 criterion 5)
+    await voice.unsupported();
+
+    // And a new child picks Zuri from Home
     const home = new HomePage(page);
     await home.open();
     await home.choosePlay();

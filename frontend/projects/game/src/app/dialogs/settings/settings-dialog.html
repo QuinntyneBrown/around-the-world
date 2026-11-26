@@ -1,0 +1,15 @@
+<atw-dialog heading="Settings" [titleId]="titleId" (closed)="close()">
+  <atw-switch
+    label="Answer by shouting"
+    [help]="shoutingHelp"
+    [checked]="shouting()"
+    [disabled]="!available"
+    (toggled)="answerByShouting($event)"
+  />
+  <button atw-toy-button slot="actions" type="button" size="xl" [block]="true" (click)="close()">
+    Done
+  </button>
+  <p slot="actions" class="text-sm text-muted settings__note">
+    Kept on this device only. No account, ever.
+  </p>
+</atw-dialog>

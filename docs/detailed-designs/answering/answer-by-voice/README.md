@@ -31,7 +31,7 @@ The slice sits in the `answering` subsystem beside `answering/answer-with-number
 
 ## Description
 
-The slice is not built yet; the parts below are those the design introduces. The slice is played
+The slice is built (journey 07); the parts below are those the design introduces. The slice is played
 wholly on the device: it has no backend part, and its diagrams show frontend libraries and the
 browser's speech recognition only. An answer reaches the `GameSession` contract as a number; in a
 game with friends the server applies the same rules to that number
@@ -39,33 +39,39 @@ game with friends the server applies the same rules to that number
 criterion 2).
 
 - **`VoiceAnswer`** — contract in the `api` library, bound to the `VOICE_ANSWER` token at the
-  game route. It exposes `available` (whether the browser has speech recognition), `listening`,
-  `requestMicrophone()` and `heardSpeech` (both used by `answering/check-mic`),
-  `start()`, `stop()`, `heard` (a stream of whole numbers) and `failed` (a stream of `VoiceError`
-  values, each with a `code`). The contract carries numbers only; no transcript crosses it.
-- **`SpeechVoiceAnswer`** — implementation in `domain`'s `voice/`, imported dynamically so that
-  it stays out of the initial bundle. No code outside `voice/` touches the microphone or speech
-  recognition. `start()` begins recognition, and each transcript goes to `spokenNumber`. A
+  game route. It exposes `available` (whether the browser can recognise speech on the
+  device), `requestMicrophone()` (used by `answering/check-mic`), `start()`, `stop()` and
+  `listen(listener)`, which returns a function that stops listening. The listener hears
+  `heard(value)` (a whole number), `heardSpeech()` and `noSpeech()` (used by Mic Check) and
+  `failed(error)` (a `VoiceError` with a `code` of `refused` or `failed`). The contract carries
+  numbers only; no transcript crosses it.
+- **`SpeechVoiceAnswer`** — implementation in `domain`'s `voice/`, imported dynamically by
+  `LazyVoiceAnswer` (what the routes bind) so that it stays out of the initial bundle. No code
+  outside `voice/` touches the microphone or speech recognition. `start()` begins recognition, and each transcript goes to `spokenNumber`. A
   transcript that gives a number is emitted on `heard`; any other transcript is dropped
   (`L2-009` criterion 2). An error from the browser stops recognition and is emitted on
   `failed`. `stop()` ends recognition and closes the microphone's stream.
 - **`spokenNumber`** — pure function in `domain`'s `voice/`. It reads a transcript as a whole
   number from 0 to 999 and returns nothing for any other input. "twenty-four" gives 24 (`L2-009`
   criterion 1). It has a unit test with one case for each row of its table of spoken forms.
-- **`WayOfAnswering`** — service in the `game` application, provided in `root` because
-  Settings, Mic Check, Duel and a later game share it. It holds the way of answering, an
-  `AnswerWay` (`voice` or `numberPad`), as a signal, and `voiceOffered`, which is true when
-  `VoiceAnswer.available` is true and the microphone was not refused. `use(way)` changes the
-  way. The way is kept on the device with the kid, the nickname, the setup and the sound
-  setting (`L2-015` criterion 4): `WayOfAnswering` reads it from, and writes it through, the
-  `PlayerChoices` store (`player/pick-kid`), and holds no storage of its own. Where
-  `VoiceAnswer.available` is false the way is `numberPad`.
+- **`WayOfAnswering`** — contract in `api` behind `WAY_OF_ANSWERING`, realized by
+  `KeptWayOfAnswering` in `domain`'s `voice/`, which Settings, Mic Check and Duel share
+  through state kept elsewhere. `kept` is the way of answering kept on the device, an
+  `AnswerWay` (`voice` or `numberPad`); `voiceOffered` is true when `VoiceAnswer.available` is
+  true and voice was not lost in this visit (`Visit.voiceLost`: a refused microphone or a
+  failure at Mic Check); `way` is `kept` while voice is offered, and `numberPad` otherwise.
+  `use(way)` changes the kept way and `loseVoice()` records a refusal. The way is kept on the
+  device with the kid, the nickname and the setup (`L2-015` criterion 4): it reads it from,
+  and writes it through, the `PlayerChoices` store (`player/pick-kid`), and holds no storage
+  of its own.
 - **`DuelPage`** — page in `game`. It computes `mayAnswer` from `DuelState`: the device's player
-  is in the duel, is not frozen, and the duel is open and not paused. One effect calls
-  `VoiceAnswer.start()` while the way is `voice` and `mayAnswer` is true, and `stop()` otherwise
-  (`L2-009` criterion 5). While listening the flash card shows "Shout it!" with a meter
-  (`L2-009` criterion 4), and the live region adds "Shout it!" to the line for a new card. It
-  forwards each number from `heard` to `GameSession.answer`.
+  is in the duel, is not frozen, and the duel is open and not paused. While the way is `voice`
+  and `mayAnswer` is true it shows the "Shout it!" pill (`Shout`), on which the listening
+  directive `[atwListening]` calls `VoiceAnswer.start()` when it is created and `stop()` when
+  it is destroyed (`L2-009` criterion 5); no effect is used (ADR 0025). While listening the
+  flash card shows "Shout it!" with a meter (`L2-009` criterion 4), and the live region adds
+  "Shout it!" to the line for a new card. It forwards each number heard to
+  `GameSession.answer`.
 - **`NumberPad`** — presentation component in `components`, shown when the way is `numberPad`
   (`answering/answer-with-number-pad`).
 
@@ -79,8 +85,8 @@ is offered while a flash card is showing or the device's player is frozen. It is
 once the duel is decided, while the passport stamp shows, or while the player is watching
 (`L2-011` criterion 5).
 
-- "Use number pad" calls `WayOfAnswering.use(numberPad)`; the effect stops recognition and the
-  number pad shows (`L2-011` criterion 1).
+- "Use number pad" calls `WayOfAnswering.use(numberPad)`; the "Shout it!" pill goes, its
+  directive stops recognition, and the number pad shows (`L2-011` criterion 1).
 - "Shout instead" calls `WayOfAnswering.use(voice)`; the pad hides and recognition starts
   (`L2-011` criterion 2). The choice is offered only while `voiceOffered` is true.
 - Where the browser has no speech recognition, `voiceOffered` is false, the number pad is the
@@ -89,7 +95,8 @@ once the duel is decided, while the passport stamp shows, or while the player is
   of its own and does not call `use`. The `DuelState` is untouched, so the same flash card
   stays. The number pad shows for that duel, the Duel screen says "Bolt stopped hearing, so tap
   your answer for this one." as a status, and "Shout instead" is not offered for that duel
-  (`L2-011` criterion 4).
+  (`L2-011` criterion 4). A failure whose `code` is `refused` also calls
+  `WayOfAnswering.loseVoice()` (`L2-011` criterion 6).
 
 Switching in Settings. The Settings dialog, opened from Home, has the switch "Answer by
 shouting" beside "Sound", each showing "On" or "Off" (`L2-032` criterion 4). Turning it off
@@ -99,32 +106,36 @@ number pad." In a browser with no speech recognition the switch is off and disab
 help text reads "This browser can't listen, so you tap answers." Under the button "Done" the
 dialog says "Kept on this device only. No account, ever." Home and the dialog's place on it
 are designed in `player/find-way-through-screens`, and the "Sound" switch in
-`classroom/play-motion-and-sound`. Whether Settings stays, or the settings button goes, is to
-confirm (`L2-032` criterion 1).
+`classroom/play-motion-and-sound`; the "Sound" switch joins the dialog with that journey
+(journey 10), so until then the dialog shows "Answer by shouting" alone. Whether Settings
+stays, or the settings button goes, is to confirm (`L2-032` criterion 1).
 
-`DuelPage` unsubscribes from `heard` and `failed` and calls `stop()` when it is destroyed, so
+The listening directive stops listening and calls `stop()` when it is destroyed, so
 speech recognition has stopped and the microphone's stream is closed when the child leaves Duel
 (`L2-048` criterion 1).
 
-Open points:
+Decisions (`docs/adr/0025-answering-by-voice.md`):
 
-- The language or languages speech recognition listens in: `<TO SUPPLY>`.
-- The spoken forms `spokenNumber` accepts beyond number words and digits from 0 to 999, and
-  whether a number inside other words ("um, twenty-four") is an answer: `<TO SUPPLY>`.
-- Whether an interim result gives an answer, or only a final one: `<TO SUPPLY>`.
-- Whether, after speech recognition fails during a duel, "Shout instead" is offered again in
-  later duels, and which way of answering the next duel starts with: `<TO SUPPLY>`. `L2-011`
-  criterion 4 and the mock speak of that duel only.
-- Whether "Shout instead" may ask for the microphone again after a refusal: `<TO SUPPLY>`.
-  Mic Check itself offers no second request (`L2-012` criterion 7).
-- What "Answer by shouting" switched off does to Mic Check on a later visit: `<TO SUPPLY>`
-  (`answering/check-mic`).
-- Whether speech recognition runs on the device: `<TO SUPPLY>`.
-- How a sound the game plays is kept from giving an answer (`L2-039` criterion 4):
-  `<TO SUPPLY>`.
-- How the level of the child's voice reaches the meter shown beside "Shout it!":
-  `<TO SUPPLY>`. The mocks fix that the meter moves with the child's voice and holds still
-  under reduced motion; the `VoiceAnswer` contract carries numbers only.
+- Speech recognition listens in `en-US`, on the device only: each session sets
+  `processLocally`, and a browser that cannot recognise on the device plays with the number pad
+  as one with no recognition does. No sound reaches a recognition service.
+- `spokenNumber` reads the whole transcript, lower-cased and without punctuation: digits, number
+  words from "zero" (or "nought", "oh") to "nine hundred and ninety-nine", with or without a
+  hyphen or "and", "a hundred", and the homophones "won", "to", "too", "for" and "ate". A
+  number among other words ("um, twenty-four") is no answer.
+- Only a final result gives an answer: `interimResults` is off and `continuous` is on, and a
+  session the browser ends is started again while the page still listens. A `no-speech` report
+  on Duel starts listening again and is not a failure.
+- After a failure during a duel, the next duel starts with the kept way, so voice is tried
+  again and "Shout instead" is offered again. A refused microphone makes the number pad the way
+  for the rest of the visit and withdraws "Shout instead" (`L2-011` criterion 6).
+- "Shout instead" never asks for the microphone again after a refusal in the visit. Where Mic
+  Check was skipped because the kept way was the number pad, starting recognition is what asks.
+- "Answer by shouting" switched off keeps the number pad, so a later visit skips Mic Check
+  (`L2-012` criterion 13, `answering/check-mic`).
+- The game's sounds (journey 10) speak no number, and recognition asks for echo cancellation.
+- The meter beside "Shout it!" shows that the device listens, not the voice's level: its bars
+  pulse on their own and hold still under reduced motion.
 
 The screen follows the mocks `docs/mocks/pages/duel/` (states `default`, `wrong`, `no-speech`
 and `voice-failed`, with `pad`, `pad-typed` and `wrong-pad` for the switch) and

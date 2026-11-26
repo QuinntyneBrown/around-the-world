@@ -1,5 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { GAME_SESSION, type Duellist, type FlashCard as Card } from '@atw/api';
+import {
+  GAME_SESSION,
+  WAY_OF_ANSWERING,
+  type AnswerWay,
+  type DuelState,
+  type Duellist,
+  type FlashCard as Card,
+  type VoiceError,
+} from '@atw/api';
 import {
   DuelHud,
   FlashCard,
@@ -7,6 +15,7 @@ import {
   NumberPad,
   Pill,
   Screen,
+  Shout,
   StampCard,
   TextButton,
   TimerBar,
@@ -15,6 +24,7 @@ import {
   type PadKey,
 } from '@atw/components';
 import { kidById } from '@atw/domain';
+import { Listening } from '../../voice/listening';
 import { DuelWords } from './duel-words';
 
 /**
@@ -23,16 +33,21 @@ import { DuelWords } from './duel-words';
  * the child's answer to it; the session decides everything (docs/detailed-designs/tour/
  * play-duel/). Until the first duel is published it is in its loading state (docs/adr/0017).
  * After a hop the passport stamp stands in place of the flash card, and after a lost duel the
- * quiet pill opens World Map (docs/adr/0022). Pause comes with journey 08.
+ * quiet pill opens World Map (docs/adr/0022). With voice as the way of answering it shows
+ * "Shout it!" while the child may answer, and listens exactly then; the quiet pill at the
+ * bottom switches between voice and the pad (docs/detailed-designs/answering/answer-by-voice/).
+ * Pause comes with journey 08.
  */
 @Component({
   selector: 'atw-duel-page',
   imports: [
     DuelHud,
     FlashCard,
+    Listening,
     NumberPad,
     Pill,
     Screen,
+    Shout,
     StampCard,
     TextButton,
     TimerBar,
@@ -44,6 +59,9 @@ import { DuelWords } from './duel-words';
 })
 export class DuelPage {
   private readonly session = inject(GAME_SESSION);
+  private readonly way = inject(WAY_OF_ANSWERING);
+  /** The duel in which speech recognition failed: the pad shows for it (L2-011 criterion 4). */
+  private readonly failedDuel = signal<string | null>(null);
 
   protected readonly duel = this.session.duel;
   /** The digits typed, and the card they were typed for. */
@@ -59,10 +77,32 @@ export class DuelPage {
     const duel = this.duel();
     return typed.card === duel?.card ? typed.digits : '';
   });
+  /** Whether recognition failed in this duel. */
+  protected readonly voiceFailed = computed(() => {
+    const duel = this.duel();
+    return duel !== null && this.failedDuel() === duelKey(duel);
+  });
+  /** Whether this duel is answered by voice. */
+  protected readonly byVoice = computed(() => this.way.way() === 'voice' && !this.voiceFailed());
+  /** The child's duel, with a card showing: answers and the switch are offered (L2-011 5). */
+  private readonly playing = computed(() => {
+    const duel = this.duel();
+    return duel?.outcome === 'open' && duel.role !== 'watching' && !this.stamp();
+  });
+  /** Whether the device listens now: by voice, playing and not frozen (L2-009 criterion 5). */
+  protected readonly listening = computed(
+    () => this.byVoice() && this.playing() && !this.duel()?.frozen,
+  );
+  /** The way the quiet pill at the bottom switches to, or null when it is not offered. */
+  protected readonly switchTo = computed<AnswerWay | null>(() => {
+    if (!this.playing() || this.voiceFailed()) return null;
+    if (this.byVoice()) return 'numberPad';
+    return this.way.voiceOffered() ? 'voice' : null;
+  });
   /** What the answer box shows: the entry, the wrong answer while frozen, or nothing. */
   protected readonly answerBox = computed(() => {
     const duel = this.duel();
-    if (!duel || duel.outcome !== 'open') return null;
+    if (!duel || duel.outcome !== 'open' || this.byVoice()) return null;
     return duel.frozen ? String(duel.wrongAnswer ?? '') : this.entry();
   });
   protected readonly open = computed(() => this.duel()?.outcome === 'open');
@@ -80,7 +120,9 @@ export class DuelPage {
   });
   protected readonly announcement = computed(() => {
     const duel = this.duel();
-    return duel ? DuelWords.announcement(duel) : '';
+    if (!duel) return '';
+    const words = DuelWords.announcement(duel);
+    return this.listening() ? `${words} Shout it!` : words;
   });
   /** The quiet pill after a lost duel (L2-033 criteria 8 and 11). */
   protected readonly pill = computed(() => {
@@ -111,6 +153,26 @@ export class DuelPage {
     this.session.continue();
   }
 
+  /** A number the child shouted (L2-009 criteria 1 and 3). */
+  protected shouted(value: number): void {
+    this.session.answer(value);
+  }
+
+  /**
+   * Recognition stopped during the duel: the pad shows for this duel, with the same card
+   * (L2-011 criterion 4); a refused microphone also gives up voice for the visit (criterion 6).
+   */
+  protected voiceStopped(error: VoiceError): void {
+    const duel = this.duel();
+    if (duel) this.failedDuel.set(duelKey(duel));
+    if (error.code === 'refused') this.way.loseVoice();
+  }
+
+  /** "Use number pad" or "Shout instead" (L2-011 criteria 1 and 2). */
+  protected switchWay(way: AnswerWay): void {
+    this.way.use(way);
+  }
+
   /** A key of the number pad: a digit or Delete changes the entry, Go gives it (L2-010). */
   protected press(key: PadKey): void {
     const entry = this.entry();
@@ -133,4 +195,9 @@ export class DuelPage {
     const picture = duellist.kid === 'classmate' ? '' : kidById(duellist.kid).picture;
     return { name: duellist.name, role, kid: duellist.kid, picture };
   }
+}
+
+/** A duel's identity: its desk and its two duellists. */
+function duelKey(duel: DuelState): string {
+  return `${duel.desk}|${duel.traveller.name}|${duel.deskHolder.name}`;
 }

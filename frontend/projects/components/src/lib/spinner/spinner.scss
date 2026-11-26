@@ -1,0 +1,22 @@
+// The spinner block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 3px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: var(--radius-full);
+  animation: spin var(--duration-spin) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}

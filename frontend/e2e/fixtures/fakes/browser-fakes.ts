@@ -7,7 +7,7 @@
  *
  * This function is serialised into the page, so it must not close over anything.
  */
-export type MicrophoneSetting = 'unexpected' | 'granted' | 'denied';
+export type MicrophoneSetting = 'unexpected' | 'asking' | 'granted' | 'denied';
 
 export interface BrowserFakesState {
   problems: string[];
@@ -17,6 +17,14 @@ export interface BrowserFakesState {
   modelReplies: string[];
   modelSessions: { created: number; destroyed: number };
   say(transcript: string): number;
+  /** The recognizers listening report that they heard no speech, and end. */
+  silence(): number;
+  /** The recognizers listening fail with the browser's error, and end. */
+  fail(error: string): number;
+  /** How many recognizers are listening. */
+  listening(): number;
+  /** How many microphone tracks the game opened and has not stopped. */
+  openTracks(): number;
 }
 
 declare global {
@@ -34,20 +42,41 @@ export function installBrowserFakes(): void {
     modelReplies: [],
     modelSessions: { created: 0, destroyed: 0 },
     say: () => 0,
+    silence: () => 0,
+    fail: () => 0,
+    listening: () => 0,
+    openTracks: () => 0,
   };
   Object.defineProperty(window, '__atwFakes', { value: fakes, configurable: false });
+
+  // The browser's question about the microphone, open while the setting is 'asking': it is
+  // answered when the spec grants or denies.
+  let microphoneSetting: MicrophoneSetting = 'unexpected';
+  const asking: (() => void)[] = [];
+  Object.defineProperty(fakes, 'microphone', {
+    get: () => microphoneSetting,
+    set: (value: MicrophoneSetting) => {
+      microphoneSetting = value;
+      if (value !== 'asking') asking.splice(0).forEach((answer) => answer());
+    },
+  });
 
   const notAllowed = () => new DOMException('Permission denied', 'NotAllowedError');
 
   // ---- Microphone -----------------------------------------------------------------------
+  const opened: MediaStreamTrack[] = [];
   const silentStream = (): MediaStream => {
+    let stream: MediaStream;
     try {
       const context = new AudioContext();
-      return context.createMediaStreamDestination().stream;
+      stream = context.createMediaStreamDestination().stream;
     } catch {
-      return new MediaStream();
+      stream = new MediaStream();
     }
+    opened.push(...stream.getAudioTracks());
+    return stream;
   };
+  fakes.openTracks = () => opened.filter((track) => track.readyState === 'live').length;
   const mediaDevices = navigator.mediaDevices ?? ({} as MediaDevices);
   Object.defineProperty(mediaDevices, 'getUserMedia', {
     configurable: true,
@@ -55,6 +84,9 @@ export function installBrowserFakes(): void {
       if (fakes.microphone === 'unexpected') {
         fakes.problems.push('Unexpected microphone call: getUserMedia');
         throw notAllowed();
+      }
+      if (fakes.microphone === 'asking') {
+        await new Promise<void>((answer) => asking.push(answer));
       }
       if (fakes.microphone === 'denied') throw notAllowed();
       return constraints?.audio ? silentStream() : new MediaStream();
@@ -128,6 +160,12 @@ export function installBrowserFakes(): void {
       this.end();
     }
 
+    /** Reports an error the browser gives, then ends, as Chrome's recognizer does. */
+    report(error: string): void {
+      this.emit(Object.assign(new Event('error'), { error, message: '' }));
+      this.end();
+    }
+
     hear(transcript: string): void {
       const alternative = { transcript, confidence: 0.95 };
       const result = Object.assign([alternative], {
@@ -149,6 +187,23 @@ export function installBrowserFakes(): void {
     recognizers.forEach((recognizer) => recognizer.hear(transcript));
     return recognizers.length;
   };
+  fakes.silence = () => {
+    const recognizers = [...listening];
+    recognizers.forEach((recognizer) => recognizer.report('no-speech'));
+    return recognizers.length;
+  };
+  fakes.fail = (error: string) => {
+    const recognizers = [...listening];
+    recognizers.forEach((recognizer) => recognizer.report(error));
+    return recognizers.length;
+  };
+  fakes.listening = () => listening.size;
+  // processLocally is a property of the recognizer's prototype in Chrome.
+  Object.defineProperty(FakeSpeechRecognition.prototype, 'processLocally', {
+    configurable: true,
+    writable: true,
+    value: false,
+  });
   let supported = true;
   const defineRecognizer = () => {
     for (const name of ['SpeechRecognition', 'webkitSpeechRecognition']) {

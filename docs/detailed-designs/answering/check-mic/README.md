@@ -27,7 +27,7 @@ The slice sits in the `answering` subsystem. The way of answering it settles is 
 
 ## Description
 
-The slice is not built yet; the parts below are those the design introduces. The slice is played
+The slice is built (journey 07); the parts below are those the design introduces. The slice is played
 wholly on the device: it has no backend part, and its diagrams show frontend libraries and the
 browser's speech recognition only. Mic Check comes before a solo game and before a game with
 friends alike. In a solo game it follows "Go!" on Game Setup. In a game with friends it follows
@@ -35,9 +35,12 @@ the host's "Start the race": each player who needs Mic Check is shown it on thei
 before Duel (`L2-012` criterion 9). Once the game starts, in a game with friends the server
 applies the same rules to each answer (`rooms/decide-game-on-server`).
 
-- **`micCheckGuard`** — route guard function in the `game` application, on the Mic Check route.
-  It reads `WayOfAnswering.micCheckNeeded`. When Mic Check is not needed it redirects to Duel,
-  so the screen is never created (`L2-012` criteria 5 and 6).
+- **`micCheckGuard`** — route guard function in the `game` application, on the Mic Check route
+  (`/mic`). "Go!" on Game Setup reads `WayOfAnswering.micCheckNeeded` and starts the game with
+  `GameSession.start(setup, { micCheck })`; with Mic Check the session waits at the screen
+  `mic-check` and deals no card. The guard lets the route open only while the session is at
+  `mic-check`; otherwise it redirects to Duel, or Home when there is no game, so the screen is
+  never created when Mic Check is not needed (`L2-012` criteria 5 and 6).
 - **`MicCheckPage`** — page in `game`. It holds one signal, `step`, with the values `asking`,
   `waiting`, `listening`, `notHeard`, `heard`, `refused` and `failed`.
   - `asking` — "You answer by shouting!" and "Bolt listens for your answer. Your voice is never
@@ -68,17 +71,24 @@ applies the same rules to each answer (`rooms/decide-game-on-server`).
 
   In `asking`, `waiting`, `listening` and `notHeard` the page also offers "Too noisy? Tap
   answers instead", which starts the game with the number pad (`L2-012` criteria 4, 10 and 11).
-- **`WayOfAnswering`** — service in `game`, provided in `root` because Settings, Mic Check, Duel
-  and a later game share it (`answering/answer-by-voice`). `micCheckNeeded` is true when
-  `VoiceAnswer.available` is true and Mic Check has not finished in this visit.
-  `finishMicCheck(way)` sets the way of answering and records that Mic Check is done for the
-  visit. The way of answering is kept on the device (`L2-015` criterion 4); that Mic Check is
-  done is held in memory only. When `VoiceAnswer.available` is false the way is `numberPad`.
+- **`WayOfAnswering`** — contract in `api` behind the `WAY_OF_ANSWERING` token, realized by
+  `KeptWayOfAnswering` in `domain`'s `voice/` (`answering/answer-by-voice`). It holds no state
+  of its own: the kept way is `PlayerChoices.wayOfAnswering` and what the visit remembers is in
+  `Visit`, both shared by the whole game, so the solo group and Home each bind their own.
+  `micCheckNeeded` is true when voice is offered, the kept way is voice and Mic Check has not
+  finished in this visit. `finishMicCheck(outcome)` records that Mic Check is done for the
+  visit: `heard` keeps voice, `numberPad` keeps the number pad, and `refused` or `failed` lose
+  voice for the visit and keep the way as it was. The way of answering is kept on the device
+  (`L2-015` criterion 4); what the visit remembers is held in memory only. When
+  `VoiceAnswer.available` is false the way is `numberPad`.
 - **`VoiceAnswer`** — contract in `api` behind the `VOICE_ANSWER` token. This slice uses
   `available`, `requestMicrophone()` (which answers `allowed`, `refused` or `failed`),
   `start()`, `stop()`, `heardSpeech` and `failed`.
 - **`SpeechVoiceAnswer`** — implementation in `domain`'s `voice/`, the only code that touches
-  the microphone and speech recognition. It is imported dynamically.
+  the microphone and speech recognition. `LazyVoiceAnswer`, also in `voice/`, is what the
+  routes bind: it answers `available` at once and imports `SpeechVoiceAnswer` dynamically the
+  first time the microphone is asked for. `requestMicrophone()` opens the microphone with
+  `getUserMedia` only to ask the browser, and closes the stream at once.
 
 "Passed in this visit" is held in memory by `WayOfAnswering` and nowhere else, so a reload or a
 new visit shows Mic Check again and a second game in the same visit does not (`L2-012`
@@ -106,20 +116,27 @@ has failed. Each state is therefore carried by words and a mark, and not by colo
 words of `asking`, `waiting`, `listening`, `notHeard` and `heard` are a status region; the
 words of `refused` and `failed` are an alert.
 
-Open points:
+Decisions (`docs/adr/0025-answering-by-voice.md`):
 
-- What counts as hearing "Ready!": any speech, or that word: `<TO SUPPLY>`.
-- How long Mic Check listens before it shows "Bolt didn't catch that": `<TO SUPPLY>`.
-- What Mic Check does on a later visit when "Answer by shouting" was switched off in Settings,
-  and so the kept way of answering is the number pad: `<TO SUPPLY>`. The switch's help text
-  says "Off means you tap answers on the number pad."; `L2-012` criterion 6 speaks of one visit
-  only.
-- Whether, in a game with friends, the first flash card waits for every player's Mic Check:
-  `<TO SUPPLY>`.
-- Whether "Shout instead" on Duel may ask for the microphone again after a refusal:
-  `<TO SUPPLY>`.
-- How the level of the child's voice reaches the rings and the level meter of the `listening`
-  step: `<TO SUPPLY>` (`answering/answer-by-voice`).
+- Hearing "Ready!" is any final transcript: Mic Check proves the microphone hears the child.
+  The contract carries no transcript, so the `heard` step shows the word asked for, "Ready!".
+- "After a while" is when the browser reports that it heard no speech (`noSpeech`, about
+  8 seconds of silence in Chrome); the page keeps no timer of its own.
+- Mic Check shows when voice is available, the kept way of answering is voice and Mic Check
+  has not finished in this visit. "Too noisy? Tap answers instead" keeps the number pad, so a
+  later visit skips Mic Check until "Answer by shouting" is switched on in Settings (`L2-012`
+  criterion 13). A refusal or a failure keeps the way as it was and makes the number pad the
+  way for the rest of the visit, so the next visit asks again.
+- Whether, in a game with friends, the first flash card waits for every player's Mic Check is
+  settled with the game with friends (`rooms/decide-game-on-server`, journey 14).
+- "Shout instead" on Duel never asks for the microphone again after a refusal in the visit:
+  it is not offered (`L2-011` criterion 6).
+- The rings and the level meter of the `listening` step show that the device listens, not how
+  loud the child is: they pulse on their own and hold still under reduced motion. Reading the
+  level would open a second microphone stream beside recognition.
+- Voice is available only where speech recognition can run on the device (`processLocally`);
+  when the browser says its on-device language pack can be downloaded, "Turn on mic" installs
+  it from the child's press while the page stays in `waiting`.
 
 The screen follows the mocks `docs/mocks/pages/mic-check/` (states `default`, `loading`,
 `listening`, `not-heard`, `heard`, `denied` and `error`); its `loading` state is the step

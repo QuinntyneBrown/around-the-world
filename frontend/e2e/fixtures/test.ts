@@ -24,11 +24,21 @@ export interface FakeVoice {
   say(transcript: string): Promise<number>;
   /** The browser has no speech recognition, so the number pad is the way to answer. */
   unsupported(): Promise<void>;
+  /** The recognizers listening hear no speech (Chrome's `no-speech`); resolves to how many. */
+  silence(): Promise<number>;
+  /** The recognizers listening fail with the browser's error (`network` by default). */
+  fail(error?: string): Promise<number>;
+  /** How many recognizers are listening now. */
+  listening(): Promise<number>;
 }
 
 export interface FakeMicrophone {
   grant(): Promise<void>;
   deny(): Promise<void>;
+  /** The browser's question about the microphone stays open until `grant` or `deny`. */
+  ask(): Promise<void>;
+  /** How many microphone streams the game opened and has not closed. */
+  openStreams(): Promise<number>;
 }
 
 export interface FakeModel {
@@ -53,6 +63,7 @@ export interface KeptRecord {
   kid?: string | null;
   nickname?: { adjective: number; animal: number } | null;
   setup?: { kinds: string[]; tables: number[]; tourLength: number; cardSpeed: string } | null;
+  wayOfAnswering?: 'voice' | 'numberPad';
 }
 
 export interface FakeDevice {
@@ -305,6 +316,9 @@ export const test = base.extend<Fixtures>({
     await use({
       say: (transcript) => page.evaluate((words) => window.__atwFakes.say(words), transcript),
       unsupported: () => setFake(page, { speechSupported: false }),
+      silence: () => page.evaluate(() => window.__atwFakes.silence()),
+      fail: (error = 'network') => page.evaluate((code) => window.__atwFakes.fail(code), error),
+      listening: () => page.evaluate(() => window.__atwFakes.listening()),
     });
   },
 
@@ -312,6 +326,8 @@ export const test = base.extend<Fixtures>({
     await use({
       grant: () => setFake(page, { microphone: 'granted' }),
       deny: () => setFake(page, { microphone: 'denied' }),
+      ask: () => setFake(page, { microphone: 'asking' }),
+      openStreams: () => page.evaluate(() => window.__atwFakes.openTracks()),
     });
   },
 

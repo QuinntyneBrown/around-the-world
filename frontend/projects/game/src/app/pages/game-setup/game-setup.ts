@@ -5,6 +5,7 @@ import {
   MATHS_KINDS,
   PLAYER_CHOICES,
   TIMES_TABLES,
+  WAY_OF_ANSWERING,
   type CardSpeed,
   type GameSetup,
   type MathsKind,
@@ -83,6 +84,7 @@ export class GameSetupPage {
   private readonly choices = inject(PLAYER_CHOICES);
   private readonly session = inject(GAME_SESSION);
   private readonly router = inject(Router);
+  private readonly way = inject(WAY_OF_ANSWERING);
 
   protected readonly kinds = KINDS;
   protected readonly tables = TIMES_TABLES;
@@ -124,9 +126,11 @@ export class GameSetupPage {
     this.keep(GameSetupRules.chooseCardSpeed(this.setup(), cardSpeed));
   }
 
+  /** Starts the game, at Mic Check when it is needed (L2-012 criteria 1, 5, 6 and 13). */
   protected go(): void {
-    this.session.start(this.setup());
-    void this.router.navigateByUrl('/duel');
+    const micCheck = this.way.micCheckNeeded();
+    this.session.start(this.setup(), { micCheck });
+    void this.router.navigateByUrl(micCheck ? '/mic' : '/duel');
   }
 
   private apply(change: SetupChange): void {
