@@ -97,6 +97,21 @@ describe('LocalPlayerStorage', () => {
       '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"wayOfAnswering":"typing"}',
       { kid: 'milo', nickname: { adjective: 2, animal: 3 } },
     ],
+    [
+      'a kept mute',
+      '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"soundMuted":true}',
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 }, soundMuted: true },
+    ],
+    [
+      'a mute that is not a yes or a no',
+      '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"soundMuted":"loud"}',
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 } },
+    ],
+    [
+      'a mute with no kid picked',
+      '{"version":1,"kid":null,"nickname":null,"soundMuted":true}',
+      { kid: null, nickname: null, soundMuted: true },
+    ],
   ])('reads %s', (_case, text, expected) => {
     const memory = new MemoryStorage();
     if (text !== null) memory.setItem(PLAYER_KEY, text);
@@ -144,6 +159,17 @@ describe('LocalPlayerStorage', () => {
       kid: 'zuri',
       nickname: TURBO_YAK,
       wayOfAnswering: 'voice',
+    });
+  });
+
+  it('writes the mute once the child has changed it (L2-015 3 and 4)', () => {
+    const memory = new MemoryStorage();
+    storageWith(memory).write({ kid: 'zuri', nickname: TURBO_YAK, soundMuted: false });
+    expect(JSON.parse(memory.getItem(PLAYER_KEY) ?? '')).toEqual({
+      version: 1,
+      kid: 'zuri',
+      nickname: TURBO_YAK,
+      soundMuted: false,
     });
   });
 

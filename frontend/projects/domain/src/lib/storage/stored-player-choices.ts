@@ -23,6 +23,7 @@ export class StoredPlayerChoices implements PlayerChoices {
   readonly nickname = computed(() => this.record().nickname);
   readonly setup = computed(() => this.record().setup ?? defaultSetup());
   readonly wayOfAnswering = computed(() => this.record().wayOfAnswering ?? 'voice');
+  readonly soundMuted = computed(() => this.record().soundMuted ?? false);
 
   confirmKid(kid: KidId, nickname: Nickname): void {
     this.record.update((record) => ({ ...record, kid, nickname }));
@@ -36,6 +37,11 @@ export class StoredPlayerChoices implements PlayerChoices {
 
   changeWayOfAnswering(wayOfAnswering: AnswerWay): void {
     this.record.update((record) => ({ ...record, wayOfAnswering }));
+    this.storage.write(this.record());
+  }
+
+  setSoundMuted(soundMuted: boolean): void {
+    this.record.update((record) => ({ ...record, soundMuted }));
     this.storage.write(this.record());
   }
 }
