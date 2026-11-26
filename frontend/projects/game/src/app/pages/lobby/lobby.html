@@ -41,16 +41,31 @@
               <a atw-text-button slot="actions" routerLink="/">Go home</a>
             </atw-alert>
           } @else if (isHost()) {
-            <button
-              atw-toy-button
-              type="button"
-              size="xl"
-              [block]="true"
-              [disabled]="true"
-              aria-describedby="start-hint"
-            >
-              Start the race
-            </button>
+            @if (starting()) {
+              <button
+                atw-toy-button
+                type="button"
+                size="xl"
+                [block]="true"
+                [disabled]="true"
+                aria-busy="true"
+                aria-describedby="start-hint"
+              >
+                <atw-spinner /> Starting…
+              </button>
+            } @else {
+              <button
+                atw-toy-button
+                type="button"
+                size="xl"
+                [block]="true"
+                [disabled]="alone()"
+                aria-describedby="start-hint"
+                (click)="start()"
+              >
+                Start the race
+              </button>
+            }
             <p id="start-hint" class="lobby__hint" role="status">
               @if (alone()) {
                 Waiting for at least one friend…

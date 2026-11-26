@@ -10,6 +10,8 @@ export class LobbyPage {
   readonly setupValues: Locator;
   readonly startRace: Locator;
   readonly startHint: Locator;
+  /** "Start the race" while the start is on its way to the room (mock `starting`). */
+  readonly starting: Locator;
   readonly classHeading: Locator;
   readonly count: Locator;
   readonly players: Locator;
@@ -38,6 +40,7 @@ export class LobbyPage {
     this.setupValues = page.locator('.summary__value');
     this.startRace = page.getByRole('button', { name: 'Start the race' });
     this.startHint = page.locator('#start-hint');
+    this.starting = page.getByRole('button', { name: 'Starting…' });
     this.classHeading = page.getByRole('heading', { name: 'In the classroom' });
     this.count = page.getByRole('img', { name: / of 8 players$/ });
     this.players = page.locator('.player-card:not(.player-card--empty)');

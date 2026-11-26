@@ -71,3 +71,126 @@ export function joinedRoom(code: string, players: RoomPlayerFixture[], me: RoomP
 export function hostOf(made: ReturnType<typeof madeRoom>): RoomPlayerFixture {
   return made.room.players[0];
 }
+
+/** A player or classmate of a game, as the room hub sends them (`GameChanged`, docs/adr/0033). */
+export interface GamePlayerFixture {
+  id: string;
+  kid: string;
+  nickname: { adjective: number; animal: number } | null;
+  distance: number;
+  stamps: number[];
+}
+
+/** A duel of a game, as the room hub sends it: the card without its answer while open. */
+export interface GameDuelFixture {
+  number: number;
+  desk: number;
+  traveller: string;
+  deskHolder: string;
+  card: { kind: string; left: number; right: number };
+  timeLeftMs: number;
+  travellerFrozenMs: number;
+  deskHolderFrozenMs: number;
+  travellerWrong: number | null;
+  deskHolderWrong: number | null;
+  outcome: 'open' | 'won' | 'timedOut';
+  winner: 'traveller' | 'deskHolder' | null;
+  answer: number | null;
+  sinceDecidedMs: number;
+}
+
+/** What a spec says of a game; everything else is the start of a race of the players. */
+export interface GameOptions {
+  players: RoomPlayerFixture[];
+  tourLength?: number;
+  phase?: 'starting' | 'duel' | 'decided' | 'timeUp' | 'over';
+  traveller?: string;
+  travellerDesk?: number;
+  /** Who sits where, from desk 1; by default the race's start: the first player travels. */
+  desks?: (string | null)[];
+  duel?: Partial<GameDuelFixture> | null;
+  lastMove?: {
+    kind: 'hop' | 'deskHolderTravels';
+    traveller: string;
+    from: number;
+    to: number;
+    passedEmptyDesk: boolean;
+    satDown: string | null;
+  } | null;
+  distances?: Record<string, number>;
+  stamps?: Record<string, number[]>;
+  standings?: string[];
+  ending?: 'allTheWayRound' | 'timeLimit' | null;
+  winner?: string | null;
+}
+
+/**
+ * A game with friends as the room hub sends it (`GameChanged`): the players at the desks the
+ * server seats them (the first travelling from desk 1, the others at desks 2, 3 and on, and
+ * classmates `c{n}` at the rest), with what the spec says on top.
+ */
+export function gameState(options: GameOptions) {
+  const tourLength = options.tourLength ?? 12;
+  const ids = options.players.map((p) => p.id);
+  const desks =
+    options.desks ??
+    Array.from({ length: tourLength }, (_, index) =>
+      index === 0 ? null : (ids[index] ?? `c${index + 1}`),
+    );
+  const classmates = desks.filter((id): id is string => id !== null && !ids.includes(id));
+  const players: GamePlayerFixture[] = [
+    ...options.players.map((p, index) => ({
+      id: p.id,
+      kid: p.kid,
+      nickname: p.nickname,
+      distance: options.distances?.[p.id] ?? (index === 0 ? 1 : 0),
+      stamps: options.stamps?.[p.id] ?? (index === 0 ? [1] : []),
+    })),
+    ...classmates.map((id) => ({
+      id,
+      kid: 'classmate',
+      nickname: null,
+      distance: options.distances?.[id] ?? 0,
+      stamps: options.stamps?.[id] ?? [],
+    })),
+  ];
+  const traveller = options.traveller ?? ids[0];
+  const travellerDesk = options.travellerDesk ?? 2;
+  const duel: GameDuelFixture | null =
+    options.duel === null || options.phase === 'starting'
+      ? null
+      : {
+          number: 1,
+          desk: travellerDesk,
+          traveller,
+          deskHolder: desks[travellerDesk - 1] ?? '',
+          card: { kind: 'times', left: 6, right: 4 },
+          timeLeftMs: 6000,
+          travellerFrozenMs: 0,
+          deskHolderFrozenMs: 0,
+          travellerWrong: null,
+          deskHolderWrong: null,
+          outcome: 'open',
+          winner: null,
+          answer: null,
+          sinceDecidedMs: 0,
+          ...options.duel,
+        };
+  return {
+    tourLength,
+    secondsToAnswer: 6,
+    phase: options.phase ?? 'duel',
+    firstCardInMs: options.phase === 'starting' ? 3000 : 0,
+    players,
+    desks,
+    traveller,
+    travellerDesk,
+    standings:
+      options.standings ??
+      [...players].sort((one, other) => other.distance - one.distance).map((p) => p.id),
+    duel,
+    lastMove: options.lastMove ?? null,
+    ending: options.ending ?? null,
+    winner: options.winner ?? null,
+  };
+}

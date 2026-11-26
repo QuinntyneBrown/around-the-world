@@ -8,6 +8,7 @@ export * from './lib/duel';
 export * from './lib/flash-card';
 export * from './lib/game-session';
 export * from './lib/game-setup';
+export * from './lib/game-state';
 export * from './lib/fetch-rooms-api';
 export * from './lib/kid';
 export * from './lib/network';

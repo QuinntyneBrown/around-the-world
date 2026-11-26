@@ -1,11 +1,14 @@
 import { InjectionToken } from '@angular/core';
 import { type GameSetup } from './game-setup';
+import { type GameState } from './game-state';
 import { type RoomState } from './rooms';
 
 /** What a room's connection tells the game. */
 export interface RoomEvents {
   /** The room as it stands: on connecting, and on every change saved since (L2-024 criterion 2). */
   changed(room: RoomState): void;
+  /** The room's game as it stands: on connecting, and on every change the server decides. */
+  gameChanged(game: GameState): void;
   /** The connection is gone and could not be got back (L2-029 criterion 6). */
   lost(): void;
 }
@@ -26,6 +29,12 @@ export interface RoomConnection {
    * criterion 1). Rejects with an `ApiError` holding the hub error's `code`.
    */
   saveSetup(setup: GameSetup): Promise<void>;
+  /** The host starts the room's game (L2-025 criterion 2); rejects with an `ApiError`. */
+  start(): Promise<void>;
+  /** Sends the player's answer, a number and nothing else (L2-026 criterion 1). */
+  answer(value: number): Promise<void>;
+  /** "Play again" from the Podium: the room returns to its Lobby (L2-035 criterion 3). */
+  playAgain(): Promise<void>;
   /** Tells the room the player leaves it (L2-025 criterion 5); rejects when it cannot. */
   leave(): Promise<void>;
   /** Closes the connection and removes its handlers (L2-048 criterion 2). It never rejects. */

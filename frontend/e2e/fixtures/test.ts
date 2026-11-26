@@ -123,7 +123,7 @@ export interface FakeRoomHub {
   /** The method is answered again after `refusesMethod`. */
   acceptsMethod(target: string): void;
   /** Sends the game's new state (`GameChanged`) to every open connection, and to every later one. */
-  game(state: Json): void;
+  game(state: object | null): void;
   /** How many connections are open now. */
   openConnections(): number;
 }
@@ -355,7 +355,7 @@ class RoomHubFixtures implements FakeRoomHub {
   private readonly calls: { target: string; args: Json[] }[] = [];
   private readonly heldMethods = new Map<string, (() => void)[]>();
   private readonly refusedMethods = new Map<string, string>();
-  private gameState: Json | null = null;
+  private gameState: object | null = null;
 
   serves(room: Json): void {
     this.room = room;
@@ -412,7 +412,7 @@ class RoomHubFixtures implements FakeRoomHub {
     this.refusedMethods.delete(target);
   }
 
-  game(state: Json): void {
+  game(state: object | null): void {
     this.gameState = state;
     for (const socket of this.open) if (!this.held.includes(socket)) this.sendGame(socket);
   }

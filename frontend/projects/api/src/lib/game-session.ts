@@ -3,8 +3,11 @@ import { type DuelState } from './duel';
 import { type GameSetup } from './game-setup';
 import { type TourResult, type TourState } from './tour';
 
-/** The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/). */
-export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium';
+/**
+ * The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/), or, in
+ * a game with friends, the room's Lobby once "Play again" returned the room to it (ADR 0034).
+ */
+export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium' | 'lobby';
 
 /**
  * A moment of the game that makes a sound (docs/adr/0029-motion-and-sound.md): the device's own
