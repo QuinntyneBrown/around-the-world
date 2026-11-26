@@ -1,0 +1,105 @@
+// The backdrop and dialog blocks of docs/design-system/assets/components.css. The app opens it
+// in a CDK Dialog pane that fills the screen, which the dialog fills in turn.
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-backdrop);
+  z-index: var(--z-overlay);
+  animation: fade-in var(--duration-base) var(--ease-enter);
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: end center;
+  pointer-events: none;
+}
+
+.dialog__panel {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 28rem;
+  max-height: calc(100dvh - var(--space-12));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-surface-raised);
+  color: var(--color-fg-default);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-4);
+  animation: sheet-in var(--duration-slow) var(--ease-standard);
+}
+
+.dialog__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-6) 0;
+}
+
+.dialog__title {
+  flex: 1;
+  font: var(--text-h2);
+}
+
+.dialog__body {
+  padding: var(--space-3) var(--space-6) var(--space-2);
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dialog__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6) calc(var(--space-6) + var(--toy-depth));
+}
+
+@media (min-width: 36rem) {
+  .dialog {
+    place-items: center;
+    padding: var(--space-6);
+  }
+
+  .dialog__panel {
+    border-radius: var(--radius-xl);
+    animation-name: scale-in;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog__panel {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    translate: 0 100%;
+  }
+}

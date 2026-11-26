@@ -27,8 +27,9 @@ requirements and designs leave.
 | [0018](0018-flash-card-ranges.md) | The numbers of a flash card, how its kind is picked and what counts as the same card | Accepted |
 | [0019](0019-classmate-profiles.md) | The classmates' profiles, how the class is seated and how a classmate answers | Accepted |
 | [0020](0020-solo-duel-clock-and-states.md) | The solo duel: its clock, its timings, the states journey 04 reaches and how specs drive it | Accepted |
-| [0021](0021-initial-budget-with-the-duel.md) | The initial budget of `game` once Duel plays a duel | Accepted |
+| [0021](0021-initial-budget-with-the-duel.md) | The initial budget of `game` once Duel plays a duel | Accepted; `initial` superseded by 0026 |
 | [0022](0022-moving-round-the-ring.md) | Moving round the ring: timings, stamps, words, ties and the classmates' duels | Accepted; the first traveller's first stamp superseded by 0024 |
 | [0023](0023-game-screens-follow-the-session.md) | The game screens follow the session through a listener, and World Map's room is drawn with the page | Accepted |
 | [0024](0024-ending-a-tour.md) | Ending a tour: the time limit, the places, the first stamp, the headline and Play again | Accepted |
 | [0025](0025-answering-by-voice.md) | Answering by voice: what is heard, on the device, when Mic Check shows and what a failure does | Accepted |
+| [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted |

@@ -2,7 +2,9 @@ import { type Page } from '@playwright/test';
 import { expect, test, type FakeClock, type FakeVoice } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
+import { HomePage } from '../pages/home.page';
 import { MicCheckPage } from '../pages/mic-check.page';
+import { SettingsDialog } from '../pages/settings.dialog';
 
 /**
  * Journey 07: shout answers after the Mic Check (L2-009, L2-011, L2-012, L2-040). The fixture's
@@ -473,6 +475,100 @@ test.describe('Switching between voice and the number pad', () => {
     await expect(duel.numberPad).toBeVisible();
     await expect(duel.voiceFailed).toHaveCount(0);
     await expect(duel.switchWay).toHaveCount(0);
+  });
+});
+
+test.describe('Settings', () => {
+  test('"Answer by shouting" switches the way of answering, kept on the device at once', async ({
+    page,
+    device,
+  }) => {
+    // Given a child on Home who answers by voice
+    await device.keeps(ZURI);
+    const home = new HomePage(page);
+    await home.open();
+
+    // When the child chooses the settings button
+    await home.settings.click();
+
+    // Then Settings opens with "Answer by shouting" on, and Done takes the focus (L2-032 4)
+    const settings = new SettingsDialog(page);
+    await expect(settings.dialog).toBeVisible();
+    await expect(settings.title).toHaveText('Settings');
+    await expect(settings.answerByShouting).toHaveAttribute('aria-checked', 'true');
+    await expect(settings.answerByShoutingState).toHaveText('On');
+    await expect(settings.answerByShouting).toHaveAccessibleDescription(
+      'Off means you tap answers on the number pad.',
+    );
+    await expect(settings.note).toHaveText('Kept on this device only. No account, ever.');
+    await expect(settings.done).toBeFocused();
+
+    // When the child turns it off
+    await settings.answerByShouting.click();
+
+    // Then it reads Off, and the number pad is kept on the device the moment it changes
+    await expect(settings.answerByShouting).toHaveAttribute('aria-checked', 'false');
+    await expect(settings.answerByShoutingState).toHaveText('Off');
+    expect((await device.kept())?.wayOfAnswering).toBe('numberPad');
+
+    // When the child chooses Done
+    await settings.done.click();
+
+    // Then the dialog closes and the focus returns to the settings button
+    await expect(settings.dialog).toHaveCount(0);
+    await expect(home.settings).toBeFocused();
+
+    // And the next game skips Mic Check and plays with the pad (L2-012 criterion 13)
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    await expect(page).toHaveURL(/\/duel$/);
+    await expect(new DuelPage(page).numberPad).toBeVisible();
+
+    // When the child turns it back on in a later visit
+    await home.open();
+    await home.settings.click();
+    await settings.answerByShouting.press('Space');
+    await expect(settings.answerByShouting).toHaveAttribute('aria-checked', 'true');
+    expect((await device.kept())?.wayOfAnswering).toBe('voice');
+
+    // And closes the dialog with Escape
+    await page.keyboard.press('Escape');
+    await expect(settings.dialog).toHaveCount(0);
+
+    // Then the next game shows Mic Check again
+    await setup.open();
+    await setup.chooseGo();
+    await expect(new MicCheckPage(page).heading).toHaveText('Mic check');
+  });
+
+  test('where the browser has no speech recognition, "Answer by shouting" is off and cannot be turned on', async ({
+    page,
+    device,
+    voice,
+  }) => {
+    // Given a browser with no speech recognition
+    await device.keeps(ZURI);
+    await voice.unsupported();
+    const home = new HomePage(page);
+    await home.open();
+
+    // When the child opens Settings
+    await home.settings.click();
+
+    // Then "Answer by shouting" is off, disabled, and says why (L2-032 criterion 4)
+    const settings = new SettingsDialog(page);
+    await expect(settings.answerByShouting).toHaveAttribute('aria-checked', 'false');
+    await expect(settings.answerByShouting).toBeDisabled();
+    await expect(settings.answerByShoutingHelp).toHaveText(
+      'This browser can’t listen, so you tap answers.',
+    );
+
+    // When the child chooses Close
+    await settings.close.click();
+
+    // Then the dialog closes
+    await expect(settings.dialog).toHaveCount(0);
   });
 });
 

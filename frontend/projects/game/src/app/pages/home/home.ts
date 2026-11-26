@@ -3,12 +3,13 @@ import {
   Component,
   computed,
   DestroyRef,
+  EnvironmentInjector,
   inject,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PICTURE_LOADER, PLAYER_CHOICES, VISIT, type PictureArrival } from '@atw/api';
-import { KidChip, Skeleton, ToyButton } from '@atw/components';
+import { IconButton, KidChip, Skeleton, ToyButton } from '@atw/components';
 import { kidById, NicknameGenerator } from '@atw/domain';
 
 type Arrival = PictureArrival | 'loading';
@@ -18,11 +19,12 @@ const CLASSROOM_PICTURE = 'img/scene-classroom.jpg';
 
 /**
  * Home (docs/mocks/pages/home/): the classroom, the game's name, one big Play button and the
- * kid chip, or a line of words for a child who has picked no kid (L2-013, L2-030, L2-032).
+ * kid chip, or a line of words for a child who has picked no kid (L2-013, L2-030, L2-032). The
+ * settings button in the corner opens Settings; the sound button joins it with journey 10.
  */
 @Component({
   selector: 'atw-home-page',
-  imports: [KidChip, RouterLink, Skeleton, ToyButton],
+  imports: [IconButton, KidChip, RouterLink, Skeleton, ToyButton],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +34,7 @@ export class HomePage {
   private readonly nicknames = inject(NicknameGenerator);
   private readonly pictures = inject(PICTURE_LOADER);
   private readonly visit = inject(VISIT);
+  private readonly injector = inject(EnvironmentInjector);
 
   protected readonly classroomPicture = CLASSROOM_PICTURE;
   protected readonly classroom = signal<Arrival>('loading');
@@ -50,6 +53,12 @@ export class HomePage {
   protected readonly playLabel = computed(() =>
     this.visit.tourFinished() ? 'Play again' : 'Play',
   );
+
+  /** The settings button opens Settings, whose code loads then (L2-032 criterion 4). */
+  protected async openSettings(): Promise<void> {
+    const { openSettings } = await import('../../dialogs/settings/open-settings');
+    openSettings(this.injector);
+  }
 
   constructor() {
     const arriving = new AbortController();

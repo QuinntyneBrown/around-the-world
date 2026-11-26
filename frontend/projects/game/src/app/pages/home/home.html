@@ -8,6 +8,15 @@
         <img class="home__picture" [src]="classroomPicture" alt="" />
       }
     }
+    <div class="home__corner">
+      <button
+        atw-icon-button
+        type="button"
+        icon="settings"
+        aria-label="Settings"
+        (click)="openSettings()"
+      ></button>
+    </div>
   </div>
   <section class="home__panel">
     <div class="home__intro">

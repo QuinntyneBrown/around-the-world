@@ -24,6 +24,14 @@
   object-fit: cover;
 }
 
+.home__corner {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  gap: var(--space-2);
+}
+
 .home__panel {
   position: relative;
   z-index: var(--z-raised);
@@ -85,6 +93,11 @@
 
   .home__play {
     align-self: flex-start;
+  }
+
+  .home__corner {
+    top: var(--space-6);
+    right: var(--space-6);
   }
 }
 
