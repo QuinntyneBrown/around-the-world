@@ -122,7 +122,7 @@ Page in the `game` application:
   - *Game with friends.* "Make a room" opens the Lobby directly, before any Game Setup. The
     host reaches Game Setup by choosing "Change" in the Lobby's panel "The game". The
     page then reads "Set up the race" in its top bar and "Save" in place of "Go!" (`L2-018`
-    criterion 5). "Save" calls `RoomConnection.saveSetup` and returns to the Lobby when the
+    criterion 5). "Save" calls `RoomSession.saveSetup`, which sends `SaveSetup` over `RoomConnection`, and returns to the Lobby when the
     call resolves. Back returns to the Lobby without saving. A player who is not the host is
     shown the setup in the Lobby, is not offered "Change" and has no way to Game Setup
     (`L2-018` criteria 3 and 5).
@@ -164,10 +164,12 @@ Backend, in `AroundTheWorld.Api`, `AroundTheWorld.Application` and `AroundTheWor
 
 The message that carries a setup holds setup values only and no free text (`L2-040`
 criterion 1). The check that the caller's connection belongs to the room is designed in the
-`rooms` subsystem (`L2-043`). The engine of the room store is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`). Whether a new room
-starts from the default setup or from the setup kept on the host's device is `<TO SUPPLY>`.
-Whether a host who saves a setup in a room also changes the setup kept on the host's own device
-is `<TO SUPPLY>`.
+`rooms` subsystem (`L2-043`). The engine of the room store is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`). A new room
+starts from the default setup, and Game Setup in a room starts from the room's setup; the host's
+"Save" does not change the setup kept on the host's own device, which is the solo game's
+(`docs/adr/0033-deciding-a-game-on-the-server.md`). The validator also refuses a table given
+twice. Journey 14 builds the host's part (`docs/adr/0034-playing-with-friends-on-the-device.md`):
+`RoomSession.saveSetup` sends the setup over the room's connection.
 
 The screen follows the mocks `docs/mocks/pages/game-setup/` (states `default`, `friends`,
 `all-maths`, `easy`, `times-off`, `last-one`, `last-table`, `loading`, `submitting`, `error`).

@@ -162,13 +162,15 @@ says the room is lost; "Try again" when the room no longer holds the player is r
 alert returns; and the backend does not remove a waiting player whose connection is lost until
 journey 16 decides the 30 seconds of `L2-029` for the Lobby too.
 
-One point is undecided:
-
-- Whether the first flash card waits for each player's Mic Check is `<TO SUPPLY>`
-  ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)).
+Decided by journey 14 (`docs/adr/0033-deciding-a-game-on-the-server.md`,
+`docs/adr/0034-playing-with-friends-on-the-device.md`): the host's "Change" opens Game Setup and
+"Start the race", enabled once a friend is in, sends `StartGame` and is busy ("Starting…") until
+the game arrives (mock `starting`); the server sends the game as `GameChanged` in place of
+`GameStarted`, and deals the first flash card 3 seconds after the start without waiting for any
+player's Mic Check **(to confirm)**.
 
 The screen follows the mocks `docs/mocks/pages/lobby/` (states `default`, `empty`, `guest`,
-`full`, `edited`, `loading`, `error`) and `docs/mocks/notifications/lobby-toast/` (states `info`,
+`full`, `edited`, `loading`, `error`, `starting`) and `docs/mocks/notifications/lobby-toast/` (states `info`,
 `success`, `warning`, `danger`, `stacked`).
 
 ## Requirements
