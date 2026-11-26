@@ -3,6 +3,7 @@ import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
 import { HomePage } from '../pages/home.page';
 import { PauseDialog } from '../pages/pause.dialog';
+import { SettingsDialog } from '../pages/settings.dialog';
 import { WorldMapPage } from '../pages/world-map.page';
 import { named } from '../support/motion';
 
@@ -199,6 +200,78 @@ test.describe('Sound', () => {
     await expect(new HomePage(page).play).toBeVisible();
 
     // Then no audio element holds a sound any more (L2-048 criterion 3)
+    expect(await sound.openSounds()).toBe(0);
+  });
+});
+
+test.describe('Mute', () => {
+  test('the sound button on Home mutes every sound, and the mute is kept on the device', async ({
+    page,
+    device,
+  }) => {
+    // Given Home with sound on
+    await device.keeps(ZURI);
+    const home = new HomePage(page);
+    await home.open();
+    await expect(home.sound).toHaveAccessibleName('Mute sound');
+    await expect(home.sound).toHaveAttribute('aria-pressed', 'false');
+
+    // When the child presses the sound button
+    await home.sound.click();
+
+    // Then it says it will turn sound on, is pressed, and the mute is kept on the device
+    await expect(home.sound).toHaveAccessibleName('Turn sound on');
+    await expect(home.sound).toHaveAttribute('aria-pressed', 'true');
+    expect((await device.kept())?.soundMuted).toBe(true);
+
+    // When the child comes back to the game
+    await page.reload();
+
+    // Then sound is still muted, as they left it (L2-015 criterion 3)
+    await expect(home.sound).toHaveAccessibleName('Turn sound on');
+
+    // When the child opens Settings
+    await home.settings.click();
+    const settings = new SettingsDialog(page);
+
+    // Then the "Sound" switch comes first, and is off
+    await expect(settings.sound).toHaveAttribute('aria-checked', 'false');
+    await expect(settings.soundState).toHaveText('Off');
+    await expect(settings.soundHelp).toHaveText('Pops, chimes and jingles.');
+    await expect(settings.dialog.getByRole('switch').first()).toHaveAccessibleName('Sound');
+
+    // When the child turns sound on there, and chooses Done
+    await settings.sound.click();
+    await expect(settings.soundState).toHaveText('On');
+    expect((await device.kept())?.soundMuted).toBe(false);
+    await settings.done.click();
+
+    // Then Home's sound button says it will mute sound again
+    await expect(home.sound).toHaveAccessibleName('Mute sound');
+    await expect(home.sound).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('while muted, no sound plays and none is fetched', async ({
+    page,
+    device,
+    clock,
+    sound,
+  }) => {
+    // Given a child who muted sound, at the first duel
+    await device.keeps({ ...ZURI, soundMuted: true });
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+
+    // When the child presses keys and wins the duel
+    await duel.answerWithPad(answer);
+    await expect(duel.result).toHaveText(`= ${answer} You got it!`);
+
+    // Then nothing plays, and no sound was made (L2-039 criterion 2)
+    expect(await sound.played()).toEqual([]);
     expect(await sound.openSounds()).toBe(0);
   });
 });

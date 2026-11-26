@@ -21,7 +21,8 @@ const CLASSROOM_PICTURE = 'img/scene-classroom.jpg';
 /**
  * Home (docs/mocks/pages/home/): the classroom, the game's name, one big Play button and the
  * kid chip, or a line of words for a child who has picked no kid (L2-013, L2-030, L2-032). The
- * settings button in the corner opens Settings; the sound button joins it with journey 10. The
+ * sound button in the corner mutes and unmutes every sound, kept on the device, and the
+ * settings button beside it opens Settings (L2-032 criteria 3 and 4, docs/adr/0029). The
  * 3D classroom is drawn over the still picture once it arrives; on a device that cannot draw
  * it, the picture stays and Home says so (L2-036, docs/adr/0028).
  */
@@ -54,11 +55,19 @@ export class HomePage {
     return { kid: kidById(kid), nickname: this.nicknames.words(nickname) };
   });
 
+  /** Whether every sound is muted, as the child left it (L2-015 criterion 3). */
+  protected readonly muted = this.choices.soundMuted;
+
   /** Pick Your Kid for a child with no kid kept; Solo Or Friends otherwise (L2-030 criterion 1). */
   protected readonly playLink = computed(() => (this.kept() ? '/play' : '/kid'));
   protected readonly playLabel = computed(() =>
     this.visit.tourFinished() ? 'Play again' : 'Play',
   );
+
+  /** The sound button mutes or unmutes every sound, kept the moment it changes (L2-032 3). */
+  protected toggleSound(): void {
+    this.choices.setSoundMuted(!this.muted());
+  }
 
   /** The settings button opens Settings, whose code loads then (L2-032 criterion 4). */
   protected async openSettings(): Promise<void> {

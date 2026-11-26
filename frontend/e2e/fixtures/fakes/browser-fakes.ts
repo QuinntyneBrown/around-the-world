@@ -306,7 +306,11 @@ export function installBrowserFakes(): void {
       audios.push(this);
     }
   }
-  Object.defineProperty(window, 'Audio', { configurable: true, writable: true, value: CountedAudio });
+  Object.defineProperty(window, 'Audio', {
+    configurable: true,
+    writable: true,
+    value: CountedAudio,
+  });
   Object.defineProperty(HTMLMediaElement.prototype, 'play', {
     configurable: true,
     writable: true,

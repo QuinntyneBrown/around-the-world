@@ -18,11 +18,13 @@ export type IconName =
   | 'leave'
   | 'mic'
   | 'mic-off'
+  | 'mute'
   | 'pause'
   | 'play'
   | 'retry'
   | 'settings'
-  | 'solo';
+  | 'solo'
+  | 'sound';
 
 /**
  * Icon (docs/design-system/foundations/iconography.html): a round line icon on a 24-unit grid

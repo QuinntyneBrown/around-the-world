@@ -18,6 +18,14 @@
       <button
         atw-icon-button
         type="button"
+        [icon]="muted() ? 'mute' : 'sound'"
+        [attr.aria-label]="muted() ? 'Turn sound on' : 'Mute sound'"
+        [attr.aria-pressed]="muted()"
+        (click)="toggleSound()"
+      ></button>
+      <button
+        atw-icon-button
+        type="button"
         icon="settings"
         aria-label="Settings"
         (click)="openSettings()"
