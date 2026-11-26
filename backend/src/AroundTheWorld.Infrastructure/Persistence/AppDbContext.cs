@@ -13,6 +13,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<Room> Rooms => Set<Room>();
 
+    public void Forget() => ChangeTracker.Clear();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Room>(room =>
@@ -26,6 +28,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             room.HasIndex(r => r.Code).IsUnique();
             room.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             room.HasIndex(r => r.LastActivityAt);
+            room.Property(r => r.Version).IsConcurrencyToken();
             room.OwnsOne(r => r.Setup, setup =>
             {
                 setup.Property(s => s.Kinds);
@@ -40,6 +43,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             player.ToTable("RoomPlayers");
             player.HasKey(p => p.Id);
+            // The domain makes each player's id, so a player added to a room is a new row.
+            player.Property(p => p.Id).ValueGeneratedNever();
             player.Property(p => p.Kid).HasConversion<string>().HasMaxLength(8);
             player.OwnsOne(p => p.Nickname);
             player.Property(p => p.Token)
