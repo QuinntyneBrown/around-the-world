@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Return after a lost connection
+
+Person(player, "Player", "Loses their connection during a game with friends and returns")
+Person(others, "Other players", "Keep playing; the game does not wait")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(player, atw, "Returns to the same room and desk in")
+Rel(others, atw, "Keep playing in")
+Rel(atw, signalr, "Learns of lost and returned connections through", "WebSockets")
+@enduml

@@ -1,0 +1,88 @@
+@startuml
+title UML sequence behaviour — Decide a duel by the first correct answer
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as page
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — components library" #E0F2FE
+  participant "FlashCardView,\nStampCard, TimerBar" as views
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "Duel" as duel
+  participant "GameClock" as clock
+  participant "FlashCardMaker" as maker
+  participant "ClassmateAgent" as mate
+end box
+
+solo -> maker : Make a flash card
+maker --> solo : FlashCard 6 × 4
+solo -> duel : Start duel (traveller, desk holder, card, time by card speed)
+solo -> clock : Set the card's timer (L2-005: 10, 6 or 3 s)
+solo --> page : DuelState, outcome open
+page -> views : Show card, players, timer bar draining (L2-033 criteria 1 and 6)
+opt a wrong answer first (L2-004)
+  child -> page : Answer 26
+  page -> solo : answer(26)
+  solo -> duel : answer(player, 26, now)
+  duel --> solo : wrong, player frozen for 1 s
+  solo -> clock : Set the freeze timer (1 s)
+  solo --> page : DuelState, ownFrozen true, ownWrongAnswer 26
+  page -> views : Card shakes once and is outlined (L2-004 criterion 5);\nunder reduced motion the outline and the words only
+  views --> child : "Not 26! Frozen for a sec…", number pad disabled (L2-004 criterion 4)
+  opt an answer while frozen
+    page -> solo : answer(24)
+    solo -> duel : answer(player, 24, now)
+    duel --> solo : ignored (L2-004 criterion 1)
+  end
+  clock --> solo : 1 s has passed
+  solo --> page : DuelState, ownFrozen false (L2-004 criterion 2)
+end
+alt the child answers correctly first (L2-001)
+  child -> page : Answer 24
+  page -> solo : answer(24)
+  solo -> duel : answer(player, 24, now)
+  duel --> solo : won, first correct answer
+  solo -> clock : Cancel the card's timer, set the wait for "You got it!"
+  solo --> page : DuelState, outcome won, winner, answer 24
+  page -> views : Show "= 24" and "You got it!" (L2-033 criterion 2)
+  views --> child : Result of the duel
+  opt the rival answers correctly afterwards
+    mate -> solo : Classmate's answer 24
+    solo -> duel : answer(classmate, 24, now)
+    duel --> solo : ignored, result unchanged (L2-001 criterion 4)
+  end
+  clock --> solo : "You got it!" has been shown (L2-033 criterion 7)
+  solo -> solo : Apply the result to the tour (tour/travel-round-ring)
+  solo --> page : DuelState, hop set to the TourMove
+  page -> views : StampCard in place of the flash card, the stamp lands in about 250 ms
+  views --> child : "Passport stamp!", country, landmark,\n"{kid} hops to desk {n} of {tour length}" (L2-038 criterion 5)
+  clock --> solo : The passport stamp has been shown
+else the classmate answers correctly first (L2-001)
+  mate -> solo : Classmate's answer 24
+  solo -> duel : answer(classmate, 24, now)
+  duel --> solo : won by the classmate
+  solo -> clock : Cancel the card's timer
+  solo --> page : DuelState, outcome won, winner, answer 24
+  page -> views : Show "{rival} said 24 first. So close!" (L2-033 criterion 3)
+  views --> child : Quiet pill "You sit at {country} · {rival} travels on",\nthe only action on the screen
+  child -> page : Choose the pill (L2-033 criterion 8)
+  page -> solo : continue()
+  solo -> solo : Apply the result to the tour
+end
+solo --> page : TourState phase moving, World Map opens (L2-030 criterion 4)
+@enduml

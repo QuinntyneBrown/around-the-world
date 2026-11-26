@@ -1,0 +1,9 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Play a duel
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+Rel(child, atw, "Answers a flash card first to win a duel in")
+@enduml

@@ -1,0 +1,69 @@
+@startuml
+title UML sequence behaviour — Release everything when a game is left
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game application" #E0F2FE
+  participant "Router" as router
+  participant "DuelPage" as duel
+  participant "GAME_SESSION\n(SoloGame or FriendsGame)" as session
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "SpeechVoiceAnswer" as voice
+  participant "OnDeviceModelSession" as model
+  participant "BoundedBuffer" as buffer
+end box
+box "Frontend — world library" #E0F2FE
+  participant "ThreeClassroomRenderer" as renderer
+end box
+box "Frontend — api library" #E0F2FE
+  participant "SignalRRoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+end box
+== A duel is decided: Duel is left for World Map (L2-030 criterion 4) ==
+session --> router : Duel decided
+router -> duel : Destroy the component
+duel -> voice : stop() from DestroyRef.onDestroy
+voice -> voice : End recognition; stop every track of the stream (L2-048 criterion 1)
+duel -> renderer : dispose()
+renderer -> renderer : Cancel requestAnimationFrame; dispose geometries,\nmaterials, textures, render targets and the renderer (L2-048 criterion 3)
+duel -> duel : Remove timers, key listeners and observers
+note over session, conn : The model sessions and the SignalR connection are kept\nwhile World Map is shown (L2-021 criterion 6)
+== A tour ends: the Podium opens ==
+opt solo game
+  session -> model : destroy() each session (L2-021 criterion 6)
+end
+opt Play again
+  actor -> session : Play again
+  session -> buffer : clear() before the new tour starts (L2-035 criterion 3)
+  note over session, conn : A game with friends returns to the room's Lobby;\nthe SignalR connection stays open (L2-035 criterion 3)
+end
+== The child leaves for Home ==
+actor -> router : "Home" on the Podium, "Go home" in Pause or "Leave" in Leave Game
+router -> session : Destroy the game route's injector
+session -> buffer : clear() duels played, stickers, positions (L2-048 criterion 5)
+alt solo game
+  session -> model : destroy() any session still open (L2-021 criterion 6)
+else game with friends
+  session -> conn : close()
+  conn -> conn : Remove every handler (L2-048 criterion 2)
+  conn -> hub : Stop the connection
+  hub --> conn : Closed
+end
+session --> router : Released
+router --> actor : Home; the game's state is released (L2-035 criterion 4)
+@enduml

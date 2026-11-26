@@ -1,0 +1,9 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — End a tour
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+Rel(child, atw, "Finishes a tour and reads their place and passport in")
+@enduml

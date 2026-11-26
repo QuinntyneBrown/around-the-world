@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Travel round the ring
+
+Person(child, "Child", "The device's player")
+Container_Boundary(game, "game (Angular application and its libraries)") {
+  Component(page, "WorldMapPage", "Page, game application", "Shows the ring, the hop after each decided duel, its message and the standings")
+  Component(views, "WorldRing, Standings, MapToast, KidTag", "Presentation, components library", "Draw the desks, the players, the distances travelled and the World Map message")
+  Component(session, "GameSession (GAME_SESSION)", "Contract and token, api library", "Publishes TourState and continues after a move")
+  Component(solo, "SoloGame", "Game service, game application", "Starts the tour and applies each duel's result to it")
+  Component(tour, "Tour", "Rule type, domain tour/", "Owns the ring: the hop, the swap of traveller and desk holder, the empty desks, the distances")
+  Component(standings, "Standings", "Rule type, domain tour/", "Orders the players by distance travelled")
+  Component(passport, "Passport", "Rule type, domain tour/", "Holds a stamp for each country a player reached")
+  Component(classf, "ClassFactory", "Factory, domain classmates/", "Makes the classmates who hold every desk but desk 1")
+  Component(renderer, "ClassroomRenderer (CLASSROOM_RENDERER)", "Contract and token, api library", "Draws the classroom from above and the kid hopping to the next desk")
+}
+Rel(child, page, "Watches the move on")
+Rel(page, views, "Binds tour state to")
+Rel(page, session, "Reads TourState from and continues through")
+Rel(page, renderer, "Hands the move to")
+Rel(solo, session, "Implements")
+Rel(solo, classf, "Asks for the class from")
+Rel(solo, tour, "Starts and applies duel results to")
+Rel(tour, standings, "Keeps")
+Rel(tour, passport, "Stamps")
+@enduml

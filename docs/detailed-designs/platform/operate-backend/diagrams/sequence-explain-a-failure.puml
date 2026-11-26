@@ -1,0 +1,70 @@
+@startuml
+title UML sequence behaviour — Explain a failure in words a child understands
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game application" #E0F2FE
+  participant "RoomPage /\nSoloOrFriendsPage" as page
+  participant "messageForCode" as words
+  participant "SoloGame" as solo
+  participant "GameErrorHandler" as geh
+  participant "SomethingWentWrongPage" as sww
+end box
+box "Frontend — components library" #E0F2FE
+  participant "AlertMessage" as alert
+end box
+box "Frontend — api library" #E0F2FE
+  participant "RoomsApi" as client
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomsController" as controller
+  participant "ProblemDetailsWriter" as writer
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "JoinRoomCommandHandler" as handler
+end box
+actor -> page : Join with a code
+page -> client : joinRoom(code, kid, nickname)
+alt the backend answers
+  client -> controller : HTTPS request
+  controller -> handler : Send JoinRoomCommand
+  handler --> controller : Refusal with ErrorCode room_not_found
+  controller -> writer : Write the refusal
+  writer --> controller : ProblemDetails with code; no stack trace, no server detail (L2-054 criterion 1)
+  controller --> client : ProblemDetails response
+  client --> page : ApiError(code = room_not_found)
+else the backend cannot be reached
+  client -> controller : HTTPS request
+  client --> page : ApiError(code = backend_unreachable), made on the device
+end
+page -> words : messageForCode(joinRoom, ApiError)
+alt a known code
+  words --> page : "Hmm, no room with that code. Check the letters?" (L2-023 criterion 4)
+else a code with no message
+  words --> page : The generic message; the backend's detail is dropped (L2-054 criterion 2)
+end
+page -> alert : words
+alert --> actor : Words a child understands, announced as an alert
+opt the child is on Solo Or Friends and the backend cannot be reached
+  actor -> page : Play solo
+  page -> solo : Start a solo game; no request is made (L2-054 criterion 3)
+  solo --> actor : Game Setup, then the first duel
+end
+opt the game itself breaks
+  geh -> geh : Catch the failure; keep no detail of it
+  geh -> sww : Open Something Went Wrong
+  sww --> actor : "Oops, the game tripped over"; "Try again" and "Home" (L2-054 criterion 4)
+end
+@enduml

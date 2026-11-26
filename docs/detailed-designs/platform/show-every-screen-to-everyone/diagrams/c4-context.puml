@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Show every screen to everyone
+
+Person(child, "Child", "Plays by touch on a phone or tablet, or by keyboard on a laptop or desktop")
+Person(childAt, "Child using assistive technology", "Plays with a screen reader, a keyboard alone or 200% zoom")
+System(atw, "Around the World", "Every screen from 320 px to 1920 px wide, meeting WCAG 2.2 AA")
+System_Ext(at, "Assistive technology", "Screen reader and the browser's accessibility tree")
+
+Rel(child, atw, "Plays at any width")
+Rel(childAt, at, "Listens and navigates through")
+Rel(at, atw, "Reads roles, states, live regions and alerts from")
+@enduml

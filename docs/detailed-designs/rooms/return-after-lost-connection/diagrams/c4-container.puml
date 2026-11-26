@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Return after a lost connection
+
+Person(player, "Player", "Loses their connection and returns")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Shows Reconnecting and reconnects with the token")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core with RoomHub", "Saves the spot 30 seconds, then removes the player")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "The room, each player's place and when they went away")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(player, game, "Plays", "HTTPS")
+Rel(game, signalr, "Reconnects, presenting the token", "SignalR over WebSockets")
+Rel(signalr, api, "Reports connections lost and made", "SignalR")
+Rel(api, store, "Reads and saves the room", "EF Core")
+@enduml

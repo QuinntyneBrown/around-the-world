@@ -1,0 +1,45 @@
+@startuml
+title UML sequence behaviour — Open an address whose screen cannot be shown
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "Router" as router
+  participant "inGameGuard / inRoomGuard" as guard
+  participant "GameSession or room of this visit" as state
+  participant "Requested screen" as screen
+  participant "HomePage" as home
+  participant "NotFoundPage" as notfound
+end box
+actor -> router : Open a web address
+alt the address leads to no screen
+  router -> notfound : Load lazy chunk
+  notfound --> actor : "This desk isn't on the map" and "Home" (L2-030 criterion 9)
+else the address is for Lobby, Mic Check, Duel, World Map or Podium
+  router -> guard : canActivate
+  guard -> state : Is the child in a game or a room?
+  alt child is in that game or room
+    state --> guard : Yes
+    guard --> router : true
+    router -> screen : Load lazy chunk
+    screen --> actor : Requested screen
+  else child is in no game and no room
+    state --> guard : No
+    guard --> router : Redirect to home (L2-030 criterion 7)
+    router -> home : Load Home
+    home --> actor : Home with "Play"
+  end
+end
+@enduml

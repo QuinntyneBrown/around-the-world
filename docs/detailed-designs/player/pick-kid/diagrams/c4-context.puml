@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Pick a kid
+
+Person(child, "Child", "Player aged 10 to 12, on their own device")
+System(atw, "Around the World", "Classroom flash-card game; keeps a kid and a generated nickname on the device")
+
+Rel(child, atw, "Picks a kid and a nickname in")
+@enduml

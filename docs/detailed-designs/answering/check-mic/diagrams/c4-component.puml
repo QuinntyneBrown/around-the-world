@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Check the microphone
+
+Person(child, "Child", "The device's player")
+Container_Boundary(game, "game (Angular application and its libraries)") {
+  Component(guard, "micCheckGuard", "Route guard, game application", "Skips Mic Check when it is not needed")
+  Component(page, "MicCheckPage", "Page, game application", "Asks, waits for the browser's question, listens for the shout of Ready!, and reports nothing heard, a refusal or a failure")
+  Component(way, "WayOfAnswering", "Service, game application", "Keeps the way of answering on the device and holds, in memory, whether Mic Check is done in this visit")
+  Component(voice, "VoiceAnswer (VOICE_ANSWER)", "Contract and token, api library", "Availability, the microphone request and what was heard")
+  Component(speech, "SpeechVoiceAnswer", "Implementation, domain voice/", "The only code that touches the microphone and speech recognition")
+  Component(duel, "DuelPage", "Page, game application", "Opened when Mic Check is done or skipped; the first flash card appears then")
+}
+Container_Ext(sr, "Speech recognition", "Browser", "Optional")
+Rel(child, page, "Chooses on")
+Rel(guard, way, "Asks whether Mic Check is needed")
+Rel(guard, page, "Lets the route open")
+Rel(guard, duel, "Redirects to, when skipped")
+Rel(page, voice, "Asks for the microphone and listens through")
+Rel(page, way, "Sets the way of answering in")
+Rel(way, voice, "Reads availability from")
+Rel(speech, voice, "Implements")
+Rel(speech, sr, "Asks permission and listens through", "Web Speech API")
+Rel(page, duel, "Starts the game at")
+@enduml

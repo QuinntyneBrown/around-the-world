@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — Mute and the first touch
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "HomePage" as home
+  participant "MomentPlayer" as player
+end box
+box "Frontend — domain" #E0F2FE
+  participant "BrowserSound" as sound
+  participant "StoredPlayerChoices" as choices
+end box
+actor -> home : Open the game
+home -> sound : Read muted
+sound -> choices : Read soundMuted
+choices --> sound : Sound setting as the child left it (L2-015 criterion 3)
+sound -> sound : Start locked; listen for the first touch
+home --> actor : Home in silence (L2-039 criterion 3)
+actor -> home : First touch or key press
+sound -> sound : Unlock; remove the listener
+opt child presses the sound button, or changes "Sound" in Settings
+  actor -> home : Sound button, or the "Sound" switch (L2-032 criterion 4)
+  home -> sound : setMuted(not muted)
+  sound -> choices : setSoundMuted(muted)
+  choices --> sound : Kept on the device
+  sound --> home : muted changed
+  home --> actor : Label reads "Mute sound" or "Turn sound on" (L2-032 criterion 3)
+end
+player -> sound : play(pop) for a number-pad key
+alt muted
+  sound -> sound : Play nothing (L2-039 criterion 2)
+else sound is on and unlocked
+  sound --> actor : Pop (L2-039 criterion 1)
+end
+@enduml

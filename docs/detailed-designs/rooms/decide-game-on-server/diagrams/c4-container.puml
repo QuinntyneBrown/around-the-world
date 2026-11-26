@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Decide the game on the server
+
+Person(duellist, "Traveller and desk holder", "Answer the flash card")
+Person(player, "Player", "Sees the result")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Duel, World Map and Podium on each device")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core with RoomHub", "Makes each flash card and decides each duel")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "The room and its game until the last player has left")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(duellist, game, "Answers by voice or number pad", "HTTPS")
+Rel(player, game, "Watches", "HTTPS")
+Rel(game, signalr, "Sends an answer as a number, receives events", "SignalR over WebSockets")
+Rel(signalr, api, "Relays hub messages", "SignalR")
+Rel(api, store, "Reads, saves and deletes the room", "EF Core")
+@enduml

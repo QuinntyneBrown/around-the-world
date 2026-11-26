@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Answer a flash card by voice
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as page
+  participant "WayOfAnswering" as way
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "SpeechVoiceAnswer\n(VoiceAnswer)" as voice
+  participant "spokenNumber" as parser
+end box
+participant "Speech recognition\n(browser)" as sr
+
+solo --> page : DuelState, card 6 × 4, own player in the duel, not frozen
+page -> way : way()
+way --> page : voice
+page -> voice : start()
+voice -> sr : Start recognition
+page --> child : "Shout it!" on the flash card (L2-009 criterion 4)
+alt the child says something that is not a number (L2-009 criterion 2)
+  child -> sr : "um, hang on"
+  sr --> voice : Transcript
+  voice -> parser : spokenNumber(transcript)
+  parser --> voice : Nothing
+  voice -> voice : Drop the transcript, no answer, no freeze
+else the child says a number
+  child -> sr : "twenty-four"
+  sr --> voice : Transcript
+  voice -> parser : spokenNumber(transcript)
+  parser --> voice : 24 (L2-009 criterion 1)
+  voice --> page : heard 24
+  page -> solo : answer(24)
+  alt 24 is correct
+    solo --> page : DuelState, outcome won
+  else the number is wrong (L2-009 criterion 3)
+    solo --> page : DuelState, ownFrozen true (L2-004)
+  end
+end
+opt the player is frozen, is watching, or the duel is decided or paused (L2-009 criterion 5)
+  page -> voice : stop()
+  voice -> sr : Stop recognition
+end
+opt the Duel screen is destroyed (L2-048 criterion 1)
+  page -> voice : stop()
+  voice -> sr : Stop recognition, close the microphone's stream
+end
+@enduml

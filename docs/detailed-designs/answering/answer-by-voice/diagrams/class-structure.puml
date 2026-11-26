@@ -1,0 +1,72 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Answer by voice
+
+interface VoiceAnswer {
+  +available: boolean
+  +listening: Signal<boolean>
+  +heard: Observable<number>
+  +heardSpeech: Observable<void>
+  +failed: Observable<VoiceError>
+  +requestMicrophone(): Promise<MicrophoneAnswer>
+  +start(): void
+  +stop(): void
+}
+class VoiceError {
+  +code: string
+}
+class SpeechVoiceAnswer {
+  -recognition: SpeechRecognition | null
+  -stream: MediaStream | null
+  +start(): void
+  +stop(): void
+  -onResult(transcript: string): void
+  -onError(error: string): void
+}
+class spokenNumber <<function>> {
+  +spokenNumber(transcript: string): number | null
+}
+class WayOfAnswering {
+  +way: Signal<AnswerWay>
+  +voiceOffered: Signal<boolean>
+  +use(way: AnswerWay): void
+}
+interface PlayerChoices
+enum AnswerWay {
+  voice
+  numberPad
+}
+interface GameSession {
+  +duel: Signal<DuelState>
+  +answer(value: number): void
+}
+class DuelPage {
+  -voice: VoiceAnswer
+  -way: WayOfAnswering
+  -session: GameSession
+  -mayAnswer: Signal<boolean>
+  -voiceFailedInDuel: Signal<boolean>
+  +onUseNumberPad(): void
+  +onShoutInstead(): void
+}
+
+SpeechVoiceAnswer ..|> VoiceAnswer
+SpeechVoiceAnswer ..> spokenNumber : parses with
+VoiceAnswer ..> VoiceError : reports
+DuelPage ..> VoiceAnswer : injects VOICE_ANSWER
+DuelPage ..> GameSession : injects GAME_SESSION
+DuelPage --> WayOfAnswering
+WayOfAnswering --> AnswerWay
+WayOfAnswering ..> PlayerChoices : keeps the way on the device through
+@enduml

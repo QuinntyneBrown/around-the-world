@@ -1,0 +1,34 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Return after a lost connection
+
+Container_Boundary(game, "game and its libraries") {
+  Component(page, "DuelPage", "Angular page, game", "Shows the Reconnecting overlay, We lost the game and the connection banners")
+  Component(session, "FriendsGame", "GameSession, game", "Holds the connection state and whether it is slow; replaces its game state on return")
+  Component(conn, "RoomConnection", "SignalR client, api", "Reconnects with the token and reports its state")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(hub, "RoomHub", "SignalR hub", "Connect and disconnect each send one MediatR request")
+  Component(timers, "RoomTimers", "Hosted service on TimeProvider", "Finds players away for 30 seconds")
+  Component(away, "MarkPlayerAwayCommandHandler", "MediatR handler", "Records when a player's connection was lost")
+  Component(reconnect, "ReconnectCommandHandler", "MediatR handler", "Gives a returning token its own place back")
+  Component(remove, "RemoveAbsentPlayerCommandHandler", "MediatR handler", "Removes the player; ends the tour below two players")
+  Component(room, "Room, RoomPlayer and Tour", "Domain", "Own the places, the away time and the end of the tour")
+  Component(notifier, "HubRoomNotifier", "IRoomNotifier, over RoomHub", "Pushes RoomChanged and TourEnded")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Persists the room")
+}
+Rel(page, session, "Reads the connection state")
+Rel(session, conn, "Listens to and reconnects")
+Rel(conn, hub, "Connects with the token", "SignalR over WebSockets")
+Rel(hub, away, "Sends MarkPlayerAwayCommand on disconnect")
+Rel(hub, reconnect, "Sends ReconnectCommand on connect")
+Rel(timers, remove, "Sends RemoveAbsentPlayerCommand")
+Rel(away, room, "Calls MarkAway on")
+Rel(reconnect, room, "Calls Return on")
+Rel(remove, room, "Calls Remove on")
+Rel(reconnect, store, "Loads and saves", "IAppDbContext")
+Rel(remove, store, "Loads and saves", "IAppDbContext")
+Rel(remove, notifier, "Announces RoomChanged or TourEnded")
+Rel(notifier, conn, "Pushes events to", "SignalR over WebSockets")
+@enduml

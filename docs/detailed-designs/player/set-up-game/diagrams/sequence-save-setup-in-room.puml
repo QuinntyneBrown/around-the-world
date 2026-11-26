@@ -1,0 +1,81 @@
+@startuml
+title UML sequence behaviour — The host saves the setup in a room
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Host" as actor
+box "Frontend — game" #E0F2FE
+  participant "GameSetupPage" as page
+  participant "RoomConnection" as conn
+  participant "LobbyPage (every player)" as lobby
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "SaveSetupCommandValidator" as validator
+  participant "SaveSetupCommandHandler" as handler
+  participant "Room" as room
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+  participant "IRoomNotifier" as notifier
+end box
+actor -> lobby : Choose "Change" in the panel "The game" (host only, L2-018 criterion 5)
+lobby --> page : Open Game Setup titled "Set up the race" with "Save"
+opt host chooses Back
+  actor -> page : Back
+  page --> actor : Return to the Lobby; nothing sent
+end
+actor -> page : Choose maths, tour and speed, then Save
+page --> actor : Button busy, "Saving…"; every choice disabled (L2-018 criterion 6)
+page -> conn : saveSetup(setup)
+conn -> hub : SaveSetup(setup) over SignalR
+hub -> validator : Send SaveSetupCommand
+alt a value is outside those Game Setup offers
+  validator --> hub : Refuse with code invalid_setup (L2-018 criterion 4)
+  hub --> conn : Hub error with code
+  conn --> page : ApiError
+  page --> actor : Alert "That setup didn't save" with "Try again"; the page stays open (L2-018 criterion 7)
+else every value is offered by Game Setup
+  validator -> handler : Valid command
+  handler -> db : Load the room of this connection
+  db --> handler : Room
+  handler -> room : SaveSetup(setup, caller)
+  alt caller is not the host
+    room --> handler : Refuse with code not_host (L2-025 criterion 4)
+    handler --> hub : Error; setup unchanged
+    hub --> conn : Hub error with code
+    conn --> page : ApiError
+    page --> actor : Alert "That setup didn't save" with "Try again"
+  else game has started
+    room --> handler : Refuse with code game_started
+    handler --> hub : Error; setup unchanged
+    hub --> conn : Hub error with code
+    conn --> page : ApiError
+    page --> actor : Alert "That setup didn't save" with "Try again"
+  else caller is the host and the room is waiting
+    room --> handler : Setup replaced
+    handler -> db : Save changes
+    db --> handler : Saved
+    handler -> notifier : RoomChanged(room)
+    notifier --> lobby : RoomState with the setup
+    lobby --> actor : Lobby shows the chosen maths and tour (L2-018 criterion 2)
+    handler --> hub : Done
+    hub --> conn : Completed
+    conn --> page : Resolved
+    page --> actor : Return to the Lobby
+  end
+end
+@enduml

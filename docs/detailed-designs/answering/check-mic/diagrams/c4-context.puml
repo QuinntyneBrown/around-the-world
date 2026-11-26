@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Check the microphone
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(sr, "Speech recognition", "The browser's own, optional")
+Rel(child, atw, "Turns on the microphone, or chooses the number pad, in")
+Rel(atw, sr, "Asks for the microphone and listens through", "Web Speech API")
+@enduml

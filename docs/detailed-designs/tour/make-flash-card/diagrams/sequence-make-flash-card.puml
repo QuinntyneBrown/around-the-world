@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — Make a flash card
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Frontend — game application" #E0F2FE
+  participant "SoloGame\n(GameSession)" as solo
+  participant "DuelPage" as page
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "FlashCardMaker" as maker
+  participant "RandomSource" as random
+end box
+box "Frontend — components library" #E0F2FE
+  participant "FlashCardView" as view
+end box
+solo -> maker : next()
+loop until the card differs from the last one (L2-008 criterion 6)
+  maker -> random : Pick one of the chosen kinds (L2-008 criterion 2)
+  random --> maker : Kind
+  alt Times
+    maker -> random : Pick a chosen table and a factor from 1 to 12 (L2-008 criterion 1)
+  else Divide
+    maker -> random : Pick a divisor above 0 and a quotient,\nleft = divisor × quotient (L2-008 criterion 3)
+  else Minus
+    maker -> random : Pick two numbers, the larger on the left (L2-008 criterion 4)
+  else Plus
+    maker -> random : Pick two numbers
+  end
+  random --> maker : Numbers
+  maker -> maker : Keep only an answer from 0 to 999 (L2-008 criterion 5)
+end
+maker -> maker : Remember the card as the last one
+maker --> solo : FlashCard (kind, left, right)
+solo --> page : DuelState with the card and no answer
+page -> view : Show the card
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Set up a game
+
+Person(child, "Child", "Player setting up a solo game")
+Person(host, "Host", "Player who made a room")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Game Setup screen and its rules")
+  ContainerDb(device, "Device storage", "Browser storage", "Keeps the setup between visits")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core, SignalR hub", "Validates and holds a room's setup")
+  ContainerDb(rooms, "Room store", "EF Core", "Rooms and their setup")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(child, game, "Chooses maths, tour and speed in", "HTTPS, browser")
+Rel(host, game, "Saves the room's setup in", "HTTPS, browser")
+Rel(game, device, "Reads and writes the setup", "PlayerStorage")
+Rel(game, signalr, "Sends SaveSetup, receives RoomState", "WSS")
+Rel(signalr, api, "Relays hub messages", "SignalR")
+Rel(api, rooms, "Reads and writes", "EF Core")
+@enduml

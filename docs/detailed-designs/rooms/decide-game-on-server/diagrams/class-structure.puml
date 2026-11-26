@@ -1,0 +1,115 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Decide the game on the server
+
+class RoomHub {
+  +SubmitAnswer(answer: int): Task
+  +PlayAgain(): Task
+}
+class SubmitAnswerCommand {
+  +int Answer
+}
+class SubmitAnswerCommandValidator
+class SubmitAnswerCommandHandler {
+  +Handle(command: SubmitAnswerCommand): Task
+}
+class EndCardTimeCommand {
+  +Guid RoomId
+  +int CardNumber
+}
+class DeleteIdleRoomsCommand
+class PlayAgainCommand
+class PlayAgainCommandHandler {
+  +Handle(command: PlayAgainCommand): Task
+}
+class RoomTimers <<hosted service>> {
+  -time: TimeProvider
+}
+class Room {
+  +RoomStatus Status
+  +GameSetup Setup
+  +Tour Tour
+  +DateTimeOffset LastActivityAt
+  +Start(by: Guid, now: DateTimeOffset): void
+  +ReturnToLobby(by: Guid, now: DateTimeOffset): void
+}
+class Tour {
+  +Duel CurrentDuel
+  +Answer(player: Guid, answer: int, receivedAt: DateTimeOffset): AnswerOutcome
+  +EndCardTime(now: DateTimeOffset): void
+  +bool IsOver
+}
+class Duel {
+  +Guid Traveller
+  +Guid DeskHolder
+  +FlashCard Card
+  +Guid? Winner
+}
+class FlashCard {
+  +MathsKind Kind
+  +int Left
+  +int Right
+  +int Answer
+}
+class FlashCardMaker {
+  +Make(setup: GameSetup, last: FlashCard?): FlashCard
+}
+enum AnswerOutcome {
+  Ignored
+  Frozen
+  Won
+}
+interface IRoomNotifier {
+  +GameStarted(room: Room): Task
+  +PlayerFrozen(room: Room, player: Guid): Task
+  +DuelDecided(room: Room): Task
+  +FlashCardShown(room: Room): Task
+  +TourEnded(room: Room): Task
+  +RoomClosed(room: Room): Task
+  +RoomChanged(room: Room): Task
+}
+class FlashCardDto <<sent to players>> {
+  +MathsKind Kind
+  +int Left
+  +int Right
+}
+interface GameSession <<frontend, api>> {
+  +duel: Signal<DuelState>
+  +tour: Signal<TourState>
+  +answer(value: number): void
+  +playAgain(): void
+  +leave(): void
+}
+class FriendsGame <<frontend, game>>
+
+RoomHub ..> SubmitAnswerCommand : sends
+SubmitAnswerCommandValidator ..> SubmitAnswerCommand : validates 0 to 999
+SubmitAnswerCommandHandler ..> SubmitAnswerCommand : handles
+SubmitAnswerCommandHandler --> Room : loads / mutates
+SubmitAnswerCommandHandler ..> IRoomNotifier : announces
+RoomHub ..> PlayAgainCommand : sends
+PlayAgainCommandHandler ..> PlayAgainCommand : handles
+PlayAgainCommandHandler --> Room : loads / mutates
+PlayAgainCommandHandler ..> IRoomNotifier : announces
+RoomTimers ..> EndCardTimeCommand : sends
+RoomTimers ..> DeleteIdleRoomsCommand : sends
+Room *-- "0..1" Tour : one at a time
+Tour *-- "1" Duel : current
+Duel *-- "1" FlashCard
+Tour ..> FlashCardMaker : asks for the next card
+Tour ..> AnswerOutcome : returns
+IRoomNotifier ..> FlashCardDto : sends, without the answer
+FriendsGame ..|> GameSession
+FriendsGame ..> RoomHub : through RoomConnection
+@enduml

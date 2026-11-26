@@ -1,0 +1,39 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Decide the game on the server
+
+Container_Boundary(game, "game and its libraries") {
+  Component(pages, "DuelPage, WorldMapPage, PodiumPage", "Angular pages, game", "Show the game through GAME_SESSION")
+  Component(session, "FriendsGame", "GameSession, game", "Applies what the server sends and decides nothing")
+  Component(conn, "RoomConnection", "SignalR client, api", "One connection per player")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(hub, "RoomHub", "SignalR hub", "Each method sends one MediatR request")
+  Component(timers, "RoomTimers", "Hosted service on TimeProvider", "Sends the time-driven requests")
+  Component(answer, "SubmitAnswerCommandHandler", "MediatR handler", "Decides an answer in arrival order")
+  Component(endcard, "EndCardTimeCommandHandler", "MediatR handler", "Ends a flash card nobody answered in time")
+  Component(again, "PlayAgainCommandHandler", "MediatR handler", "Returns the room to its Lobby")
+  Component(idle, "DeleteIdleRoomsCommandHandler", "MediatR handler", "Deletes rooms idle for 10 minutes (to confirm)")
+  Component(tour, "Tour and Duel", "Domain", "The rules: first correct answer, freeze, hop, end; classmates hold the desks no player holds")
+  Component(maker, "FlashCardMaker", "Domain service", "Makes each flash card and keeps its answer")
+  Component(notifier, "HubRoomNotifier", "IRoomNotifier, over RoomHub", "Pushes each event to the whole room in one step")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Persists the room and its game")
+}
+Rel(pages, session, "Read state, submit an answer, play again")
+Rel(session, conn, "submitAnswer, listens to events")
+Rel(conn, hub, "SubmitAnswer(number), PlayAgain()", "SignalR over WebSockets")
+Rel(hub, answer, "Sends SubmitAnswerCommand")
+Rel(hub, again, "Sends PlayAgainCommand")
+Rel(again, store, "Loads and saves", "IAppDbContext")
+Rel(again, notifier, "Announces RoomChanged")
+Rel(timers, endcard, "Sends EndCardTimeCommand")
+Rel(timers, idle, "Sends DeleteIdleRoomsCommand")
+Rel(answer, tour, "Calls Answer on")
+Rel(endcard, tour, "Calls EndCardTime on")
+Rel(tour, maker, "Asks for the next flash card")
+Rel(answer, store, "Loads and saves", "IAppDbContext")
+Rel(idle, store, "Deletes idle rooms", "IAppDbContext")
+Rel(answer, notifier, "Announces the outcome")
+Rel(notifier, conn, "GameStarted, PlayerFrozen, DuelDecided, FlashCardShown, TourEnded, RoomChanged", "SignalR over WebSockets")
+@enduml

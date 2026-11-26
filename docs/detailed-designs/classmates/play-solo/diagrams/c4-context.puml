@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Play solo
+
+Person(child, "Child", "Player aged 10 to 12, playing alone")
+System(atw, "Around the World", "Classroom flash-card game; plays a solo game on the device against classmates")
+
+Rel(child, atw, "Plays a solo game in")
+@enduml

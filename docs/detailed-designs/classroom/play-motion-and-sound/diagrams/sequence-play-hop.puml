@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Play the hop after a duel is won
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "SoloGame or FriendsGame" as session
+  participant "MomentPlayer" as player
+  participant "DuelPage" as duel
+  participant "WorldMapPage" as map
+end box
+box "Frontend — domain" #E0F2FE
+  participant "MomentPlan" as plan
+  participant "BrowserSound" as sound
+end box
+box "Frontend — world" #E0F2FE
+  participant "ThreeClassroomRenderer" as renderer
+end box
+actor -> session : Correct answer; the duel is decided, speech recognition has stopped
+session --> player : Moments: answerCorrect, duelWon
+player -> plan : for(moment, reduced)
+plan --> player : Rows: chime; "You got it!", win cheer and the passport stamp
+player -> sound : play(chime)
+alt sound is on and the child has touched the page
+  sound --> actor : Chime (L2-039 criterion 1)
+else muted, or no touch yet
+  sound -> sound : Play nothing (L2-039 criteria 2 and 3)
+end
+player -> duel : Show "= {answer} You got it!"
+player -> renderer : play(kid, winCheer)
+duel --> actor : "You got it!", then the passport stamp lands in about 250 ms in place of the flash card (L2-033 criterion 7, L2-038 criterion 5)
+session --> player : World Map opens; moment travellerHopsOn
+alt full motion
+  player -> renderer : play(kid, hop)
+  renderer --> actor : Kid hops along the dotted path to the next desk
+  renderer --> player : Arrived after about 1 second, no more than 1.5 (L2-038 criterion 1)
+else the device asks for reduced motion
+  player -> renderer : show(new positions), no hop animation
+  player -> map : Fade to the new positions
+  map --> actor : Fade of 200 ms from one desk to the next, nothing moves across the screen (L2-038 criterion 4)
+end
+session --> player : Moment countryReached
+player -> map : Show "You walk on to {country}!" (L2-034 criterion 3)
+map --> actor : Message for about 1.6 seconds
+player -> sound : play(jingle)
+player --> session : Message has stayed about 1.6 seconds
+session --> actor : Duel returns (L2-034 criterion 9); the next flash card flips in within 300 ms (L2-038 criterion 2)
+@enduml

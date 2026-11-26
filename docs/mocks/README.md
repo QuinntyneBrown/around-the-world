@@ -61,7 +61,7 @@ flash card, duel, hop, room, code, host, classmates, sticker, passport, stamp.
 |---|---|---|---|
 | 1 | The button faces are the bright cast colours with white labels (tomato `#ff4f6d`, sky `#1e9bff`, leaf `#22c768`). | The faces are the deeper shade of each (`#d92e4f`, `#0a6fd1`, `#0e7a3c`); "Play solo" keeps bright yellow with navy text. | White on the bright sky and leaf is under 3:1 and on tomato 3.2:1. WCAG 2.2 AA needs 4.5:1 for a label (L2-051). The bright colours stay for marks: ring dots, the timer bar, picture backgrounds. |
 | 2 | A name tag is the kid's bright colour with white text (navy on yellow). | A tag uses a tag pair per kid: the deep shade with white text, yellow with navy. | The same contrast rule. A kid's colour never carries a state alone: the name is always written (L2-037). |
-| 3 | The number pad sits beside the flash card from 1024px. | It sits beside the card from 768px. | `AGENTS.md`: under the card on a phone, beside it on a tablet and wider. **L2-050 (2) says 992px and needs bringing in line.** |
+| 3 | The number pad sits beside the flash card from 1024px. | It sits beside the card from 768px. | `AGENTS.md`: under the card on a phone, beside it on a tablet and wider. L2-050 (2) now says 768px too. |
 | 4 | Five stickers. | Six: Bolt's "Beep boop!" is added. | The requirements and `AGENTS.md` say six stickers (L2-028). The sixth and its words are an assumption; see the open questions. |
 | 5 | Pause goes straight Home. | Pause opens a dialog: "Keep playing" or "Go home". In a game with friends it is Leave, which asks first. | L2-033 (4). |
 | 6 | The Settings button does nothing. | It opens a Settings dialog with two switches: Sound, and Answer by shouting. | L2-032 names the button; L2-015 lists what is kept on the device. Nothing else is offered. |
@@ -83,8 +83,8 @@ a game with two players, and the messages a Lobby, a World Map and a Duel show.
 2. **Settings.** Is a Settings dialog with Sound and Answer by shouting what the Settings button
    should open, or should the button go and sound stay as the one corner button?
 3. **Dark theme.** Keep it as an option that follows the device, or ship light only?
-4. **Where the pad moves beside the card.** 768px here (as `AGENTS.md` says); L2-050 (2) says
-   992px. One of them changes.
+4. **Where the pad moves beside the card.** Settled: 768px, as `AGENTS.md` says. L2-050 (2) was
+   brought in line with the mocks.
 5. **A flash card nobody answers** (L2-005, to confirm): the mock says "Time's up! It was 24.
    Here comes a new card…" and nobody hops. Should the answer be shown?
 6. **Time running out on a tour** (L2-006, to confirm): the Podium says "Time's up! You

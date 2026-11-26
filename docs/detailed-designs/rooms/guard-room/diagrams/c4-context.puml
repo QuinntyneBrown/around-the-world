@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Guard the room
+
+Person(player, "Player", "Acts only in the room they are in")
+Person_Ext(outsider, "Anyone else", "Not in the room; another origin, a guessed code or a flood of requests")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(player, atw, "Plays in their own room in", "HTTPS and WSS only")
+Rel(outsider, atw, "Is refused by", "HTTPS and WSS only")
+Rel(atw, signalr, "Holds connections through", "WSS")
+@enduml

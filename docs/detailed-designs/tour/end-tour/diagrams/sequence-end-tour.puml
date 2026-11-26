@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — End a tour and show the Podium
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "SoloGame\n(GameSession)" as solo
+  participant "WorldMapPage" as map
+  participant "PodiumPage" as page
+end box
+box "Frontend — components library" #E0F2FE
+  participant "PodiumSteps,\nPassportView" as views
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "Tour" as tour
+  participant "Standings" as standings
+  participant "Passport" as passport
+  participant "GameClock" as clock
+end box
+solo -> tour : applyDuel(winner, now)
+solo -> clock : now()
+clock --> solo : Time played, pauses left out
+solo -> tour : isOver(now)
+alt the traveller's distance travelled equals the tour length (L2-006 criteria 1 and 5)
+  tour --> solo : Over, all the way round, the traveller wins
+else the time limit has passed and the duel has ended (L2-006 criterion 2)
+  tour --> solo : Over, time limit, the furthest travelled wins
+end
+note over solo, tour : When neither has happened the tour is not over and the next duel starts instead.
+solo -> tour : result(own player)
+tour -> standings : entries()
+standings --> tour : Places 1st to last by distance, equal distance\nby who reached it first (L2-006 criteria 3 and 4)
+tour -> passport : pages(desks)
+passport --> tour : A stamp or a placeholder for each country
+tour --> solo : TourResult
+solo -> clock : Cancel the duel's timers
+solo --> map : TourState phase moving, the last move
+map --> child : The last move and its message (L2-030 criterion 4)
+map -> solo : continue()
+solo --> page : TourState phase over, TourResult (L2-030 criterion 5)
+page -> views : Top three, "You went around the world!" or "{name} made it round first!",\nthe winning kid's cheer, passport, count and place (L2-035 criteria 1, 2 and 5)
+views --> child : The places rise third, second, first (L2-038 criterion 6)
+views --> child : The Podium
+@enduml

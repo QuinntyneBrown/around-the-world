@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Drive classmates with the on-device model
+
+Container_Boundary(game, "game application") {
+  Component(solo, "SoloGame", "Service behind GAME_SESSION", "Starts the tour first, opens the sessions, keeps them for the tour and destroys them at its end")
+}
+Container_Boundary(classmates, "domain library — classmates/") {
+  Component(agent, "ClassmateAgent", "One for each classmate", "Uses a valid model decision that arrives in time, else its profile")
+  Component(session, "OnDeviceModelSession", "Implementation behind CLASSMATE_MODEL", "One primed session for each classmate")
+  Component(prompt, "ClassmatePrompt", "Pure helper", "Builds prompts from profile and flash card only")
+  Component(parse, "parseModelDecision", "Pure helper", "Accepts an answer and a time, discards the rest")
+}
+Container_Boundary(tour, "domain library — tour/") {
+  Component(duel, "Duel", "Rules of the game", "Decides correct, frozen and winner")
+}
+System_Ext(model, "On-device model", "Chrome's built-in Prompt API")
+
+Rel(solo, session, "Opens when ready, destroys at the end")
+Rel(solo, agent, "Hands a session to, asks for a decision")
+Rel(agent, session, "decide(card, signal)")
+Rel(session, prompt, "Builds prompts with")
+Rel(session, model, "Prompts with a response constraint", "Prompt API")
+Rel(session, parse, "Reads output with")
+Rel(solo, duel, "Passes the number to")
+@enduml

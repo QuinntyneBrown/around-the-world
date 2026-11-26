@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Guard the room
+
+Person(player, "Player", "Holds a connection token for one room")
+Person_Ext(outsider, "Anyone else", "Holds no token for the room")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Sends ids, indexes and numbers only; shows refusals in words")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core with RoomHub", "CORS, rate limits, size limit, token check, validation")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "Code, setup and each player's indexes, kid, position and token")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(player, game, "Plays", "HTTPS")
+Rel(game, api, "Makes and joins a room", "JSON/HTTPS")
+Rel(game, signalr, "One connection, presenting the token", "SignalR over WSS")
+Rel(signalr, api, "Relays hub messages", "SignalR")
+Rel(outsider, api, "Requests are refused", "HTTPS")
+Rel(api, store, "Reads and saves rooms", "EF Core")
+@enduml

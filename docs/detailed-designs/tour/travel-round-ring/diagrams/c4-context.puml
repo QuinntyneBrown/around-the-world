@@ -1,0 +1,9 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Travel round the ring
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+Rel(child, atw, "Hops from desk to desk round the classroom in")
+@enduml

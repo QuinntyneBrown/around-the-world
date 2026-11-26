@@ -1,0 +1,101 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Travel round the ring
+
+class TourState {
+  +length: number
+  +desks: DeskState[]
+  +traveller: PlayerId
+  +travellerDesk: number
+  +standings: StandingEntry[]
+  +lastMove: TourMove | null
+  +ownPassport: Stamp[]
+  +phase: TourPhase
+}
+enum TourPhase {
+  duel
+  moving
+  watching
+  over
+}
+class DeskState {
+  +number: number
+  +country: CountryId
+  +holder: PlayerId | null
+}
+class TourMove {
+  +kind: MoveKind
+  +traveller: PlayerId
+  +fromDesk: number
+  +toDesk: number
+  +country: CountryId
+  +passedEmptyDesk: boolean
+  +satDown: PlayerId | null
+}
+enum MoveKind {
+  hop
+  deskHolderTravels
+}
+class StandingEntry {
+  +player: PlayerId
+  +distance: number
+  +place: number
+  +isOwn: boolean
+}
+class Stamp {
+  +country: CountryId
+  +desk: number
+}
+class Tour {
+  +{static} start(setup: GameSetup, players: PlayerId[], traveller: PlayerId): Tour
+  +traveller: PlayerId
+  +deskHolder: PlayerId
+  +emptyDesk: number
+  +applyDuel(winner: PlayerId, atMs: number): TourMove
+  +state(own: PlayerId): TourState
+}
+class Standings {
+  +record(player: PlayerId, distance: number, atMs: number): void
+  +entries(): StandingEntry[]
+}
+class Passport {
+  +stamp(country: CountryId, desk: number): void
+  +stamps(): Stamp[]
+}
+class SoloGame {
+  +tour: Signal<TourState>
+  +continue(): void
+  -startTour(): void
+  -onDuelDecided(winner: PlayerId): void
+}
+class WorldMapPage {
+  -session: GameSession
+  +onMessageStayed(): void
+  +onBackToTheCard(): void
+}
+
+SoloGame *-- Tour
+Tour *-- "1" Standings
+Tour *-- "1 per player" Passport
+Tour ..> TourMove : returns
+Tour ..> TourState : builds
+TourState *-- "6, 12 or 24" DeskState
+TourState *-- StandingEntry
+TourState --> TourMove : last
+TourState --> Stamp
+TourState --> TourPhase
+TourMove --> MoveKind
+Passport *-- Stamp
+WorldMapPage ..> TourState : reads through GAME_SESSION
+@enduml

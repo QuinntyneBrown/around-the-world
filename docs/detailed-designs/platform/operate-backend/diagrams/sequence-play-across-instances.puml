@@ -1,0 +1,65 @@
+@startuml
+title UML sequence behaviour — Show one game across two instances
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Traveller" as a
+actor "Desk holder" as b
+box "Frontend — api library" #E0F2FE
+  participant "SignalRRoomConnection\n(traveller's device)" as ca
+  participant "SignalRRoomConnection\n(desk holder's device)" as cb
+end box
+participant "Azure SignalR Service" as svc
+box "Backend — AroundTheWorld.Api (instance 1)" #D1FADF
+  participant "RoomHub" as hub1
+end box
+box "Backend — AroundTheWorld.Api (instance 2)" #D1FADF
+  participant "RoomHub" as hub2
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "TelemetryBehavior" as tel
+  participant "SubmitAnswerCommandHandler" as handler
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  participant "HubRoomNotifier" as notifier
+  database "Room store" as db
+end box
+alt Azure SignalR Service is set (deployed, L2-052 criterion 1)
+  ca -> hub1 : Negotiate
+  hub1 --> ca : Service address and access token
+  ca -> svc : Connect by WebSockets
+  cb -> svc : Connect by WebSockets (negotiated at instance 2)
+  svc -> hub1 : Traveller's connection
+  svc -> hub2 : Desk holder's connection
+else no service is set (local or test, L2-052 criterion 3)
+  ca -> hub1 : Connect by WebSockets; the instance serves SignalR itself
+end
+a -> ca : Answer 24
+ca -> svc : SubmitAnswer(24)
+svc -> hub1 : Hub message
+hub1 -> tel : Send SubmitAnswerCommand
+tel -> tel : Start span "SubmitAnswerCommand"; no body, no code, no token (L2-053)
+tel -> handler : Handle
+handler -> db : Load the room; decide; save
+db --> handler : Saved
+handler -> notifier : NotifyRoom(room id, duel decided)
+notifier -> svc : Send to the room's group
+svc --> ca : Duel decided
+svc --> cb : Duel decided (the same game, L2-052 criterion 2)
+handler --> tel : Result
+tel -> tel : Record duration and outcome code
+tel --> hub1 : Result
+ca --> a : Result
+cb --> b : Result
+@enduml

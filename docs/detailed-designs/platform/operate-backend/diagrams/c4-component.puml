@@ -1,0 +1,47 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Operate the backend
+
+System_Ext(signalr, "Azure SignalR Service", "Real-time channel in a deployed system")
+System_Ext(otel, "Telemetry backend", "OTLP endpoint")
+Container_Boundary(game, "game and its libraries") {
+  Component(roomsapi, "RoomsApi / RoomConnection", "api clients", "Turn a ProblemDetails, a hub error or no response into an ApiError with a code")
+  Component(words, "messageForCode", "Pure helper in game", "Words for a refused request and its code; one generic message otherwise")
+  Component(sof, "SoloOrFriendsPage", "Page", "Play solo starts SoloGame with no request")
+  Component(handler, "GameErrorHandler", "Angular ErrorHandler", "Catches a failure of the game itself")
+  Component(sww, "SomethingWentWrongPage", "Page", "Says so in plain words; offers Try again and Home")
+}
+Container_Boundary(api, "AroundTheWorld.Api") {
+  Component(program, "Program", "Composition root", "Adds SignalR; adds Azure SignalR Service only when its connection string is set")
+  Component(ctrl, "RoomsController", "Controller", "Make and join a room")
+  Component(hub, "RoomHub", "SignalR hub", "WebSockets only; one MediatR request per method")
+  Component(health, "HealthController", "Controller", "Live and ready")
+  Component(problems, "ProblemDetailsWriter / HubErrorFilter", "Api", "Turn a refusal into a ProblemDetails or a hub error holding only a code")
+}
+Container_Boundary(app, "AroundTheWorld.Application and Infrastructure") {
+  Component(telemetry, "TelemetryBehavior", "MediatR pipeline behaviour", "One span and one duration measurement per request, tagged with request name and outcome code")
+  Component(handlers, "Handlers", "MediatR", "Return a result or a refusal with an ErrorCode")
+  Component(notifier, "HubRoomNotifier", "Infrastructure, IRoomNotifier", "Pushes room events to a room's group")
+  Component(scrub, "TelemetryScrubber", "OpenTelemetry processor", "Drops path values, query strings and addresses from every span and log")
+  Component(probes, "IReadinessProbe implementations", "Infrastructure", "Room store reachable; Azure SignalR Service connected")
+  ComponentDb(store, "Room store", "EF Core", "Shared by every instance")
+}
+Rel(roomsapi, ctrl, "Calls", "JSON/HTTPS")
+Rel(roomsapi, signalr, "Connects", "WSS")
+Rel(signalr, hub, "Delivers hub messages")
+Rel(roomsapi, words, "Gives the code to")
+Rel(handler, sww, "Opens")
+Rel(program, hub, "Maps")
+Rel(ctrl, telemetry, "Sends a request through")
+Rel(hub, telemetry, "Sends a request through")
+Rel(health, telemetry, "Sends CheckReadinessQuery through")
+Rel(telemetry, handlers, "Calls")
+Rel(handlers, store, "Reads and writes")
+Rel(handlers, notifier, "Notify a room through")
+Rel(notifier, signalr, "Sends to the room's group")
+Rel(handlers, probes, "Readiness asks")
+Rel(handlers, problems, "Refusals are written by")
+Rel(telemetry, scrub, "Spans pass through")
+Rel(scrub, otel, "Exports", "OTLP")
+@enduml

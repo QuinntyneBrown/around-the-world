@@ -1,0 +1,83 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Join a room
+
+class RoomPage <<frontend, game>> {
+  +code: Signal<string>
+  +joining: Signal<boolean>
+  +refusal: Signal<string | null>
+  +join(): void
+}
+class CodeBoxes <<frontend, components>> {
+  +value: ModelSignal<string>
+  +invalid: InputSignal<boolean>
+  +disabled: InputSignal<boolean>
+}
+interface RoomsApi <<frontend, api>> {
+  +joinRoom(code: string, kid: KidId, nickname: Nickname): Promise<RoomEntry>
+}
+class ApiError <<frontend, api>> {
+  +code: string
+}
+class RoomsController {
+  +Join(body: JoinRoomRequest): Task<ActionResult<RoomEntryDto>>
+}
+class JoinRoomCommand {
+  +string Code
+  +KidId Kid
+  +NicknameIndexes Nickname
+}
+class JoinRoomCommandValidator
+class JoinRoomCommandHandler {
+  +Handle(command: JoinRoomCommand): Task<RoomEntryDto>
+}
+class RoomCode <<value object>> {
+  +string Letters
+  +{static} Parse(text: string): RoomCode
+}
+class Room {
+  +RoomCode Code
+  +RoomStatus Status
+  +{static} int MaxPlayers = 8
+  +Join(kid: KidId, nickname: NicknameIndexes, now: DateTimeOffset): RoomPlayer
+}
+class RoomPlayer {
+  +Guid Id
+  +KidId Kid
+  +NicknameIndexes Nickname
+  +DateTimeOffset JoinedAt
+  +ConnectionToken Token
+}
+enum RoomStatus {
+  Waiting
+  Playing
+  Over
+}
+interface IRoomNotifier {
+  +RoomChanged(room: Room): Task
+}
+
+RoomPage --> CodeBoxes : shows
+RoomPage ..> RoomsApi : calls through ROOMS_API
+RoomPage ..> ApiError : branches on code
+RoomsApi ..> RoomsController : POST /rooms/join
+RoomsController ..> JoinRoomCommand : sends
+JoinRoomCommandValidator ..> JoinRoomCommand : validates
+JoinRoomCommandHandler ..> JoinRoomCommand : handles
+JoinRoomCommandHandler ..> RoomCode : parses to capitals
+JoinRoomCommandHandler --> Room : loads / mutates
+JoinRoomCommandHandler ..> IRoomNotifier : announces
+Room *-- "1..8" RoomPlayer
+Room --> RoomStatus : has
+@enduml

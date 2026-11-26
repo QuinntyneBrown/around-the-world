@@ -1,0 +1,58 @@
+@startuml
+title UML sequence behaviour — Switch between voice and the number pad
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "Settings dialog" as settings
+  participant "DuelPage" as page
+  participant "WayOfAnswering" as way
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "SpeechVoiceAnswer\n(VoiceAnswer)" as voice
+  participant "spokenNumber" as parser
+end box
+participant "Speech recognition\n(browser)" as sr
+
+note over page : The switch is offered while a flash card is showing or the\nplayer is frozen, not once the duel is decided (L2-011 criterion 5)
+alt "Use number pad" (L2-011 criterion 1)
+  child -> page : Choose "Use number pad"
+  page -> way : use(numberPad), kept on the device (L2-015 criterion 4)
+  page -> voice : stop()
+  voice -> sr : Stop recognition
+  page --> child : The number pad shows, "Shout instead" is offered
+else "Shout instead" (L2-011 criterion 2)
+  child -> page : Choose "Shout instead"
+  page -> way : use(voice), kept on the device
+  page -> voice : start()
+  voice -> sr : Start recognition
+  page --> child : The pad hides, "Shout it!"
+else speech recognition fails during a duel (L2-011 criterion 4)
+  sr --> voice : Error
+  voice -> sr : Stop recognition
+  voice --> page : failed (code)
+  page -> page : Record the failure for this duel; the kept way is unchanged
+  page --> child : The number pad shows, the same flash card stays:\n"Bolt stopped hearing, so tap your answer for this one.";\n"Shout instead" is not offered for that duel
+else the browser has no speech recognition (L2-011 criterion 3)
+  page -> way : voiceOffered()
+  way --> page : false
+  page --> child : The number pad, with no "Shout instead"
+else "Answer by shouting" in Settings, from Home (L2-032 criterion 4)
+  child -> settings : Switch "Answer by shouting" off or on
+  settings -> way : use(numberPad) or use(voice), kept on the device at once
+  settings --> child : "Off" or "On"; with no speech recognition the switch\nis off and disabled
+end
+@enduml

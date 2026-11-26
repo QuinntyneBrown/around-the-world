@@ -1,0 +1,70 @@
+@startuml
+title UML sequence behaviour — Move round the ring after a duel
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as duelpage
+  participant "WorldMapPage" as page
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — components library" #E0F2FE
+  participant "WorldRing, Standings,\nMapToast" as views
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "Tour" as tour
+  participant "Standings" as standings
+  participant "Passport" as passport
+end box
+solo -> tour : applyDuel(winner, now)
+alt the traveller won (L2-002)
+  tour -> tour : Traveller hops to the next desk, passing an empty desk\nif it is next; the beaten desk holder keeps their desk
+  tour -> standings : record(traveller, distance + 1, now)
+  tour -> passport : stamp(country of the desk reached)
+  tour --> solo : TourMove hop
+else the desk holder won (L2-003)
+  tour -> tour : Beaten traveller sits at that desk\nand becomes its desk holder
+  tour -> tour : Former desk holder is the traveller\nand travels on to the next desk
+  tour -> standings : record(new traveller, 1 if it was 0, else unchanged, now)
+  tour --> solo : TourMove deskHolderTravels
+end
+opt the device's player won
+  solo --> duelpage : DuelState, hop set to the TourMove
+  duelpage --> child : The passport stamp lands on Duel (L2-038 criteria 1 and 5)
+end
+solo --> duelpage : TourState, phase moving
+duelpage -> page : World Map opens after every decided duel (L2-030 criterion 4)
+page -> views : Ring, desk holders, traveller, labels, standings (L2-034 criteria 1, 8 and 11)
+alt hop
+  views --> child : The kid hops along the dotted path to the next desk,\nabout 1 s and no more than 1.5 (L2-038 criterion 1)
+  views --> child : "You walk on to {country}!" or\n"{name} walks on to {country}!" (L2-034 criterion 3)
+else deskHolderTravels
+  views --> child : Traveller sits, desk holder stands up, about half a second:\n"So close! You sit down at {country}" when the player sits down (L2-034 criterion 4)
+  views --> child : The new traveller moves on to the next desk
+end
+page -> page : The message has stayed for about 1.6 s (L2-034 criterion 9),\nor the child chooses "Back to the card" (L2-034 criterion 12)
+page -> solo : continue()
+alt the device's player is in the next duel
+  solo --> page : TourState, phase duel, the next DuelState
+  page -> duelpage : Duel returns
+  duelpage --> child : The next flash card
+else a solo game, two classmates duel (L2-034 criterion 7)
+  solo --> page : TourState, phase watching
+  page --> child : World Map stays, no flash card is shown
+  solo -> tour : applyDuel(winner, now), once the classmates' duel is decided
+  tour --> solo : TourMove
+  solo --> page : TourState, phase moving, played as above
+end
+@enduml

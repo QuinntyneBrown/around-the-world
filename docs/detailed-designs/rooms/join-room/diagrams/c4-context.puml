@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Join a room
+
+Person(child, "Child", "Types the 4-letter code a friend reads aloud")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+
+Rel(child, atw, "Joins a room with its code using")
+@enduml

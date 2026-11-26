@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Draw the classroom
+
+Person(child, "Child", "Player on their own device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Every screen and its interface; places the classroom on Home, Duel and World Map")
+  Container(world, "world", "Angular library, Three.js, lazy chunk", "The 3D classroom's renderer")
+  Container(assets, "Classroom assets", "Static files on the game's own origin", "Scenes built in Blender, the cast, the two still pictures")
+}
+Rel(child, game, "Uses", "HTTPS, browser")
+Rel(game, world, "Imports dynamically when the classroom is first needed")
+Rel(game, assets, "Requests the still picture from", "HTTPS, same origin")
+Rel(world, assets, "Requests scenes and the cast from", "HTTPS, same origin")
+@enduml

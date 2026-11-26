@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — A flash card that nobody answers in time
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as page
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — components library" #E0F2FE
+  participant "FlashCardView,\nTimerBar" as views
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "Duel" as duel
+  participant "GameClock" as clock
+  participant "FlashCardMaker" as maker
+  participant "ClassmateAgent" as mate
+end box
+
+solo --> page : DuelState, outcome open, card 7 × 8
+page -> views : Timer bar drains in the traveller's colour (L2-005)
+clock --> solo : The card's time has passed with no correct answer
+solo -> duel : timeOut(now)
+duel --> solo : timedOut, no winner
+solo --> page : DuelState, outcome timedOut, answer 56
+page -> views : "Time's up! It was 56. Here comes a new card…"\n(whether the answer is shown is to confirm)
+views --> child : Nobody hops (L2-005 criterion 2)
+solo -> maker : Make a new flash card, not the last one (L2-008 criterion 6)
+maker --> solo : FlashCard 9 × 3
+solo -> duel : Start a duel for the same two players, nobody frozen (to confirm)
+solo -> clock : Set the card's timer
+solo --> page : DuelState, outcome open, card 9 × 3
+page -> views : Show the new card and a full timer bar
+views --> child : New flash card
+@enduml

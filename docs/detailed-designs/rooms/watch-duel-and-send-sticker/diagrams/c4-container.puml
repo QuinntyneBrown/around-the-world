@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Watch a duel and send a sticker
+
+Person(watcher, "Watching player", "Sends a sticker")
+Person(player, "Player", "Sees the sticker")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "The Duel screen on each device")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core with RoomHub", "Checks the sticker and sends it to the room")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "The room and its current duel; no sticker is stored")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(watcher, game, "Chooses a sticker", "HTTPS")
+Rel(player, game, "Sees the sticker", "HTTPS")
+Rel(game, signalr, "Sends and receives a sticker id", "SignalR over WebSockets")
+Rel(signalr, api, "Relays hub messages", "SignalR")
+Rel(api, store, "Reads who is in the duel", "EF Core")
+@enduml

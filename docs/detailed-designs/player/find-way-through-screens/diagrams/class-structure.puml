@@ -1,0 +1,87 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Find the way through the screens
+
+interface GameSession {
+  +hasGame: Signal<boolean>
+  +screen: Signal<GameScreen>
+  +start(setup: GameSetup): void
+}
+enum GameScreen {
+  micCheck
+  duel
+  worldMap
+  podium
+}
+class SoloGame
+class FriendsGame
+class GameScreenNavigator {
+  -session: GameSession
+  -router: Router
+  +follow(): void
+}
+class inGameGuard <<function>> {
+  +(route, state): boolean | UrlTree
+}
+class inRoomGuard <<function>> {
+  +(route, state): boolean | UrlTree
+}
+class SoloPathPreloading {
+  +preload(route: Route, load: () => Observable): Observable
+}
+class Visit {
+  +tourFinished: Signal<boolean>
+  +markTourFinished(): void
+}
+class HomePage {
+  +playLabel: Signal<string>
+  +soundLabel: Signal<string>
+  +play(): void
+  +toggleSound(): void
+  +openSettings(): void
+}
+class SettingsDialog {
+  +soundOn: Signal<boolean>
+  +shouting: Signal<boolean>
+  +canListen: boolean
+  +setSound(on: boolean): void
+  +setShouting(on: boolean): void
+  +done(): void
+}
+class NotFoundPage
+interface PlayerChoices {
+  +kid: Signal<KidId | null>
+  +nickname: Signal<Nickname | null>
+  +setup: Signal<GameSetup>
+  +soundMuted: Signal<boolean>
+  +wayOfAnswering: Signal<"voice" | "numberPad">
+  +setWayOfAnswering(way: "voice" | "numberPad"): void
+}
+interface Sound {
+  +muted: Signal<boolean>
+  +setMuted(muted: boolean): void
+}
+
+GameSession <|.. SoloGame
+GameSession <|.. FriendsGame
+GameSession --> GameScreen : is at
+GameScreenNavigator --> GameSession : watches
+inGameGuard ..> GameSession : reads hasGame
+HomePage --> PlayerChoices : reads
+HomePage --> Visit : reads
+HomePage --> Sound : mutes / unmutes
+HomePage ..> SettingsDialog : opens
+SettingsDialog --> Sound : mutes / unmutes
+SettingsDialog --> PlayerChoices : sets the way of answering
+@enduml

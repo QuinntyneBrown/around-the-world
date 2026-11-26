@@ -1,0 +1,91 @@
+@startuml
+title UML sequence behaviour — Keep the room after the tour and delete it
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Player" as actor
+box "Frontend — game" #E0F2FE
+  participant "PodiumPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+  participant "RoomTimers" as timers
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "SubmitAnswerCommandHandler" as handler
+  participant "PlayAgainCommandHandler" as again
+  participant "LeaveRoomCommandHandler" as leave
+  participant "DeleteIdleRoomsCommandHandler" as idle
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+group the tour ends and the room is kept (L2-027 criterion 3)
+  handler -> db : Save the room with status Over
+  db --> handler : Commit result
+  handler -> hub : IRoomNotifier.TourEnded with every player's place
+  hub --> conn : TourEnded to the whole room
+  conn --> session : Final TourState
+  session --> page : tour signal
+  page --> actor : Podium with "Play again", "Home" and "Everyone goes back to room {code}."
+end
+alt a player chooses "Play again" (L2-035 criterion 3)
+  actor -> page : Choose "Play again"
+  page -> session : playAgain()
+  session -> conn : playAgain()
+  conn -> hub : PlayAgain()
+  hub -> again : Send PlayAgainCommand
+  again -> db : Load the room the token names
+  again -> again : Room.ReturnToLobby: tour discarded, same players and setup, status Waiting
+  again -> db : Save changes
+  db --> again : Commit result
+  again -> hub : IRoomNotifier.RoomChanged
+  hub --> conn : RoomChanged with status Waiting to the whole room
+  conn --> session : RoomState
+  session --> actor : The same room's Lobby on every device
+  note over again, db
+    Who may choose "Play again", and what the other
+    players see until then: to supply (to confirm).
+  end note
+else a player chooses "Home"
+  actor -> page : Choose "Home"
+  page -> session : leave()
+  session -> conn : leaveRoom(), then close
+  conn -> hub : LeaveRoom()
+  hub -> leave : Send LeaveRoomCommand
+  leave -> db : Load the room the token names
+  alt other players remain
+    leave -> db : Save the room without the player
+    leave -> hub : IRoomNotifier.RoomChanged
+  else the last player has left (L2-027 criterion 3)
+    leave -> db : Delete the room and everything it held
+    db --> leave : Commit result
+  end
+end
+group nobody has done anything for 10 minutes, to confirm (L2-027 criterion 4)
+  timers -> timers : Tick on TimeProvider
+  timers -> idle : Send DeleteIdleRoomsCommand
+  idle -> db : Delete rooms whose LastActivityAt is 10 minutes old or more
+  db --> idle : Commit result
+  idle -> hub : IRoomNotifier.RoomClosed for each deleted room
+  hub --> conn : RoomClosed, connections of the room closed
+  conn --> session : Room closed
+  session --> page : Room lost
+  page --> actor : Alert "We lost the room"; "Play with friends" in place of "Play again" (L2-035 criterion 6)
+end
+@enduml

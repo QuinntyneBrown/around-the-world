@@ -1,0 +1,79 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Play solo
+
+interface GameSession {
+  +hasGame: Signal<boolean>
+  +duel: Signal<DuelState>
+  +tour: Signal<TourState>
+  +start(setup: GameSetup): void
+  +answer(value: number): void
+}
+class SoloGame {
+  -tour: Tour
+  -agents: Map<string, ClassmateAgent>
+  -timers: Set<number>
+  +start(setup: GameSetup): void
+  +answer(value: number): void
+  -scheduleClassmates(card: FlashCard): void
+  -release(): void
+}
+class ClassFactory {
+  +build(picked: KidId, tourLength: number, setup: GameSetup): ClassmateProfile[]
+}
+class ClassmateProfile {
+  +id: string
+  +kid: KidId | null
+  +skill: SkillLevel
+  +characteristics: ReadonlySet<Characteristic>
+  +preferredMaths: ReadonlySet<MathsKind>
+}
+class ClassmateAgent {
+  +profile: ClassmateProfile
+  +decide(card: FlashCard): ClassmateDecision
+}
+class ClassmateDecision {
+  +answer: number
+  +afterMs: number
+}
+interface RandomSource {
+  +next(): number
+}
+class Tour {
+  +currentDuel: Duel
+  +state(): TourState
+}
+class Duel {
+  +card: FlashCard
+  +answer(playerId: string, value: number, at: number): void
+}
+class FlashCard {
+  +kind: MathsKind
+  +text: string
+}
+
+GameSession <|.. SoloGame
+SoloGame *-- Tour
+SoloGame *-- "1..*" ClassmateAgent
+SoloGame ..> ClassFactory : builds class
+ClassFactory ..> ClassmateProfile : creates
+ClassFactory ..> RandomSource
+ClassmateAgent *-- ClassmateProfile
+ClassmateAgent ..> ClassmateDecision : returns
+ClassmateAgent ..> FlashCard : reads
+ClassmateAgent --> RandomSource
+Tour *-- Duel
+Duel --> FlashCard
+SoloGame ..> Duel : passes answers
+@enduml

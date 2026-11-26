@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Set up and start a solo game
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "GameSetupPage" as page
+end box
+box "Frontend — components" #E0F2FE
+  participant "MathsToggles" as toggles
+end box
+box "Frontend — domain" #E0F2FE
+  participant "GameSetupRules" as rules
+  participant "StoredPlayerChoices" as choices
+end box
+actor -> page : Open Game Setup after "Play solo" (titled "Set up your game")
+page -> choices : Read setup
+alt a setup is kept on the device
+  choices --> page : Setup as the child left it (L2-015 criterion 3)
+else first time
+  choices -> rules : defaults()
+  rules --> choices : Times, tables 2 to 10, 12 desks, Normal
+  choices --> page : Defaults (L2-016 criterion 1, L2-017 criterion 1)
+end
+page -> toggles : Show setup
+toggles --> actor : Choices with aria-pressed and a tick or a dot (L2-016 criterion 2)
+opt child changes a choice
+  actor -> toggles : Toggle a kind of maths or a times table
+  toggles --> page : Choice pressed
+  page -> rules : toggleKind or toggleTable
+  alt it is the last one on
+    rules --> page : Setup unchanged (L2-016 criterion 3)
+    page --> actor : "Keep at least one kind of maths on. Turn another on first."
+  else
+    rules --> page : Setup with the choice toggled
+  end
+  page -> choices : setSetup(setup)
+  choices --> page : Kept on the device
+  page --> actor : New state shown
+end
+actor -> page : Go!
+page -> page : Start the solo game with the setup (L2-018 criterion 1)
+page --> actor : Mic Check when needed, then Duel
+@enduml

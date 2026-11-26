@@ -1,0 +1,70 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Drive classmates with the on-device model
+
+interface ClassmateModel {
+  +isReady(): Promise<boolean>
+  +openSession(profile: ClassmateProfile): Promise<ClassmateModelSession>
+}
+interface ClassmateModelSession {
+  +decide(card: FlashCard, signal: AbortSignal): Promise<ModelDecision | null>
+  +destroy(): void
+}
+class OnDeviceModelSession {
+  -primed: LanguageModel
+  -pending: Set<AbortController>
+  +decide(card: FlashCard, signal: AbortSignal): Promise<ModelDecision | null>
+  +destroy(): void
+}
+class ModelDecision {
+  +answer: number
+  +afterMs: number
+}
+class ClassmatePrompt <<helper>> {
+  +priming(profile: ClassmateProfile): string
+  +card(card: FlashCard): string
+}
+class parseModelDecision <<function>> {
+  +(text: string): ModelDecision | null
+}
+class ClassmateAgent {
+  +profile: ClassmateProfile
+  -session: ClassmateModelSession | null
+  +useSession(session: ClassmateModelSession): void
+  +decide(card: FlashCard): ClassmateDecision
+  +decideWithModel(card: FlashCard, signal: AbortSignal): Promise<ClassmateDecision | null>
+}
+class ClassmateProfile {
+  +skill: SkillLevel
+  +characteristics: ReadonlySet<Characteristic>
+  +preferredMaths: ReadonlySet<MathsKind>
+}
+class SoloGame {
+  -sessions: ClassmateModelSession[]
+  -openSessions(): Promise<void>
+  -release(): void
+}
+
+ClassmateModelSession <|.. OnDeviceModelSession
+ClassmateModel ..> ClassmateModelSession : opens
+OnDeviceModelSession ..> ClassmatePrompt : builds prompts
+OnDeviceModelSession ..> parseModelDecision : reads output
+parseModelDecision ..> ModelDecision : returns
+ClassmatePrompt ..> ClassmateProfile : reads
+ClassmateAgent o-- "0..1" ClassmateModelSession
+ClassmateAgent *-- ClassmateProfile
+SoloGame --> ClassmateModel : asks isReady, opens
+SoloGame o-- "*" ClassmateModelSession : destroys
+SoloGame *-- "1..*" ClassmateAgent
+@enduml

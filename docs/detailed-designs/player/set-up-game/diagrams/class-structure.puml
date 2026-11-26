@@ -1,0 +1,102 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Set up a game
+
+package "Frontend" {
+  class "GameSetup" as FGameSetup {
+    +kinds: ReadonlySet<MathsKind>
+    +tables: ReadonlySet<number>
+    +tourLength: 6 | 12 | 24
+    +cardSpeed: CardSpeed
+  }
+  class GameSetupRules {
+    +defaults(): GameSetup
+    +toggleKind(setup, kind): GameSetup
+    +toggleTable(setup, table): GameSetup
+    +easy(setup): GameSetup
+    +all(setup): GameSetup
+    +tablesEnabled(setup): boolean
+    +describeTour(length): TourDescription
+    +secondsPerCard(speed): number
+  }
+  class GameSetupPage {
+    -setup: Signal<GameSetup>
+    +go(): void
+    +save(): Promise<void>
+  }
+  interface RoomConnection {
+    +saveSetup(setup: GameSetup): Promise<void>
+  }
+  interface PlayerChoices {
+    +setup: Signal<GameSetup>
+    +setSetup(setup: GameSetup): void
+  }
+}
+package "Backend" {
+  enum MathsKind {
+    Times
+    Plus
+    Minus
+    Divide
+  }
+  enum CardSpeed {
+    Chill
+    Normal
+    Lightning
+  }
+  enum RoomStatus {
+    Waiting
+    Playing
+    Over
+  }
+  class "GameSetup" as BGameSetup {
+    +Kinds: IReadOnlySet<MathsKind>
+    +Tables: IReadOnlySet<int>
+    +TourLength: int
+    +CardSpeed: CardSpeed
+  }
+  class Room {
+    +Code: RoomCode
+    +Status: RoomStatus
+    +Setup: GameSetup
+    +SaveSetup(setup: GameSetup, by: RoomPlayer): void
+  }
+  class SaveSetupCommand {
+    +ConnectionId: string
+    +Setup: GameSetup
+  }
+  class SaveSetupCommandValidator {
+    +Validate(command: SaveSetupCommand): ValidationResult
+  }
+  class SaveSetupCommandHandler {
+    +Handle(command: SaveSetupCommand): Task
+  }
+  interface IRoomNotifier {
+    +RoomChanged(room: Room): Task
+  }
+}
+GameSetupPage ..> GameSetupRules : applies
+GameSetupPage --> PlayerChoices : reads / writes
+GameSetupPage --> RoomConnection : saves through
+GameSetupRules ..> FGameSetup : returns
+RoomConnection ..> SaveSetupCommand : becomes
+SaveSetupCommandValidator ..> SaveSetupCommand : validates
+SaveSetupCommandHandler ..> SaveSetupCommand : handles
+SaveSetupCommandHandler --> Room : loads / mutates
+SaveSetupCommandHandler --> IRoomNotifier : notifies
+Room *-- BGameSetup
+Room --> RoomStatus : has
+BGameSetup --> MathsKind
+BGameSetup --> CardSpeed
+@enduml

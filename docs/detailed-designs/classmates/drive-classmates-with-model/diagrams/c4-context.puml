@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Drive classmates with the on-device model
+
+Person(child, "Child", "Player aged 10 to 12, playing alone")
+System(atw, "Around the World", "Classroom flash-card game; classmates are agents with profiles")
+System_Ext(model, "On-device model", "Gemini Nano through Chrome's built-in Prompt API; inside the browser, optional")
+
+Rel(child, atw, "Plays a solo game in")
+Rel(atw, model, "Asks for a classmate's answer and time, when present", "Prompt API, on the device")
+@enduml

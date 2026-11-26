@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Answer with the number pad
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Shows the number pad on Duel and gives the digits entered as the answer")
+}
+Rel(child, game, "Presses the pad's keys or the keyboard in", "Browser")
+@enduml

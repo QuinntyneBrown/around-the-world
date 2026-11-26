@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Operate the backend
+
+Person(child, "Child", "A player or the host of a room")
+Person_Ext(operator, "Operator", "Deploys the backend and reads its telemetry and health")
+System(atw, "Around the World", "The game and its backend for rooms and games with friends")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections by WebSockets and fans a room's events out across instances")
+System_Ext(otel, "Telemetry backend", "Receives traces, metrics and logs through OpenTelemetry. Product <TO SUPPLY>")
+System_Ext(probe, "Hosting platform", "Asks whether an instance is live and ready. Product <TO SUPPLY>")
+
+Rel(child, atw, "Plays; reads a message in plain words when something fails")
+Rel(atw, signalr, "Serves real time through", "SignalR/WSS")
+Rel(atw, otel, "Emits traces, metrics and logs with nothing about a child", "OTLP")
+Rel(probe, atw, "Asks live and ready", "HTTPS")
+Rel(operator, otel, "Reads")
+@enduml

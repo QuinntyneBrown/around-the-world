@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Wait in the Lobby
+
+Container_Boundary(game, "game and its libraries") {
+  Component(page, "LobbyPage", "Angular page, game", "Shows the code, the players, the setup, the Answer by line, Start the race and the passing messages")
+  Component(list, "PlayerList", "Presentation component, components", "Players with kid, nickname, Host and (you), and the empty desks")
+  Component(session, "FriendsGame", "Game service, game", "Holds the RoomState as a signal and owns the connection")
+  Component(conn, "RoomConnection", "SignalR client, api, imported dynamically", "One connection per player")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(hub, "RoomHub", "SignalR hub", "Each method sends one MediatR request")
+  Component(start, "StartGameCommandHandler", "MediatR handler", "Starts the game for the host with at least two players")
+  Component(leave, "LeaveRoomCommandHandler", "MediatR handler", "Removes a player, passes the host on, deletes an empty room")
+  Component(reconnect, "ReconnectCommandHandler", "MediatR handler", "Attaches a connection to the place its token names")
+  Component(room, "Room", "Domain entity", "Owns the players, the host and the status")
+  Component(notifier, "HubRoomNotifier", "IRoomNotifier, over RoomHub", "Pushes RoomChanged and GameStarted to the room")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Persists the room")
+}
+Rel(page, list, "Shows")
+Rel(page, session, "Reads the RoomState, asks to start or leave")
+Rel(session, conn, "Opens, listens to and closes")
+Rel(conn, hub, "StartGame, LeaveRoom", "SignalR over WebSockets")
+Rel(hub, reconnect, "Sends ReconnectCommand on connect")
+Rel(hub, start, "Sends StartGameCommand")
+Rel(hub, leave, "Sends LeaveRoomCommand")
+Rel(start, room, "Calls Start on")
+Rel(leave, room, "Calls Leave on")
+Rel(start, store, "Loads and saves", "IAppDbContext")
+Rel(leave, store, "Loads, saves or deletes", "IAppDbContext")
+Rel(start, notifier, "Announces GameStarted")
+Rel(leave, notifier, "Announces RoomChanged")
+Rel(notifier, conn, "Pushes events to", "SignalR over WebSockets")
+@enduml

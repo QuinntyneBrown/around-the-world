@@ -1,0 +1,38 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Guard the room
+
+Container_Boundary(game, "game and its libraries") {
+  Component(clients, "RoomsApi and RoomConnection", "Clients, api", "Present the token; turn each refusal into an ApiError with its code")
+  Component(pages, "Pages", "Angular pages, game", "Show a message for the code in words a child understands")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(cors, "CORS policy", "ASP.NET Core middleware", "Allows the frontend's origin only")
+  Component(limiter, "Rate limiter", "ASP.NET Core middleware", "Policies make-room and join-room, by address, status 429")
+  Component(open, "OpenToAnyoneAttribute", "Endpoint metadata", "Marks an action as open to anyone and names its rate limit policy")
+  Component(ctrl, "RoomsController", "ASP.NET Core controller", "Make and Join, the two actions open to anyone")
+  Component(hub, "RoomHub", "SignalR hub, 1 KB receive limit", "Every method sends one MediatR request")
+  Component(hubLimit, "HubRateLimitFilter", "SignalR hub filter", "Drops answers beyond 5 a second and stickers beyond 1 a second")
+  Component(current, "HubCurrentPlayer", "ICurrentPlayer", "Gives the token the connection presented")
+  Component(playerGate, "RoomPlayerBehaviour", "MediatR pipeline behaviour", "Resolves the room and player from the token, or refuses")
+  Component(validation, "ValidationBehaviour", "MediatR pipeline behaviour", "Runs each request's validator")
+  Component(errors, "ErrorCodeWriter", "Exception handler and hub filter", "ProblemDetails or hub error with a code, no detail of the server")
+  Component(token, "ConnectionToken", "Domain value object", "Unguessable, one per player per room")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Holds no personal data")
+}
+Rel(pages, clients, "Call and branch on ApiError.code")
+Rel(clients, cors, "HTTPS requests pass", "HTTPS")
+Rel(cors, limiter, "Passes allowed origins to")
+Rel(limiter, ctrl, "Passes requests within the limit to")
+Rel(open, ctrl, "Marks Make and Join of")
+Rel(clients, hubLimit, "Hub messages pass", "SignalR over WSS")
+Rel(hubLimit, hub, "Passes messages within the limit to")
+Rel(hub, playerGate, "Sends each request through")
+Rel(ctrl, validation, "Sends each request through")
+Rel(playerGate, current, "Reads the token from")
+Rel(playerGate, store, "Finds the player holding the token", "IAppDbContext")
+Rel(playerGate, token, "Compares")
+Rel(playerGate, validation, "Then runs")
+Rel(validation, errors, "Refusals become codes through")
+@enduml

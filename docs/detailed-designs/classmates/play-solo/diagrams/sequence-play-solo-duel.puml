@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Play a solo duel against a classmate
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "DuelPage" as page
+  participant "SoloGame" as solo
+end box
+box "Frontend — domain" #E0F2FE
+  participant "ClassFactory" as factory
+  participant "ClassmateAgent" as agent
+  participant "Tour" as tour
+  participant "Duel" as duel
+end box
+actor -> solo : "Go!" starts the solo game (no backend request, L2-019 criterion 1)
+solo -> factory : build(picked kid, tour length, setup)
+factory --> solo : Four kids not picked plus further classmates (L2-019 criterion 3, L2-020 criterion 1)
+solo -> tour : Create tour, the device's player as traveller, desk 1 empty (L2-007 criteria 3 and 4)
+tour --> solo : First duel, at desk 2, and its flash card
+solo --> page : DuelState
+page --> actor : Flash card
+solo -> agent : decide(card)
+agent -> agent : Answer and time from skill, characteristics, preferred maths
+agent --> solo : ClassmateDecision, afterMs at or above 800 ms (to confirm)
+solo -> solo : Schedule the classmate's answer on the game's clock
+alt the child answers correctly first
+  actor -> page : Answer
+  page -> solo : answer(value)
+  solo -> duel : answer(player, value, now)
+  duel --> solo : Player wins (L2-001)
+  solo -> solo : Clear the classmate's timer
+else the classmate's time comes first
+  solo -> duel : answer(classmate, value, now)
+  alt the classmate's answer is correct
+    duel --> solo : Classmate wins (L2-001)
+  else the classmate's answer is wrong
+    duel --> solo : Classmate frozen for 1 second (L2-020 criterion 4)
+    solo -> agent : decide(card) again when the freeze ends
+    agent --> solo : ClassmateDecision
+    solo -> solo : Schedule the next answer
+  end
+end
+solo -> tour : Read the tour after the duel
+tour --> solo : TourState: hop, new traveller or end of tour
+solo --> page : DuelState and TourState
+page --> actor : Result of the duel, then World Map (L2-030 criterion 4)
+@enduml

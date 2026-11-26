@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Make a room
+
+Person(child, "Child", "Chooses Make a room on Solo Or Friends and becomes the room's host")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+
+Rel(child, atw, "Makes a room with")
+@enduml

@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Decide a classmate's answer with the model
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Frontend — game" #E0F2FE
+  participant "SoloGame" as solo
+end box
+box "Frontend — domain" #E0F2FE
+  participant "ClassmateAgent" as agent
+  participant "OnDeviceModelSession" as session
+  participant "parseModelDecision" as parse
+  participant "Duel" as duel
+end box
+participant "On-device model\n(browser)" as model
+solo -> agent : decide(card)
+agent --> solo : Profile decision: answer and time
+solo -> solo : Schedule the answer at the profile's time
+solo -> agent : decideWithModel(card, signal)
+agent -> session : decide(card, signal)
+session -> model : Prompt a clone with the flash card only (L2-042 criterion 3)
+alt output arrives before the profile's time
+  model --> session : Output text
+  session -> parse : parseModelDecision(text)
+  alt a whole-number answer from 0 to 999 and a time
+    parse --> session : ModelDecision (L2-021 criterion 2)
+    session --> agent : ModelDecision; the text is dropped (L2-042 criterion 1)
+    agent --> solo : Decision, time held at or above the floor
+    solo -> solo : Replace the scheduled answer
+  else any other form
+    parse --> session : null, output discarded
+    session --> agent : null
+    agent --> solo : null; the profile decision stands
+  end
+else the profile's time comes first
+  solo -> solo : Abort the signal (L2-021 criterion 3)
+  session --> agent : null
+end
+solo -> duel : answer(classmate, number, now)
+duel --> solo : Correct, frozen or winner, decided by Duel alone
+@enduml

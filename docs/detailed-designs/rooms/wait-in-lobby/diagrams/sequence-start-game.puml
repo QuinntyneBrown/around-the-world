@@ -1,0 +1,68 @@
+@startuml
+title UML sequence behaviour — The host starts the game
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Host" as actor
+actor "Player who is not the host" as other
+box "Frontend — game" #E0F2FE
+  participant "LobbyPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "StartGameCommandHandler" as handler
+  participant "Room" as room
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+alt the host is alone (L2-025 criterion 1)
+  page --> actor : "Start the race" disabled, "Waiting for at least one friend…"
+else at least two players are in the room (L2-025 criterion 2)
+  page --> actor : "Start the race" enabled, "{n} kids ready"
+  actor -> page : Choose "Start the race"
+  page -> session : startGame()
+  session -> conn : startGame()
+  conn -> hub : StartGame
+  hub -> handler : Send StartGameCommand
+  handler -> db : Load the room and player the token names
+  db --> handler : Room and RoomPlayer
+  handler -> room : Start(by, now)
+  room --> handler : Status Playing, tour made
+  handler -> db : Save changes in one unit of work
+  db --> handler : Commit result
+  handler -> hub : IRoomNotifier.GameStarted
+  hub --> conn : GameStarted to every player in the room
+  conn --> session : GameStarted
+  session --> page : Game started
+  page --> actor : Mic Check on this device when needed, then Duel (L2-012 criterion 9)
+  page --> other : Mic Check on this device when needed, then Duel (L2-012 criterion 9)
+end
+opt a player who is not the host sends StartGame (L2-025 criterion 4)
+  other -> hub : StartGame
+  hub -> handler : Send StartGameCommand
+  handler -> db : Load the room and player the token names
+  db --> handler : Room and RoomPlayer
+  handler -> room : Start(by, now)
+  room --> handler : not_host
+  handler --> hub : not_host
+  hub --> other : Hub error with code not_host, room unchanged
+end
+@enduml

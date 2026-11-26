@@ -1,0 +1,120 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Play a duel
+
+interface GameSession {
+  +duel: Signal<DuelState>
+  +tour: Signal<TourState>
+  +answer(value: number): void
+  +continue(): void
+  +pause(): void
+  +resume(): void
+  +leave(): void
+}
+class DuelState {
+  +card: FlashCard
+  +desk: number
+  +traveller: PlayerId
+  +deskHolder: PlayerId
+  +ownRole: DuelRole
+  +timeToAnswerMs: number
+  +remainingMs: number
+  +ownFrozen: boolean
+  +ownWrongAnswer: number | null
+  +paused: boolean
+  +outcome: DuelOutcome
+  +winner: PlayerId | null
+  +answer: number | null
+  +hop: TourMove | null
+}
+enum DuelRole {
+  traveller
+  deskHolder
+  watching
+}
+enum DuelOutcome {
+  open
+  won
+  timedOut
+}
+class FlashCard {
+  +kind: MathsKind
+  +left: number
+  +right: number
+}
+class SoloGame {
+  -duel: Duel
+  -clock: GameClock
+  +answer(value: number): void
+  +continue(): void
+  -answerFor(player: PlayerId, value: number): void
+  -startDuel(): void
+  -onTimeOut(): void
+  -onDecided(winner: PlayerId): void
+  +pause(): void
+  +resume(): void
+}
+class Duel {
+  +card: FlashCard
+  +traveller: PlayerId
+  +deskHolder: PlayerId
+  +timeToAnswerMs: number
+  +outcome: DuelOutcome
+  +winner: PlayerId | null
+  +answer(player: PlayerId, value: number, atMs: number): AnswerResult
+  +isFrozen(player: PlayerId, atMs: number): boolean
+  +timeOut(atMs: number): boolean
+}
+enum AnswerResult {
+  ignored
+  wrong
+  won
+}
+class GameClock {
+  +now(): number
+  +after(ms: number, run: () => void): Cancel
+  +pause(): void
+  +resume(): void
+}
+class DuelPage {
+  -session: GameSession
+  +onAnswer(value: number): void
+  +onPause(): void
+  +onLeaveTheGame(): void
+  +onSitDown(): void
+}
+class PauseDialog {
+  +keepPlaying(): void
+  +goHome(): void
+}
+class LeaveGameDialog {
+  +leaving: Signal<boolean>
+  +stayAndPlay(): void
+  +leave(): void
+}
+
+SoloGame ..|> GameSession
+GameSession --> DuelState : publishes
+DuelState --> FlashCard : shows
+DuelState --> DuelRole
+DuelState --> DuelOutcome
+SoloGame *-- Duel : owns the current
+SoloGame *-- GameClock
+Duel --> FlashCard
+Duel ..> AnswerResult : returns
+DuelPage ..> GameSession : injects GAME_SESSION
+DuelPage ..> PauseDialog : opens in a solo game
+DuelPage ..> LeaveGameDialog : opens in a game with friends
+LeaveGameDialog ..> GameSession : leave()
+@enduml

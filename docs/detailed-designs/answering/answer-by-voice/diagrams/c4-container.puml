@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Answer by voice
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Listens while the player may answer and gives the spoken number as the answer")
+}
+Container_Ext(sr, "Speech recognition", "Browser", "Turns speech into text on behalf of the page, optional")
+Rel(child, game, "Shouts the answer into", "Microphone")
+Rel(game, sr, "Starts, stops and reads results from", "Web Speech API")
+@enduml

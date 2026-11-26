@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Operate the backend
+
+Person(child, "Child", "A player in a room")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections; set by one configuration value")
+System_Ext(otel, "Telemetry backend", "OpenTelemetry collector or service")
+System_Ext(probe, "Hosting platform", "Health probes")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Maps an error code to words a child understands; solo play needs no backend")
+  Container(api1, "AroundTheWorld.Api (instance 1)", "ASP.NET Core, SignalR", "RoomsController, RoomHub, HealthController")
+  Container(api2, "AroundTheWorld.Api (instance 2)", "ASP.NET Core, SignalR", "The same service, scaled out")
+  ContainerDb(store, "Room store", "EF Core, engine <TO SUPPLY>", "The one copy of each room that every instance reads")
+}
+Rel(child, game, "Uses", "HTTPS")
+Rel(game, api1, "Makes and joins a room; negotiates the connection", "JSON/HTTPS")
+Rel(game, signalr, "Holds one connection per player", "WebSockets (WSS)")
+Rel(signalr, api1, "Delivers hub messages; receives room events", "SignalR")
+Rel(signalr, api2, "Delivers hub messages; receives room events", "SignalR")
+Rel(api1, store, "Reads and writes", "EF Core")
+Rel(api2, store, "Reads and writes", "EF Core")
+Rel(api1, otel, "Exports telemetry", "OTLP")
+Rel(api2, otel, "Exports telemetry", "OTLP")
+Rel(probe, api1, "GET live, GET ready", "HTTPS")
+Rel(probe, api2, "GET live, GET ready", "HTTPS")
+@enduml

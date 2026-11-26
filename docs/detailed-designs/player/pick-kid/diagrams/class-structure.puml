@@ -1,0 +1,100 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Pick a kid
+
+enum KidId {
+  zuri
+  kenji
+  nia
+  milo
+  pip
+}
+
+class Nickname {
+  +adjective: number
+  +animal: number
+}
+
+class PlayerRecord {
+  +kid: KidId | null
+  +nickname: Nickname | null
+  +setup: GameSetup
+  +soundMuted: boolean
+  +wayOfAnswering: "voice" | "numberPad"
+}
+
+interface PlayerStorage {
+  +read(): PlayerRecord
+  +write(record: PlayerRecord): void
+}
+
+class LocalPlayerStorage {
+  +read(): PlayerRecord
+  +write(record: PlayerRecord): void
+  -defaults(): PlayerRecord
+}
+
+class NicknameGenerator {
+  -adjectives: readonly string[]
+  -animals: readonly string[]
+  +generate(): Nickname
+  +generateOtherThan(current: Nickname): Nickname
+  +isValid(value: unknown): boolean
+  +words(nickname: Nickname): string
+}
+
+interface PlayerChoices {
+  +kid: Signal<KidId | null>
+  +nickname: Signal<Nickname | null>
+  +setup: Signal<GameSetup>
+  +soundMuted: Signal<boolean>
+  +wayOfAnswering: Signal<"voice" | "numberPad">
+  +confirmKid(kid: KidId, nickname: Nickname): void
+}
+
+class StoredPlayerChoices
+
+class PickYourKidPage {
+  -selected: Signal<KidId>
+  -pending: Signal<Nickname>
+  +select(kid: KidId): void
+  +newName(): void
+  +confirm(): void
+}
+
+class KidPicker {
+  +selected: KidId
+  +picked: Output<KidId>
+}
+
+class KidChip {
+  +kid: KidId
+  +nickname: string
+}
+
+class HomePage
+
+PlayerStorage <|.. LocalPlayerStorage
+PlayerChoices <|.. StoredPlayerChoices
+PlayerRecord *-- Nickname
+PlayerRecord --> KidId : has
+StoredPlayerChoices --> PlayerStorage : reads / writes
+LocalPlayerStorage ..> NicknameGenerator : checks nickname
+LocalPlayerStorage ..> PlayerRecord : returns
+PickYourKidPage --> PlayerChoices : confirms through
+PickYourKidPage ..> NicknameGenerator : generates
+PickYourKidPage --> KidPicker : renders
+HomePage --> PlayerChoices : reads
+HomePage --> KidChip : renders when a kid is kept
+@enduml

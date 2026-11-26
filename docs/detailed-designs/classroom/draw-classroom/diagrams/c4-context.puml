@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Draw the classroom
+
+Person(child, "Child", "Player aged 10 to 12, on whatever device is to hand")
+System(atw, "Around the World", "Classroom flash-card game; shows the classroom as a 3D ring of desks with its cast")
+
+Rel(child, atw, "Sees the classroom and the cast in")
+@enduml

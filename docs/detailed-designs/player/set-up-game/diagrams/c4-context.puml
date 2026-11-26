@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Set up a game
+
+Person(child, "Child", "Player setting up a solo game")
+Person(host, "Host", "Player who made a room")
+System(atw, "Around the World", "Classroom flash-card game; holds the setup of a game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(child, atw, "Sets up a solo game in")
+Rel(host, atw, "Saves a room's setup in")
+Rel(atw, signalr, "Sends and receives room messages through", "WebSockets")
+@enduml

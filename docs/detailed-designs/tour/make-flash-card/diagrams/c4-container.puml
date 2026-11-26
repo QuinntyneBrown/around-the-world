@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Make a flash card
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Makes each flash card of a solo game on the device")
+}
+Rel(child, game, "Reads each flash card in", "Browser")
+@enduml

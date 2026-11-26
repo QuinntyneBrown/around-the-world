@@ -1,0 +1,80 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Watch a duel and send a sticker
+
+class DuelPage <<frontend, game>> {
+  +watching: Signal<boolean>
+  +sendSticker(id: StickerId): void
+}
+class StickerTray <<frontend, components>> {
+  +stickers: InputSignal<StickerId[]>
+  +chosen: OutputEmitterRef<StickerId>
+}
+interface GameSession <<frontend, api>> {
+  +duel: Signal<DuelState>
+  +ownRole: Signal<'traveller' | 'deskHolder' | 'watching'>
+  +stickers: Signal<ShownSticker[]>
+  +sendSticker(id: StickerId): void
+}
+class FriendsGame <<frontend, game>> {
+  -shown: ShownSticker[] (bounded)
+}
+class ShownSticker <<frontend, api>> {
+  +sticker: StickerId
+  +kid: KidId
+  +playerId: string
+  +sender: string ("You" or the nickname)
+}
+interface RoomConnection <<frontend, api>> {
+  +sendSticker(id: StickerId): Promise<void>
+  +onStickerShown(handler): void
+}
+class RoomHub {
+  +SendSticker(stickerId: int): Task
+}
+class HubRateLimitFilter {
+  +InvokeMethodAsync(context, next): ValueTask<object?>
+}
+class SendStickerCommand {
+  +int StickerId
+}
+class SendStickerCommandHandler {
+  +Handle(command: SendStickerCommand): Task
+}
+class StickerId <<value object>> {
+  +int Value
+  +{static} TryParse(value: int, out id: StickerId): bool
+}
+class Duel {
+  +Guid Traveller
+  +Guid DeskHolder
+  +Holds(player: Guid): bool
+}
+interface IRoomNotifier {
+  +StickerShown(room: Room, sticker: StickerId, sender: Guid): Task
+}
+
+DuelPage --> StickerTray : shows while watching
+DuelPage ..> GameSession : reads through GAME_SESSION
+FriendsGame ..|> GameSession
+FriendsGame *-- "0..n, bounded" ShownSticker
+FriendsGame ..> RoomConnection : uses
+RoomConnection ..> RoomHub : SendSticker / StickerShown
+HubRateLimitFilter ..> RoomHub : filters
+RoomHub ..> SendStickerCommand : sends
+SendStickerCommandHandler ..> SendStickerCommand : handles
+SendStickerCommandHandler ..> StickerId : parses
+SendStickerCommandHandler ..> Duel : asks who is duelling
+SendStickerCommandHandler ..> IRoomNotifier : announces
+@enduml
