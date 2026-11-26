@@ -1,0 +1,101 @@
+// The bean of docs/design-system/assets/components.css. These are picture colours: the
+// outline and the art palette do not change with the theme; the body is the kid's colour.
+:host {
+  display: contents;
+}
+
+.bean-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.bean-icon--lg {
+  width: 4rem;
+  height: 4rem;
+}
+
+.art-shadow {
+  fill: var(--palette-art-outline);
+  opacity: 0.14;
+}
+
+.bean__body {
+  fill: var(--kid);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2.5;
+}
+
+.bean__deep {
+  fill: var(--kid-deep);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2.5;
+}
+
+.bean__smile {
+  fill: none;
+  stroke: var(--kid-deep);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+.bean__visor {
+  fill: var(--palette-art-visor);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2.5;
+}
+
+.bean__shine {
+  fill: var(--palette-white);
+}
+
+.bean__hair {
+  fill: var(--palette-art-hair);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__white {
+  fill: var(--palette-white);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.bean__line {
+  fill: none;
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__metal {
+  fill: var(--palette-art-metal);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__metal-light {
+  fill: var(--palette-art-metal-light);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__eye {
+  fill: var(--palette-green-400);
+}
+
+.bean__pencil {
+  fill: var(--palette-art-pencil);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__eraser {
+  fill: var(--palette-art-eraser);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.bean__pack--kenji {
+  fill: var(--palette-art-teal);
+}

@@ -1,0 +1,45 @@
+// The kid-chip block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
+  background: var(--color-bg-surface);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  text-align: left;
+  text-decoration: none;
+  color: var(--color-fg-default);
+  cursor: pointer;
+}
+
+:host(:hover) {
+  background: var(--color-bg-surface-raised);
+  color: var(--color-fg-default);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-strong);
+}
+
+:host([aria-hidden='true']) {
+  cursor: default;
+}
+
+.kid-chip__lines {
+  width: 9rem;
+}
+
+.kid-chip__name {
+  display: block;
+  font: var(--text-name);
+}
+
+.kid-chip__as {
+  color: var(--color-fg-muted);
+}
+
+.kid-chip__action {
+  font: var(--text-label);
+  color: var(--color-fg-accent);
+  text-decoration: underline;
+}

@@ -1,0 +1,56 @@
+// The skeleton block of docs/design-system/assets/components.css, on the host element. On a
+// panel the shine is the canvas colour: a panel sets `--skeleton-shine`.
+:host {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-subtle) 25%,
+    var(--skeleton-shine, var(--color-bg-subtle-hover)) 37%,
+    var(--color-bg-subtle) 63%
+  );
+  background-size: 400% 100%;
+  border-radius: var(--radius-xs);
+  animation: shimmer var(--duration-sweep) linear infinite;
+}
+
+:host(.skeleton--text) {
+  height: 1em;
+  width: 100%;
+}
+
+:host(.skeleton--title) {
+  height: 2em;
+  width: 60%;
+}
+
+:host(.skeleton--short) {
+  width: 40%;
+}
+
+:host(.skeleton--block) {
+  border-radius: var(--radius-md);
+}
+
+:host(.skeleton--round) {
+  border-radius: var(--radius-full);
+}
+
+:host(.skeleton--panel) {
+  border-radius: var(--radius-xl);
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: none;
+  }
+}

@@ -1,0 +1,20 @@
+<atw-screen>
+  <header atw-top-bar heading="Who’s playing?">
+    <a atw-icon-button slot="back" icon="back" routerLink="/kid" aria-label="Back"></a>
+  </header>
+  <main atw-screen-body [center]="true" aria-busy="true">
+    <p class="visually-hidden" role="status">Getting ready…</p>
+    <div class="mode-grid">
+      @for (way of [1, 2]; track way) {
+        <div atw-panel aria-hidden="true">
+          <div atw-stack>
+            <atw-skeleton shape="title" />
+            <atw-skeleton shape="text" />
+            <atw-skeleton shape="text" [short]="true" />
+            <atw-skeleton shape="block" class="mode-grid__action" />
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</atw-screen>

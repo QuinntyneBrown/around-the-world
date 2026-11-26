@@ -1,0 +1,27 @@
+@if (loading()) {
+  <div class="kid-picker" aria-hidden="true">
+    @for (kid of kids(); track kid.id) {
+      <span class="kid-picker__option">
+        <atw-portrait [kid]="kid.id" src="" size="fill" state="loading" />
+        <atw-skeleton shape="text" />
+      </span>
+    }
+  </div>
+} @else {
+  <div class="kid-picker" role="group" aria-label="Choose a kid">
+    @for (kid of kids(); track kid.id) {
+      <button
+        type="button"
+        class="kid-picker__option"
+        [attr.data-kid]="kid.id"
+        [attr.aria-pressed]="kid.id === selected()"
+        (click)="picked.emit(kid.id)"
+      >
+        <atw-portrait [kid]="kid.id" [src]="kid.picture" size="fill" [state]="pictures()" />
+        <span class="kid-picker__name"
+          ><atw-icon class="kid-picker__tick" name="check" />{{ kid.name }}</span
+        >
+      </button>
+    }
+  </div>
+}

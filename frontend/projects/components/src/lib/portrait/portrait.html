@@ -1,0 +1,40 @@
+@switch (state()) {
+  @case ('loading') {
+    <atw-skeleton
+      [shape]="size() === 'hero' ? 'panel' : 'block'"
+      class="portrait"
+      [class.portrait--sm]="size() === 'sm'"
+      [class.portrait--md]="size() === 'md'"
+      [class.portrait--fill]="size() === 'fill'"
+      [class.portrait--hero]="size() === 'hero'"
+    />
+  }
+  @case ('failed') {
+    <span
+      class="portrait"
+      [class.portrait--sm]="size() === 'sm'"
+      [class.portrait--md]="size() === 'md'"
+      [class.portrait--fill]="size() === 'fill'"
+      [class.portrait--hero]="size() === 'hero'"
+      [attr.data-kid]="kid()"
+      [attr.role]="alt() ? 'img' : null"
+      [attr.aria-label]="alt() || null"
+    >
+      <atw-bean [kid]="kid()" [large]="size() === 'hero'" />
+    </span>
+  }
+  @default {
+    <img
+      class="portrait"
+      [class.portrait--sm]="size() === 'sm'"
+      [class.portrait--md]="size() === 'md'"
+      [class.portrait--fill]="size() === 'fill'"
+      [class.portrait--hero]="size() === 'hero'"
+      [attr.data-kid]="kid()"
+      [src]="src()"
+      [alt]="alt()"
+      width="384"
+      height="384"
+    />
+  }
+}

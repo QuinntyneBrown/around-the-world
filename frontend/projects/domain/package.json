@@ -1,0 +1,5 @@
+{
+  "name": "@atw/domain",
+  "private": true,
+  "sideEffects": false
+}

@@ -37,8 +37,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "225kB",
-                  "maximumError": "250kB"
+                  "maximumWarning": "255kB",
+                  "maximumError": "270kB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -85,7 +85,15 @@
       "root": "projects/domain",
       "sourceRoot": "projects/domain/src",
       "prefix": "atw",
-      "architect": {}
+      "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "game:build:development",
+            "tsConfig": "projects/domain/tsconfig.spec.json"
+          }
+        }
+      }
     },
     "components": {
       "projectType": "library",

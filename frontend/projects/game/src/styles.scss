@@ -1,6 +1,7 @@
-// Global styles are foundations only (AGENTS.md): tokens, @font-face, reset and utilities.
+// Global styles are foundations only (AGENTS.md): tokens, @font-face, reset, the cast's colours and utilities.
 // Every component's own look lives in its encapsulated stylesheet in @atw/components.
 @use 'styles/fonts';
 @use 'styles/tokens';
 @use 'styles/reset';
+@use 'styles/cast';
 @use 'styles/utilities';
