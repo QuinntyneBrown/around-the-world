@@ -262,6 +262,7 @@
       "route": "/podium",
       "requirements": [
         "L2-006",
+        "L2-029",
         "L2-035"
       ],
       "states": [
@@ -271,6 +272,7 @@
         "time-up",
         "friends",
         "two-players",
+        "everyone-left",
         "long",
         "loading",
         "error"
