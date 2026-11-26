@@ -110,6 +110,26 @@ public sealed class Room
     }
 
     /// <summary>
+    /// Replaces the room's setup (L2-018 criterion 2). Only the host may, and only while the room
+    /// waits (L2-025 criterion 4); a refusal leaves the setup as it was.
+    /// </summary>
+    public void SaveSetup(RoomPlayer by, GameSetup setup, DateTimeOffset now)
+    {
+        if (!by.IsHost)
+        {
+            throw new RoomRuleException(RoomRule.NotHost);
+        }
+
+        if (Status != RoomStatus.Waiting)
+        {
+            throw new RoomRuleException(RoomRule.GameStarted);
+        }
+
+        Setup = setup;
+        Touch(now);
+    }
+
+    /// <summary>
     /// The host starts the game once at least two players are in the room (L2-025 criteria 1,
     /// 2 and 4). Journey 14 makes the tour; until then the room is only marked playing.
     /// </summary>

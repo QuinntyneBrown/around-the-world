@@ -1,5 +1,13 @@
 import { type Routes } from '@angular/router';
-import { ROOM_CONNECTION, ROOM_SESSION, SignalRRoomConnection } from '@atw/api';
+import {
+  ROOM_CONNECTION,
+  ROOM_SESSION,
+  SignalRRoomConnection,
+  SOUND,
+  VOICE_ANSWER,
+  WAY_OF_ANSWERING,
+} from '@atw/api';
+import { BrowserSound, KeptWayOfAnswering, LazyVoiceAnswer } from '@atw/domain';
 import { FriendsGame } from './friends-game';
 
 /**
@@ -16,12 +24,22 @@ export const FRIENDS_GAME_ROUTES: Routes = [
       { provide: ROOM_CONNECTION, useClass: SignalRRoomConnection },
       FriendsGame,
       { provide: ROOM_SESSION, useExisting: FriendsGame },
+      // The voice, the way of answering and the sounds, as the solo group binds them (ADR 0034).
+      { provide: VOICE_ANSWER, useClass: LazyVoiceAnswer },
+      { provide: WAY_OF_ANSWERING, useClass: KeptWayOfAnswering },
+      { provide: SOUND, useClass: BrowserSound },
     ],
     children: [
       {
         path: 'room/:code',
         title: 'Room · Around the World',
         loadComponent: () => import('../pages/lobby/lobby').then((m) => m.LobbyPage),
+      },
+      {
+        // The host's "Change" (L2-018 criterion 5, docs/adr/0034).
+        path: 'setup',
+        title: 'Set up the race · Around the World',
+        loadComponent: () => import('../pages/game-setup/game-setup').then((m) => m.GameSetupPage),
       },
     ],
   },

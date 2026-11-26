@@ -24,7 +24,11 @@
           ></button>
         </section>
         <section atw-panel>
-          <div atw-panel-head heading="The game" headingId="game-title" [level]="2"></div>
+          <div atw-panel-head heading="The game" headingId="game-title" [level]="2">
+            @if (isHost() && !lost()) {
+              <a atw-text-button icon="sliders" routerLink="/setup">Change</a>
+            }
+          </div>
           <dl atw-summary [rows]="setup()"></dl>
         </section>
         <div atw-stack gap="sm" class="lobby__start">

@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { type GameSetup } from './game-setup';
 import { type RoomState } from './rooms';
 
 /** What a room's connection tells the game. */
@@ -20,6 +21,11 @@ export interface RoomConnection {
    * room. Rejects when the connection cannot be opened; `lost` is then not called.
    */
   connect(token: string, events: RoomEvents): Promise<void>;
+  /**
+   * Saves the host's setup to the room: setup values only (L2-018 criterion 2, L2-040
+   * criterion 1). Rejects with an `ApiError` holding the hub error's `code`.
+   */
+  saveSetup(setup: GameSetup): Promise<void>;
   /** Tells the room the player leaves it (L2-025 criterion 5); rejects when it cannot. */
   leave(): Promise<void>;
   /** Closes the connection and removes its handlers (L2-048 criterion 2). It never rejects. */

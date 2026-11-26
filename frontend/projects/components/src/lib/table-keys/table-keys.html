@@ -4,7 +4,7 @@
     class="table-key"
     [attr.aria-pressed]="!disabled() && pressed().includes(table)"
     [attr.aria-label]="table + ' times table'"
-    [disabled]="disabled()"
+    [disabled]="disabled() || locked()"
     (click)="toggled.emit(table)"
   >
     ×{{ table }}

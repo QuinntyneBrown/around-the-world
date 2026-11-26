@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import type { HubConnection } from '@microsoft/signalr';
+import { type GameSetup } from './game-setup';
 import { type RoomConnection, type RoomEvents } from './room-connection';
-import { type RoomState } from './rooms';
+import { ApiError, type RoomState } from './rooms';
 
 /** Where the room hub is, on the game's own origin (docs/adr/0031-making-a-room.md). */
 export const ROOM_HUB_PATH = '/hubs/room';
@@ -45,9 +46,29 @@ export class SignalRRoomConnection implements RoomConnection {
     }
   }
 
+  saveSetup(setup: GameSetup): Promise<void> {
+    const { kinds, tables, tourLength, cardSpeed } = setup;
+    return this.invoke('SaveSetup', { kinds, tables, tourLength, cardSpeed });
+  }
+
   async leave(): Promise<void> {
     if (!this.hub) return;
     await this.hub.invoke('LeaveRoom');
+  }
+
+  /**
+   * Invokes a hub method, rejecting with an `ApiError` whose `code` is the hub error's, the last
+   * word of its message (ADR 0032), or `backend_unreachable` with no connection.
+   */
+  private async invoke(method: string, ...args: unknown[]): Promise<void> {
+    if (!this.hub) throw new ApiError('backend_unreachable', 0);
+    try {
+      await this.hub.invoke(method, ...args);
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : '';
+      const code = /HubException: ([a-z_]+)$/.exec(message)?.[1];
+      throw new ApiError(code ?? 'backend_unreachable', 0);
+    }
   }
 
   async close(): Promise<void> {
