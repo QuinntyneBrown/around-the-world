@@ -1,0 +1,34 @@
+// The shout block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-height-lg);
+  padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-action-go);
+  color: var(--color-fg-on-action);
+  font: var(--text-h3);
+}
+
+.shout__mic {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-fg-on-action) 25%, transparent);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    font: var(--text-h2);
+  }
+}
+
+@media (max-height: 34rem) {
+  :host {
+    min-height: var(--target-min);
+    font: var(--text-h4);
+  }
+}

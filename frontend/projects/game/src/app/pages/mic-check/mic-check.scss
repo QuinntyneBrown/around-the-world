@@ -1,0 +1,78 @@
+// Mic Check's own layout (docs/mocks/pages/mic-check/; the mic-check block of
+// docs/design-system/assets/components.css). Below 768px the picture is above the words; from
+// 768px it is on their left (L2-050 criterion 6).
+.mic-check {
+  flex: 1;
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--layout-margin);
+  text-align: center;
+}
+
+.mic-check__text {
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mic-check__title {
+  font: var(--text-h1);
+}
+
+.mic-check__body {
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+  margin-top: var(--space-3);
+}
+
+.mic-check__heard {
+  align-self: center;
+  margin-top: var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  font: var(--text-h2);
+  color: var(--color-success-fg);
+}
+
+.mic-check__meter {
+  display: flex;
+  justify-content: center;
+}
+
+.mic-check__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+@media (min-width: 36rem) {
+  .mic-check__title {
+    font: var(--text-display);
+  }
+}
+
+@media (min-width: 48rem) {
+  .mic-check {
+    flex-direction: row;
+    gap: var(--space-12);
+    text-align: left;
+  }
+
+  .mic-check__heard {
+    align-self: flex-start;
+  }
+
+  .mic-check__meter {
+    justify-content: flex-start;
+  }
+}

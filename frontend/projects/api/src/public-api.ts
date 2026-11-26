@@ -12,3 +12,4 @@ export * from './lib/pictures';
 export * from './lib/player';
 export * from './lib/tour';
 export * from './lib/visit';
+export * from './lib/voice';

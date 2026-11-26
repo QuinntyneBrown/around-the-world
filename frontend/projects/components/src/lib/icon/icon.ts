@@ -5,13 +5,18 @@ export type IconName =
   | 'back'
   | 'check'
   | 'clock'
+  | 'close'
   | 'delete'
   | 'dice'
   | 'friends'
   | 'frozen'
   | 'home'
   | 'info'
+  | 'keypad'
+  | 'mic'
+  | 'mic-off'
   | 'retry'
+  | 'settings'
   | 'solo';
 
 /**

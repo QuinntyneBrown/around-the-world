@@ -1,0 +1,8 @@
+<img class="listener__picture" [src]="picture()" [alt]="alt()" />
+@if (state() === 'listening') {
+  <span class="listener__ring"></span>
+  <span class="listener__ring"></span>
+}
+<span class="listener__badge" [class.listener__badge--off]="state() === 'off'">
+  <atw-icon [name]="badge()" size="xl" />
+</span>

@@ -1,21 +1,25 @@
 import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { type Routes } from '@angular/router';
-import { GAME_SESSION } from '@atw/api';
-import { SoloGame } from '@atw/domain';
+import { GAME_SESSION, VOICE_ANSWER, WAY_OF_ANSWERING } from '@atw/api';
+import { KeptWayOfAnswering, LazyVoiceAnswer, SoloGame } from '@atw/domain';
 import { GameScreenNavigator } from './game-screen-navigator';
 import { inGameGuard } from './in-game.guard';
+import { micCheckGuard } from './mic-check.guard';
 
 /**
  * The solo group (docs/adr/0016-solo-game-route-group.md): the solo Game Setup and the game
  * screens, sharing one `SoloGame` behind `GAME_SESSION`, and the navigator that opens the
  * screen the game is at (docs/adr/0023). Leaving the group destroys them, and the game with
- * them. Mic Check joins with its journey.
+ * them. The group binds the voice and the way of answering for Mic Check and Duel
+ * (docs/adr/0025-answering-by-voice.md); leaving it stops listening.
  */
 export const SOLO_GAME_ROUTES: Routes = [
   {
     path: '',
     providers: [
       { provide: GAME_SESSION, useClass: SoloGame },
+      { provide: VOICE_ANSWER, useClass: LazyVoiceAnswer },
+      { provide: WAY_OF_ANSWERING, useClass: KeptWayOfAnswering },
       GameScreenNavigator,
       provideEnvironmentInitializer(() => inject(GameScreenNavigator)),
     ],
@@ -24,6 +28,12 @@ export const SOLO_GAME_ROUTES: Routes = [
         path: 'setup',
         title: 'Set up your game · Around the World',
         loadComponent: () => import('../pages/game-setup/game-setup').then((m) => m.GameSetupPage),
+      },
+      {
+        path: 'mic',
+        title: 'Mic check · Around the World',
+        canActivate: [micCheckGuard],
+        loadComponent: () => import('../pages/mic-check/mic-check').then((m) => m.MicCheckPage),
       },
       {
         path: 'duel',

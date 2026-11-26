@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   PLAYER_STORAGE,
+  type AnswerWay,
   type GameSetup,
   type KidId,
   type Nickname,
@@ -21,6 +22,7 @@ export class StoredPlayerChoices implements PlayerChoices {
   readonly kid = computed(() => this.record().kid);
   readonly nickname = computed(() => this.record().nickname);
   readonly setup = computed(() => this.record().setup ?? defaultSetup());
+  readonly wayOfAnswering = computed(() => this.record().wayOfAnswering ?? 'voice');
 
   confirmKid(kid: KidId, nickname: Nickname): void {
     this.record.update((record) => ({ ...record, kid, nickname }));
@@ -29,6 +31,11 @@ export class StoredPlayerChoices implements PlayerChoices {
 
   changeSetup(setup: GameSetup): void {
     this.record.update((record) => ({ ...record, setup }));
+    this.storage.write(this.record());
+  }
+
+  changeWayOfAnswering(wayOfAnswering: AnswerWay): void {
+    this.record.update((record) => ({ ...record, wayOfAnswering }));
     this.storage.write(this.record());
   }
 }

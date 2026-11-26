@@ -10,4 +10,18 @@ export class VisitState implements Visit {
   finishTour(): void {
     this.finished.set(true);
   }
+
+  private readonly micChecked = signal(false);
+  readonly micCheckDone = this.micChecked.asReadonly();
+
+  finishMicCheck(): void {
+    this.micChecked.set(true);
+  }
+
+  private readonly lost = signal(false);
+  readonly voiceLost = this.lost.asReadonly();
+
+  loseVoice(): void {
+    this.lost.set(true);
+  }
 }

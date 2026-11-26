@@ -1,0 +1,53 @@
+// The level-meter block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 3.25rem;
+  margin-top: var(--space-6);
+}
+
+:host(.level-meter--sm) {
+  height: 1.5rem;
+  margin: 0;
+}
+
+.level-meter__bar {
+  width: var(--space-3);
+  height: calc(var(--level) * 1%);
+  min-height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-success-icon);
+  transform-origin: bottom;
+  animation: level var(--duration-pulse) var(--ease-exit) infinite alternate;
+}
+
+.level-meter__bar:nth-child(3n + 2) {
+  animation-delay: calc(var(--duration-pulse) / 3);
+}
+
+.level-meter__bar:nth-child(3n) {
+  animation-delay: calc(var(--duration-pulse) / 1.5);
+}
+
+:host(.level-meter--sm) .level-meter__bar {
+  width: 0.375rem;
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-meter__bar {
+    animation: none;
+  }
+}
+
+@keyframes level {
+  from {
+    scale: 1 0.25;
+  }
+
+  to {
+    scale: 1 1;
+  }
+}

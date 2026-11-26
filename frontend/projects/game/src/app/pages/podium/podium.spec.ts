@@ -68,7 +68,14 @@ describe('PodiumPage', () => {
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
     };
-    const visit: Visit = { tourFinished: signal(false), finishTour: finished };
+    const visit: Visit = {
+      tourFinished: signal(false),
+      finishTour: finished,
+      micCheckDone: signal(true),
+      finishMicCheck: () => undefined,
+      voiceLost: signal(false),
+      loseVoice: () => undefined,
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),

@@ -102,6 +102,26 @@ describe('SoloGame', () => {
     expect(game.duel()?.winner).toBe('traveller');
   });
 
+  it('waits at Mic Check with no card and no clock, and deals when it is left (L2-012 8)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = soloGame();
+    const screens: string[] = [];
+    game.watchScreen((screen) => screens.push(screen));
+    game.start(SETUP, { micCheck: true });
+    await vi.dynamicImportSettled();
+    expect(game.hasGame()).toBe(true);
+    expect(game.screen()).toBe('mic-check');
+    expect(game.duel()).toBeNull();
+
+    vi.advanceTimersByTime(60_000);
+    game.continue();
+    expect(screens).toEqual(['mic-check', 'duel']);
+    expect(game.duel()).toMatchObject({ desk: 2, timeLeftMs: 6000, outcome: 'open' });
+    // The classmates whose agents arrived during Mic Check still answer.
+    vi.advanceTimersByTime(5000);
+    expect(game.duel()).toMatchObject({ outcome: 'won', winner: 'deskHolder' });
+  });
+
   it('lets a classmate who answers correctly first win (L2-001 2)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const game = await started();
