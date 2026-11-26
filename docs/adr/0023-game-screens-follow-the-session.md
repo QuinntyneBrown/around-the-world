@@ -1,4 +1,4 @@
-# 0023. The game screens follow the session through a listener, and World Map's room is deferred
+# 0023. The game screens follow the session through a listener, and World Map's room is drawn with the page
 
 - **Status:** Accepted
 - **Date:** 2026-11-26
@@ -23,14 +23,17 @@ the drawn stand-in of the mocks.
   initializer, listens from its constructor, navigates to `/duel` or `/map` with `replaceUrl`
   (so the browser's history does not grow with every duel), and stops listening when the group
   is destroyed. The `screen` signal stays for the guard and the pages.
-- **World Map's room is deferred.** The page draws the room (`atw-world-map`) inside
-  `@defer (on immediate)`. Its placeholder is World Map's loading state, and its `@error` block
-  is the error state: the classroom's still picture with the alert, while the standings carry on.
-  Both are proved by unit tests of the page that render the defer block's states, since a
-  behaviour spec cannot hold back one hashed chunk without a test of the build's file names.
+- **World Map's room is drawn with the page, not deferred.** Drawing the room inside
+  `@defer` put 6.6 kB of Angular's defer runtime into `main`, and loading it through
+  `NgComponentOutlet` 3 kB; the room is part of World Map's own lazy chunk instead (21 kB). The
+  loading state ("Drawing the classroom…", placeholders for the room and the standings) shows
+  until the session publishes the tour, which a solo game does before World Map opens, so it is
+  proved by a unit test of the page, as Duel's loading state is (ADR 0020). The drawn stand-in
+  cannot fail to draw, so the error state ("The map is having a rest") comes with the 3D
+  classroom in journey 09, when the classroom's renderer can fail (`L2-036` criterion 3).
 
 ## Consequences
 
 The game screens change without framework code in `main`. A room group (journey 14) provides
-the same navigator. Journey 09 replaces the drawn room with the 3D classroom behind the same
-deferred block, and its loading and error states then follow the renderer too.
+the same navigator. Journey 09 replaces the drawn room with the 3D classroom, imported
+dynamically, and World Map's loading and error states then follow the renderer.

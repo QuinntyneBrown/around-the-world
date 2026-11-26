@@ -17,6 +17,7 @@ const OPEN: DuelState = {
   winner: null,
   answer: null,
   ring: [],
+  hop: null,
 };
 
 describe('DuelWords', () => {

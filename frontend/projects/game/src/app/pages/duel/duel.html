@@ -23,15 +23,25 @@
     <main id="main" class="duel__stage">
       <h1 class="visually-hidden">Duel at {{ duel.country }}</h1>
       <p class="visually-hidden" role="status" aria-live="assertive">{{ announcement() }}</p>
-      <atw-flash-card
-        [sum]="sum()"
-        [sumLabel]="sumLabel()"
-        [answer]="answerBox()"
-        [frozen]="duel.frozen"
-        [result]="line().result"
-        [emphasis]="line().emphasis"
-        [tone]="line().tone"
-      />
+      @if (stamp(); as stamp) {
+        <atw-stamp-card [country]="stamp.country" [landmark]="stamp.landmark" [hop]="stamp.hop" />
+      } @else {
+        <atw-flash-card
+          [sum]="sum()"
+          [sumLabel]="sumLabel()"
+          [answer]="answerBox()"
+          [frozen]="duel.frozen"
+          [result]="line().result"
+          [emphasis]="line().emphasis"
+          [tone]="line().tone"
+        >
+          @if (pill(); as words) {
+            <button atw-text-button type="button" [pill]="true" [sunken]="true" (click)="moveOn()">
+              {{ words }}
+            </button>
+          }
+        </atw-flash-card>
+      }
       @if (open()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }

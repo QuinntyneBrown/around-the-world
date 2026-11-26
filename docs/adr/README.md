@@ -29,4 +29,4 @@ requirements and designs leave.
 | [0020](0020-solo-duel-clock-and-states.md) | The solo duel: its clock, its timings, the states journey 04 reaches and how specs drive it | Accepted |
 | [0021](0021-initial-budget-with-the-duel.md) | The initial budget of `game` once Duel plays a duel | Accepted |
 | [0022](0022-moving-round-the-ring.md) | Moving round the ring: timings, stamps, words, ties and the classmates' duels | Accepted |
-| [0023](0023-game-screens-follow-the-session.md) | The game screens follow the session through a listener, and World Map's room is deferred | Accepted |
+| [0023](0023-game-screens-follow-the-session.md) | The game screens follow the session through a listener, and World Map's room is drawn with the page | Accepted |

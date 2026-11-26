@@ -1,0 +1,180 @@
+// The world-map view and the art-* parts of docs/design-system/assets/components.css. These are
+// picture colours: the room is the same in light and dark. Kid colours come from `data-kid`.
+:host {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.world-map__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.world-map__view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.world-map__view--room {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .world-map__view--room {
+    display: block;
+  }
+
+  .world-map__view--zoom {
+    display: none;
+  }
+}
+
+.art-outline {
+  stroke: var(--palette-art-outline);
+  stroke-linejoin: round;
+}
+
+.art-floor-edge {
+  fill: var(--palette-gray-300);
+}
+
+.art-floor {
+  fill: var(--palette-art-floor);
+  stroke: var(--palette-gray-200);
+  stroke-width: 4;
+}
+
+.art-floor-left {
+  fill: var(--palette-art-edge-1);
+}
+
+.art-floor-right {
+  fill: var(--palette-art-edge-2);
+}
+
+.art-tile {
+  stroke: var(--palette-art-tile);
+  stroke-width: 2;
+  fill: none;
+}
+
+.art-rug-deep {
+  fill: var(--palette-blue-600);
+}
+
+.art-rug {
+  fill: var(--palette-blue-500);
+  stroke: var(--palette-art-outline);
+  stroke-width: 3;
+}
+
+.art-rug-line {
+  fill: none;
+  stroke: var(--palette-white);
+  stroke-opacity: 0.4;
+  stroke-width: 2;
+}
+
+.art-land-1 {
+  fill: var(--palette-green-400);
+}
+
+.art-land-2 {
+  fill: var(--palette-amber-300);
+}
+
+.art-land-3 {
+  fill: var(--palette-red-500);
+}
+
+.art-land-4 {
+  fill: var(--palette-purple-500);
+}
+
+.art-path {
+  fill: none;
+  stroke: var(--palette-white);
+  stroke-width: 7;
+  stroke-dasharray: 1 18;
+  stroke-linecap: round;
+}
+
+.art-shadow {
+  fill: var(--palette-art-outline);
+  opacity: 0.14;
+}
+
+.art-desk-leg {
+  stroke: var(--palette-art-desk-leg);
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.art-desk-side-1 {
+  fill: var(--palette-art-desk-side);
+}
+
+.art-desk-side-2 {
+  fill: var(--palette-amber-500);
+}
+
+.art-desk-top {
+  fill: var(--palette-art-desk-top);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.art-desk-top--lit {
+  fill: var(--palette-white);
+}
+
+.art-plaque {
+  fill: var(--palette-white);
+  stroke: var(--palette-art-outline);
+  stroke-width: 2;
+}
+
+.art-plaque--next {
+  fill: var(--palette-blue-600);
+}
+
+.art-plaque--start {
+  fill: var(--palette-art-outline);
+}
+
+.art-plaque-text {
+  font: 600 14px var(--font-family-display);
+  fill: var(--palette-art-outline);
+  text-anchor: middle;
+}
+
+.art-plaque-text--on {
+  fill: var(--palette-white);
+}
+
+.art-tag {
+  fill: var(--kid-tag-bg);
+  stroke: var(--palette-white);
+  stroke-width: 3;
+}
+
+.art-tag--you {
+  fill: var(--palette-art-outline);
+}
+
+.art-tag-text {
+  font: 600 15px var(--font-family-display);
+  fill: var(--kid-tag-fg);
+  text-anchor: middle;
+}
+
+.art-tag-text--you {
+  fill: var(--palette-white);
+}

@@ -1,0 +1,27 @@
+<ol class="standings" aria-label="Standings, by desks travelled">
+  @if (loading()) {
+    @for (placeholder of placeholders; track placeholder) {
+      <li class="standings__item">
+        <atw-skeleton shape="block" class="standings__icon" />
+        <span class="standings__text"><atw-skeleton shape="text" /></span>
+      </li>
+    }
+  } @else {
+    @for (item of items(); track item.kid) {
+      <li class="standings__item" [attr.data-kid]="item.kid" [attr.aria-current]="item.you || null">
+        <span class="standings__place numeric" [attr.aria-label]="'Place ' + item.place">{{
+          item.place
+        }}</span>
+        <span class="standings__icon"><atw-bean [kid]="item.kid" /></span>
+        <span class="standings__text">
+          <span class="standings__name">{{ item.name }}</span>
+          <span
+            class="standings__score numeric"
+            [attr.aria-label]="item.distance + ' of ' + tourLength() + ' desks'"
+            >{{ item.distance }}/{{ tourLength() }}</span
+          >
+        </span>
+      </li>
+    }
+  }
+</ol>

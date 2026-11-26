@@ -18,6 +18,9 @@ describe('DuelPage', () => {
       duel,
       start: () => undefined,
       answer: () => undefined,
+      tour: signal(null),
+      continue: () => undefined,
+      watchScreen: () => () => undefined,
     };
     TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });
     const fixture = TestBed.createComponent(DuelPage);
@@ -48,6 +51,7 @@ describe('DuelPage', () => {
       winner: null,
       answer: null,
       ring: [],
+      hop: null,
     });
     await fixture.whenStable();
 

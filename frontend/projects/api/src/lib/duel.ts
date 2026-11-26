@@ -1,5 +1,6 @@
 import { type FlashCard } from './flash-card';
 import { type KidId } from './kid';
+import { type TourMove } from './tour';
 
 /** One of the two players of a duel, as the Duel screen shows them. */
 export interface Duellist {
@@ -51,4 +52,6 @@ export interface DuelState {
   readonly answer: number | null;
   /** The kids round the ring, for the world ring. */
   readonly ring: readonly RingPlace[];
+  /** The hop a duel the device's player won as the traveller earned: its passport stamp. */
+  readonly hop: TourMove | null;
 }
