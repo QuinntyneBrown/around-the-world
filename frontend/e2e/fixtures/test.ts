@@ -11,6 +11,8 @@ import { installBrowserFakes, type MicrophoneSetting } from './fakes/browser-fak
  * - `backend`: API and hub requests answered from fixtures (no real backend or database);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
+ * - `classroom`: the 3D classroom's scenes on localhost, held back or refused when a spec asks,
+ *   WebGL taken away, and the WebGL contexts still open (docs/adr/0028);
  * - `clock`: the game's clock, held still and moved on by the spec (docs/adr/0020);
  * - `random`: `Math.random`, fixed by the spec so a classmate answers as it needs (ADR 0020).
  *
@@ -84,6 +86,17 @@ export interface FakePictures {
   refuse(pattern: RegExp): () => void;
 }
 
+export interface FakeClassroom {
+  /** The browser gives no WebGL context, so the classroom cannot be drawn (L2-036 3). */
+  cannotDraw(): Promise<void>;
+  /** Holds back the classroom's scenes until the returned function is called. */
+  holdBack(): () => void;
+  /** Refuses the classroom's scenes, so they fail to load. */
+  refuse(): () => void;
+  /** How many WebGL contexts the game opened and has not released (L2-048 criterion 3). */
+  openContexts(): Promise<number>;
+}
+
 export interface FakeClock {
   /** Holds the game's clock still (the page's `Date.now`); the browser's timers keep running. */
   hold(): Promise<void>;
@@ -112,6 +125,7 @@ interface Fixtures {
   random: FakeRandom;
   device: FakeDevice;
   pictures: FakePictures;
+  classroom: FakeClassroom;
   voice: FakeVoice;
   microphone: FakeMicrophone;
   model: FakeModel;
@@ -123,6 +137,8 @@ const HELD_AT = Date.parse('2026-01-05T09:00:00Z');
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const PLAYER_KEY = 'atw.player';
 const BACKEND_PATH = /^\/(api|hubs)\//;
+/** Where the classroom's scenes are served from (docs/adr/0028). */
+const CLASSROOM_SCENES = /^\/classroom\//;
 
 /** A change to the fakes in the page. */
 interface FakesPatch {
@@ -130,6 +146,7 @@ interface FakesPatch {
   speechSupported?: boolean;
   modelAvailability?: 'downloadable' | 'available';
   modelReplies?: string[];
+  webglSupported?: boolean;
 }
 
 function applyPatch(patch: FakesPatch): void {
@@ -138,6 +155,7 @@ function applyPatch(patch: FakesPatch): void {
   if (patch.speechSupported !== undefined) fakes.speechSupported = patch.speechSupported;
   if (patch.modelAvailability !== undefined) fakes.modelAvailability = patch.modelAvailability;
   if (patch.modelReplies !== undefined) fakes.modelReplies.push(...patch.modelReplies);
+  if (patch.webglSupported !== undefined) fakes.webglSupported = patch.webglSupported;
 }
 
 /** Changes the fakes now (when a page is open) and again on every page loaded after. */
@@ -330,6 +348,15 @@ export const test = base.extend<Fixtures>({
           };
         });
       },
+    });
+  },
+
+  classroom: async ({ page, pictures }, use) => {
+    await use({
+      cannotDraw: () => setFake(page, { webglSupported: false }),
+      holdBack: () => pictures.holdBack(CLASSROOM_SCENES),
+      refuse: () => pictures.refuse(CLASSROOM_SCENES),
+      openContexts: () => page.evaluate(() => window.__atwFakes.openContexts()),
     });
   },
 

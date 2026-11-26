@@ -1,5 +1,6 @@
 import { type TourMove, type TourPlayer, type TourState } from '@atw/api';
 import { type RoomKid, type StandingsItem } from '@atw/components';
+import { nextStop } from '@atw/domain';
 
 /**
  * The words and the pieces of World Map for a tour (docs/detailed-designs/tour/
@@ -35,12 +36,7 @@ export const MapWords = {
 
   /** The next stop: the desk after the traveller's with a holder, passing the empty desk. */
   nextDesk(tour: TourState): number {
-    let desk = tour.travellerDesk;
-    for (let step = 0; step < tour.tourLength; step++) {
-      desk = (desk % tour.tourLength) + 1;
-      if (tour.desks[desk - 1]?.holder) return desk;
-    }
-    return desk;
+    return nextStop(tour);
   },
 
   /** The desk the device's player sits at, or null while they travel. */

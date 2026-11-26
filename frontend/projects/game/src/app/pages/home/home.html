@@ -8,6 +8,12 @@
         <img class="home__picture" [src]="classroomPicture" alt="" />
       }
     }
+    <canvas
+      class="home__canvas"
+      [class.home__canvas--drawn]="scene() === 'drawn'"
+      [atwClassroom]="atRest"
+      (status)="scene.set($event)"
+    ></canvas>
     <div class="home__corner">
       <button
         atw-icon-button
@@ -30,6 +36,12 @@
       </p>
       <a atw-toy-button size="xl" class="home__play" [routerLink]="playLink()">{{ playLabel() }}</a>
     </div>
+
+    @if (scene() === 'still') {
+      <atw-alert heading="The 3D classroom is having a rest">
+        <p>You’re seeing a picture of it instead. The game plays just the same.</p>
+      </atw-alert>
+    }
 
     @if (kept(); as kept) {
       @if (kidPicture() === 'loading') {

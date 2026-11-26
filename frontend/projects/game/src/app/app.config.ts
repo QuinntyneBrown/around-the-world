@@ -4,7 +4,14 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, withAutoCleanupInjectors, withRouterConfig } from '@angular/router';
-import { DEVICE_STORAGE, PICTURE_LOADER, PLAYER_CHOICES, PLAYER_STORAGE, VISIT } from '@atw/api';
+import {
+  CLASSROOM_RENDERER,
+  DEVICE_STORAGE,
+  PICTURE_LOADER,
+  PLAYER_CHOICES,
+  PLAYER_STORAGE,
+  VISIT,
+} from '@atw/api';
 import {
   deviceStorage,
   LocalPlayerStorage,
@@ -38,5 +45,11 @@ export const appConfig: ApplicationConfig = {
     { provide: PLAYER_CHOICES, useClass: StoredPlayerChoices },
     { provide: PICTURE_LOADER, useClass: BrowserPictureLoader },
     { provide: VISIT, useClass: VisitState },
+    // The 3D classroom: Three.js and its renderer load when a screen first draws it, never
+    // with the initial bundle (L2-047 criterion 2, docs/adr/0028).
+    {
+      provide: CLASSROOM_RENDERER,
+      useValue: () => import('@atw/world').then((world) => world.createClassroomRenderer()),
+    },
   ],
 };

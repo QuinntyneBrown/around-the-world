@@ -113,7 +113,9 @@ room may share a kid (`L2-013`).
 - The game runs end to end with the stand-in, and the Blender exports can drop in at the same
   paths. Their absence is reported as the journey's blocker; the animation clips come with them.
 - The `world` library joins the dependency direction (`game` → `world` → `api`), enforced by
-  ESLint, as `AGENTS.md` already describes it. Three.js and the renderer are one lazy chunk of
+  ESLint, as `AGENTS.md` already describes it. Since `game` reaches it only through `import()`,
+  ESLint's boundaries now count a dynamic `import()` as a dependency too, so no other library
+  can reach `world` that way. Three.js and the renderer are one lazy chunk of
   about 640 kB raw; the initial bundle grew by 0.15 kB, for the token and its loader.
 - World Map's labels and the 3D room agree only while `RoomPlan` and `RoomLayout` agree.
 - Every behaviour spec that opens Home, Duel or World Map now draws the classroom with

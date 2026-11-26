@@ -22,6 +22,7 @@ const types = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.woff2': 'font/woff2',
+  '.glb': 'model/gltf-binary',
   '.txt': 'text/plain; charset=utf-8',
 };
 

@@ -1,7 +1,13 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { PICTURE_LOADER, PLAYER_CHOICES, VISIT, type PlayerChoices } from '@atw/api';
+import {
+  CLASSROOM_RENDERER,
+  PICTURE_LOADER,
+  PLAYER_CHOICES,
+  VISIT,
+  type PlayerChoices,
+} from '@atw/api';
 import { GameSetupRules, NicknameGenerator } from '@atw/domain';
 import { VisitState } from '../../visit/visit-state';
 import { HomePage } from './home';
@@ -28,6 +34,8 @@ describe('HomePage', () => {
         { provide: NicknameGenerator, useValue: new NicknameGenerator() },
         { provide: PICTURE_LOADER, useValue: { preload: () => Promise.resolve('loaded') } },
         { provide: VISIT, useValue: visit },
+        // The 3D classroom is the behaviour specs' business; here it never arrives.
+        { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
       ],
     });
     const fixture = TestBed.createComponent(HomePage);
