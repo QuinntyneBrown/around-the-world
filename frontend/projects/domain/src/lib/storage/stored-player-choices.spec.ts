@@ -42,4 +42,25 @@ describe('StoredPlayerChoices', () => {
     expect(choices.nickname()).toEqual({ adjective: 8, animal: 5 });
     expect(storage.writes).toEqual([{ kid: 'milo', nickname: { adjective: 8, animal: 5 } }]);
   });
+
+  it('offers the default setup until the child changes it (L2-016 1, L2-017 1)', () => {
+    const choices = choicesWith(new RecordingStorage({ kid: 'nia', nickname: null }));
+    expect(choices.setup()).toEqual({
+      kinds: ['times'],
+      tables: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+      tourLength: 12,
+      cardSpeed: 'normal',
+    });
+  });
+
+  it('keeps a changed setup on the device beside the kid and nickname (L2-015 3)', () => {
+    const storage = new RecordingStorage({ kid: 'pip', nickname: { adjective: 1, animal: 1 } });
+    const choices = choicesWith(storage);
+    const setup = { kinds: ['plus'], tables: [7], tourLength: 24, cardSpeed: 'chill' } as const;
+
+    choices.changeSetup(setup);
+
+    expect(choices.setup()).toEqual(setup);
+    expect(storage.writes).toEqual([{ kid: 'pip', nickname: { adjective: 1, animal: 1 }, setup }]);
+  });
 });
