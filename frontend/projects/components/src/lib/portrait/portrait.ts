@@ -24,6 +24,7 @@ export class Portrait {
   readonly kid = input.required<KidId | 'classmate'>();
   /** The picture's address. */
   readonly src = input.required<string>();
+  readonly stageSrc = input<string>();
   /** The kid's name when the portrait stands alone; empty beside the name. */
   readonly alt = input('');
   readonly size = input<PortraitSize>('default');

@@ -37,6 +37,10 @@
       [class.portrait--round]="round()"
       [class.portrait--ring]="ring()"
       [attr.data-kid]="kid()"
+      #picture
+      [attr.srcset]="stageSrc() ? src() + ' 384w, ' + stageSrc() + ' 1024w' : null"
+      [attr.sizes]="stageSrc() ? '(min-width: 62rem) 28rem, (min-width: 36rem) 24rem, 17rem' : null"
+      (error)="picture.removeAttribute('srcset')"
       [src]="src()"
       [alt]="alt()"
       width="384"

@@ -26,6 +26,8 @@ runs wholly on the device: it has no backend part and makes no request to `Aroun
 A game with friends later sends the kid's id and the nickname's two list indexes to a room;
 that exchange belongs to the `rooms` subsystem.
 
+The stage offers the selected kid’s 384- and 1024-pixel portraits to the browser. The roster uses thumbnails.
+
 Types and contracts in the `api` library (`@atw/api`):
 
 - **`KidId`** — identifier of one of the five kids: `zuri`, `kenji`, `nia`, `milo`, `pip`.

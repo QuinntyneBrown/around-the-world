@@ -15,6 +15,7 @@ storage shows no error, so a storage failure cannot be Pick Your Kid's error sta
 ## Decision
 
 - The pictures are files of `game` (`public/img/`), copied from `docs/mocks/assets/img/`.
+- The selected stage portrait can use its 1024-pixel source when the display needs more detail. Only thumbnails are preloaded.
 - `PictureLoader` (`PICTURE_LOADER`, `@atw/api`) preloads a list of pictures and resolves
   `loaded` when every one has arrived, or `failed` when one could not. Its browser
   implementation, `BrowserPictureLoader` in `game`, uses `Image.decode()` and drops each

@@ -72,6 +72,21 @@ test.describe('Picking a kid', () => {
     }
   });
 
+  test('shows the full Character Sheet portrait when the stage exceeds thumbnail size', async ({
+    page,
+  }) => {
+    const pick = new PickYourKidPage(page);
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await pick.open();
+    for (const [name] of KIDS) {
+      await pick.choose(name);
+      await expect(pick.stagePicture).toHaveJSProperty(
+        'currentSrc',
+        new URL('/img/kid-' + name.toLowerCase() + '-stage.jpg', page.url()).href,
+      );
+    }
+  });
+
   test('gives a nickname from the lists, rolls a different one, and has no field to type in', async ({
     page,
   }) => {
