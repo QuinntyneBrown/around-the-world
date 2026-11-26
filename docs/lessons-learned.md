@@ -195,3 +195,72 @@ the lessons that fit.
 - *Prove a hand-over with a unit test of the page* (03, 4): `SoloGame`'s unit tests prove the
   class, the clock, and the first card dealt before the agents arrive.
 
+## Journey 05: Hop round the ring on the World Map
+
+**What slowed it.**
+
+- Drawing World Map's room inside `@defer`, so its placeholder and error blocks would be the
+  loading and error states, put 6.6 kB of Angular's defer runtime into `main`; loading the room
+  through `NgComponentOutlet` instead cost 3 kB. Both went over the 256 kB warning. The room is
+  drawn with the page, in World Map's lazy chunk; the loading state follows the tour, and the
+  error state waits for the 3D classroom, which can fail (ADR 0023).
+- The design's `GameScreenNavigator` watched the session with an effect, which ADR 0021 had
+  already measured at 3.4 kB in `main`. The session tells a plain listener instead
+  (`watchScreen`), and the navigator stops listening with its group.
+- The mock `world-map/hop` put the child above Kenji at the same distance, the opposite of how
+  `L2-006` orders the end of a tour. The mock was redrawn and the order written into `L2-034`.
+- `SoloGame`'s flow for the sit, the classmates' duels and the child as the desk holder was
+  written with the first slice's rules, so the second and third slices' specs were green on
+  their first run. Each was broken by hand (the desk holder never dealt in, every desk labelled,
+  the zoom never ending) to see it fail for the expected reason.
+
+**New lessons.**
+
+1. Measure a template feature (`@defer`, `NgComponentOutlet`) on the chunk table before a state
+   is designed around it: its runtime lands in `main` whichever lazy chunk uses it.
+2. Let the game service decide when the screen changes and tell a plain listener, and keep every
+   wait between screens on the game's clock, so a spec moves them all with `clock.pass(ms)`.
+3. Draw a picture once in `<defs>` and show it in two views with `<use>` (the room and the zoom);
+   the encapsulated styles still apply to the copies in Chromium.
+4. Share SVG parts between components with an attribute component on `g` whose template uses
+   `svg:`-prefixed elements (`g[atw-bean-parts]`), rather than copying the drawing.
+5. Work out a rule with chance that no one watches (the classmates' duels) at its start with a
+   pure helper, and play its result on the clock: it can then be played out at once on demand.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): it showed the defer runtime in `main`
+  at the first build.
+- *Check a fake once by hand* (01, 2): the specs written after the flow were broken by hand
+  once each, as above.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): StampCard, WorldMap (with
+  RoomLayout), MapToast, Standings and BeanParts added; TextButton (`sunken`), Pill
+  (`--pill-bg`) and Bean extended; each marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0023 for the listener in
+  place of an effect, and for the room drawn without `@defer`.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): read after every slice;
+  `main` stayed at 234.6 kB.
+- *A link or button block is an attribute component* (02, 2): the quiet pill is
+  `button[atw-text-button]` and Back to the card `button[atw-icon-button]`.
+- *Drive states through the fixture* (02, 3): `clock` and `random` drive every hop, sit and
+  classmates' duel; nothing new was needed in the fixture.
+- *An unreachable state gets a unit test of the page* (02, 4): World Map's loading state.
+- *Tag one spec per feature `@critical`* (02, 5): a traveller who wins, hops on and duels the
+  next desk.
+- *Put the page in the group that provides its service* (03, 1): World Map and the navigator
+  are in the solo group.
+- *Measure the initial bundle against the base commit* (03, 2): 255.46 kB before, 255.44 kB
+  after.
+- *A group of toggles is one component* (03, 3): not needed.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s unit tests prove the stamp, the
+  waits and the classmates' duels.
+- *Drive game time from the wall clock* (04, 1): the three new waits are on `GameClock`.
+- *Prefer signals and outputs to `effect()`* (04, 2): applied to the navigator (lesson 2 above).
+- *Keep fast-changing input in the component that owns it* (04, 3): new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the room's name and the
+  standings' distances.
+- *Let a rule with chance take a `RandomSource`* (04, 5): `ClassmatesDuel` takes the agents,
+  so its unit tests fix every answer and time.
+
