@@ -244,6 +244,19 @@ public sealed class KnownIngressApiFixture() : BehindIngressApiFixture("10.0.0.1
 /// <summary>Behind an ingress that no setting names, whose forwarded headers are not to be believed.</summary>
 public sealed class UnknownIngressApiFixture() : BehindIngressApiFixture(null);
 
+/// <summary>The backend whose setting names the game's origin, the only one CORS allows (docs/adr/0037).</summary>
+public sealed class FrontendOriginApiFixture : ApiFixture
+{
+    /// <summary>The origin of the <c>game</c> application in this deployment.</summary>
+    public const string Origin = "https://play.around-the-world.test";
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Frontend:Origin", Origin);
+    }
+}
+
 /// <summary>A code generator that draws the codes it was given, in order, then the last again.</summary>
 internal sealed class ScriptedCodes(IReadOnlyList<string> codes) : IRoomCodeGenerator
 {

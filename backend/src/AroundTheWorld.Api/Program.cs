@@ -25,6 +25,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorCodeWriter>();
 builder.Services.AddRoomRateLimits(builder.Configuration);
 builder.Services.AddKnownProxies(builder.Configuration);
+builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddHostedService<IdleRoomSweeper>();
 builder.Services.AddHostedService<RoomTimers>();
 
@@ -60,6 +61,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseWebSockets();
 app.UseRouting();
+app.UseCors();
 app.UseRateLimiter();
 app.UseBodySizeLimit();
 app.MapControllers().RequireOpenToAnyoneLimits();
