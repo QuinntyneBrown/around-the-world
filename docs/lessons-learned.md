@@ -1018,3 +1018,82 @@ the lessons that fit.
   `GameChanged`.
 - *Say whether a test helper waits for any or the next* (14, 5): `WaitForStickerAsync` takes any
   received, and the tests then compare every sticker received.
+
+## Journey 16: Come back after a lost connection
+
+**What slowed it.**
+
+- The design's `GameSnapshot` and `TourEnded` were types and events the game no longer needed:
+  ADR 0033's single `GameChanged`, sent to every connection as it opens, is already the snapshot
+  a returning device needs, so the return is the existing `RoomChanged` and `GameChanged` pair.
+- SignalR's retry delays run on real timers, which the fixture's `clock` does not move. The
+  30 seconds are counted on the game's clock, ticked every 100 ms, which now also ticks while
+  the connection is being tried again, even in the Lobby; the fake hub holds a returning
+  connection's handshake until `returns()`, so a return is instant and a give-up is a
+  `clock.pass(30_000)`, with no spec waiting on SignalR's back-off.
+- A backend test needs to know the server has noticed a lost connection before it moves the
+  clock 30 seconds on. A pipeline behaviour that records every request handled, by the token of
+  the connection it came from, let the tests await `MarkPlayerAwayCommand` for one player
+  without the command existing yet, so the first run failed for the right reason.
+- The host mark passed to "the earliest joiner" by `MinBy(JoinedAt)`, and every player of a test
+  joined at the same fake time: the store's order decided. Ties now fall to the place taken.
+- `FriendsGame`'s injected connection was named `connection`, the name `GameSession` now needed
+  for the connection's state; it is `hub` now.
+- The device's slices were written together, so most frontend specs passed at their first run
+  after the first slice's; the dropped-out banner, "You're back!", World Map's filter and the
+  wobbly rule were each broken by hand and failed their specs as expected. Breaking the
+  standings' numbering did not fail a spec, since World Map draws only the players it is given;
+  the spec guards the players' list, and a unit test of `FriendsView` the numbering.
+
+**New lessons.**
+
+1. When a library retries on its own timers, keep its back-off for the real network and decide
+   the deadline on the game's clock as well, and let the fake hold a connection's handshake rather
+   than refuse it, so a spec can return it at once or give up with one `clock.pass`.
+2. A server that holds a spot for a lost connection must record which connection it was: a
+   device that reconnects before the server notices the old one is gone must not be marked away
+   by the old one's disconnect.
+3. Let a test fixture record every request handled, with the caller's token, through one open
+   generic pipeline behaviour: a test can await a request that has no handler yet, and fails
+   naming what was handled.
+4. When "the earliest" decides something, give it a tie-breaker that does not depend on the
+   store's order: fake clocks make ties the rule in tests.
+5. Give a page that can be covered by an overlay an `inert` binding on everything else, and
+   hide the controls that would send while the overlay shows, so neither keyboard nor touch
+   reaches them.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` stayed at 252.46 kB and the initial total at 273.28 kB.
+- *Check a fake once by hand* (01, 2): four behaviours were broken by hand, as above.
+- *Check an ESLint boundary by hand* (01, 3): the boundary caught `ConnectionBanner`'s value
+  import of `@atw/api`; it is `import type` now.
+- *Build a component the first time a screen needs it* (01, 4): StatusOverlay and
+  ConnectionBanner (composing Alert) added; Icon extended (`wifi`); marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0036 fills
+  the design's gaps and supersedes ADR 0032's Lobby retries.
+- *Drive states through the fixture* (02, 3): `roomHub` gained `loses()` and `returns()`.
+- *Tag one spec per feature `@critical`* (02, 5): a lost connection comes back to the same spot.
+- *Measure the initial bundle against the base commit* (03, 2): 252.46 kB before and after.
+- *Drive game time from the wall clock* (04, 1): the 30 seconds and every banner's time are on
+  the game's clock.
+- *Prefer signals and outputs to `effect()`* (04, 2): `connection` and `notice` are `computed`
+  signals; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsGame` opens Duel when
+  the connection is away, and `FriendsView` the Podium 3 seconds after everyone left.
+- *Await a background job through a pipeline behaviour* (12, 4): the removal sweep is awaited by
+  the time it swept at.
+- *Prove a backend rule through a store double* (13, 2): not needed; a return and a removal that
+  race are taken one at a time by the room's `Version`, as joins are.
+- *Fake a real-time channel at its protocol* (13, 4): a lost connection is a WebSocket closed
+  with no SignalR close message, and a refused return a handshake followed by a close message.
+- *A test helper that waits must say any or next* (14, 5): the traveller test first matched the
+  room state of the join; it waits for a room without the removed host now.
+- *Measure overlap at three sizes* (15, 1): the wobbly banner was measured against the flash card
+  on a phone, a tablet and a desktop.
+- *Let a short-lived thing live on the game's clock* (15, 4): the banners are times on the clock
+  that already ticks, not timers of their own.

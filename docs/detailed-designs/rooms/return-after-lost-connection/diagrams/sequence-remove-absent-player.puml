@@ -27,7 +27,7 @@ box "Backend — AroundTheWorld.Api" #D1FADF
   participant "RoomHub" as hub
 end box
 box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
-  participant "RemoveAbsentPlayerCommandHandler" as handler
+  participant "RemoveAbsentPlayersCommandHandler" as handler
   participant "Room" as room
   participant "Tour" as tour
 end box
@@ -37,7 +37,7 @@ end box
 timers -> timers : Tick on TimeProvider
 timers -> db : Find players whose AwaySince is 30 seconds old or more
 db --> timers : Players away
-timers -> handler : Send RemoveAbsentPlayerCommand(room, player)
+timers -> handler : Send RemoveAbsentPlayersCommand(now)
 handler -> db : Load the room
 db --> handler : Room with its Tour
 handler -> room : Remove(player, now)
@@ -59,8 +59,8 @@ else the player is still away (L2-029 criterion 4)
     room -> tour : End()
     tour --> room : Tour over
     handler -> db : Save changes in one unit of work
-    handler -> hub : IRoomNotifier.TourEnded
-    hub --> conn : TourEnded to the player who remains
+    handler -> hub : IRoomNotifier.GameChanged (ending everyoneLeft)
+    hub --> conn : GameChanged to the player who remains
     conn --> session : Final TourState
     session --> page : tour signal
     page --> others : Banner "Everyone else has left.", "The tour ends here. On to the podium!"
