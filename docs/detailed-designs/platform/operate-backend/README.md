@@ -111,7 +111,8 @@ API's normal start never migrates (`docs/adr/0009-health-and-migrations.md`).
   counts outcomes. Its only tags are the request's type name and the outcome `code`. It never
   reads a property of the request. The histogram is the measurement behind `L2-049`
   criterion 3. The span is `atw.request`, the histogram `atw.request.duration` in seconds, and
-  their tags `atw.request` and `atw.outcome` (`ok`, a refusal's `code` or `server_error`), from
+  their tags `atw.request` and `atw.outcome` (`ok`, a refusal's `code`, `server_error` or
+  `cancelled`), from
   the source and meter `AroundTheWorld`.
 - **`TelemetryScrubber`** — OpenTelemetry processor in Infrastructure, applied to every span
   and log record before export. It removes the path with its values, the query string, the

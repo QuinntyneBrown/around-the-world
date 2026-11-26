@@ -89,8 +89,8 @@ telemetry backend. `OTEL_SERVICE_NAME` names the service, `around-the-world-api`
 
 - **`TelemetryBehavior`** starts the span `atw.request` for each MediatR request and records
   its duration into the histogram `atw.request.duration` (seconds). Both carry two tags only:
-  `atw.request`, the request type's name, and `atw.outcome`, `ok`, the refusal's `code` or
-  `server_error`. The histogram's count counts the outcomes.
+  `atw.request`, the request type's name, and `atw.outcome`, `ok`, the refusal's `code`,
+  `server_error` or `cancelled` (the caller went away). The histogram's count counts the outcomes.
 - **`TelemetryScrubber`** removes, from every span before export, the tags `url.full`,
   `url.path`, `url.query`, `http.target`, `http.url`, `client.address`, `client.port`,
   `network.peer.address`, `network.peer.port` and `user_agent.original`; from every log record,
@@ -124,6 +124,11 @@ room) give every code they do not name their screen's generic words, never the b
 "Something went wrong on our side. Try again in a moment." (ADR 0032) and Solo Or Friends' "We
 couldn't make your room" (`L2-022` criterion 3). They stand in for the design's single
 `messageForCode`.
+
+**Testing telemetry.** An activity source is seen by every tracer in a process, so the
+acceptance test that reads exported telemetry (through OpenTelemetry's in-memory exporters,
+after the scrubber) runs in an xUnit collection with parallelization off; a deployed process
+holds one host and needs nothing of the kind.
 
 **Migrations.** Unchanged: `migrate` applies them and the API never does (ADR 0009).
 
