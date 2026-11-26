@@ -1,0 +1,120 @@
+// Home's own layout (docs/mocks/pages/home/; the home block of
+// docs/design-system/assets/components.css). Below 992px the classroom fills the top 46% and
+// the title panel rises over it; from 992px the panel is a left column (L2-050 criterion 4).
+.home {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.home__scene {
+  position: relative;
+  height: 46vh;
+  min-height: 18rem;
+  flex: none;
+  background: var(--color-bg-subtle);
+}
+
+.home__picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home__panel {
+  position: relative;
+  z-index: var(--z-raised);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: calc(-1 * var(--space-8));
+  padding: var(--space-8) var(--space-6);
+  background: var(--color-bg-canvas);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.home__intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.home__kicker {
+  font: var(--text-h4);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-fg-muted);
+}
+
+.home__title {
+  font: var(--text-display);
+  line-height: 0.95;
+  margin-top: var(--space-1);
+}
+
+.home__title-accent {
+  color: var(--color-danger-solid);
+}
+
+.home__lead {
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+  max-width: 24rem;
+  margin-top: var(--space-4);
+}
+
+.home__play {
+  margin-top: var(--space-8);
+  align-self: stretch;
+}
+
+@media (min-width: 36rem) {
+  .home__panel {
+    padding-inline: var(--space-10);
+  }
+
+  .home__title {
+    font: var(--text-hero);
+    line-height: 0.95;
+  }
+
+  .home__play {
+    align-self: flex-start;
+  }
+}
+
+@media (min-width: 62rem) {
+  .home {
+    flex-direction: row;
+  }
+
+  .home__scene {
+    order: 2;
+    flex: 1;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .home__panel {
+    flex: none;
+    width: 30rem;
+    margin-top: 0;
+    border-radius: 0;
+    padding: var(--space-12);
+  }
+}
+
+@media (min-width: 75rem) {
+  .home__panel {
+    width: 34rem;
+  }
+
+  .home__title {
+    font-size: var(--font-size-7xl);
+  }
+}

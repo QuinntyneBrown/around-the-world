@@ -1,0 +1,38 @@
+// The topbar block of docs/design-system/assets/components.css, on the host <header>.
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--layout-margin) 0;
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+.topbar__title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font: var(--text-h3);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__slot {
+  min-width: var(--target-comfortable);
+  display: flex;
+  justify-content: flex-end;
+  flex: none;
+}
+
+@media (min-width: 36rem) {
+  :host {
+    padding-top: var(--space-6);
+  }
+
+  .topbar__title {
+    font: var(--text-h2);
+    font-weight: var(--font-weight-semibold);
+  }
+}

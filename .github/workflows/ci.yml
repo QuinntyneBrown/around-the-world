@@ -42,8 +42,8 @@ jobs:
         run: npm run build
       - name: Install Chromium
         run: npx playwright install --with-deps --only-shell chromium
-      - name: Behaviour specs
-        run: npm run e2e
+      - name: Behaviour specs (the critical path of each feature, docs/adr/0015)
+        run: npm run e2e -- --grep @critical
 
   backend:
     name: Backend

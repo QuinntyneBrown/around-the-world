@@ -1,0 +1,5 @@
+{
+  "name": "@atw/components",
+  "private": true,
+  "sideEffects": false
+}

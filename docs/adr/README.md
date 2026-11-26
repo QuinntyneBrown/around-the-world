@@ -14,9 +14,11 @@ requirements and designs leave.
 | [0005](0005-eslint-boundaries.md) | `eslint-plugin-boundaries` enforces the dependency direction | Accepted |
 | [0006](0006-playwright-fixture.md) | The shape of the shared Playwright fixture | Accepted |
 | [0007](0007-ci-layout.md) | One CI workflow of two parallel jobs | Accepted |
-| [0008](0008-bundle-budgets.md) | The production budgets of `game` | Accepted |
+| [0008](0008-bundle-budgets.md) | The production budgets of `game` | Accepted; `initial` superseded by 0014 |
 | [0009](0009-health-and-migrations.md) | The live endpoint, the room store's engine and the migrations command | Accepted |
 | [0010](0010-design-system-components.md) | Each design-system component is built once, in `@atw/components` | Accepted |
 | [0011](0011-player-record-on-the-device.md) | The player's record is one versioned JSON entry in `localStorage` | Accepted |
 | [0012](0012-interactive-components-on-native-elements.md) | A design-system component that is a link or a button sits on the native element | Accepted |
 | [0013](0013-pictures-arriving-and-failing.md) | Home's and Pick Your Kid's loading and error states follow their pictures | Accepted |
+| [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted |
+| [0015](0015-critical-path-in-ci.md) | CI runs the behaviour specs tagged `@critical` | Accepted |

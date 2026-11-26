@@ -1,0 +1,13 @@
+// The two ways to play, one above the other and side by side from 768px.
+.mode-grid {
+  display: grid;
+  gap: var(--layout-gutter);
+
+  @media (min-width: 48rem) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mode-grid__action {
+  height: var(--control-height-lg);
+}

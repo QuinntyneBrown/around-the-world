@@ -1,0 +1,15 @@
+@if (loading()) {
+  <atw-portrait [kid]="kid()" src="" state="loading" />
+  <span atw-stack gap="sm" class="kid-chip__lines">
+    <atw-skeleton shape="text" />
+    <atw-skeleton shape="text" [short]="true" />
+  </span>
+} @else {
+  <atw-portrait [kid]="kid()" [src]="picture()" [state]="pictureState()" />
+  <span>
+    <span class="kid-chip__name"
+      >{{ nickname() }} <span class="kid-chip__as">as {{ kidName() }}</span></span
+    >
+    <span class="kid-chip__action">Change kid</span>
+  </span>
+}

@@ -1,0 +1,74 @@
+<atw-screen>
+  <header atw-top-bar heading="Pick your kid">
+    <a atw-icon-button slot="back" icon="back" routerLink="/" aria-label="Back"></a>
+  </header>
+  <main atw-screen-body columns="split">
+    @if (pictures() === 'loading') {
+      <section class="kid-stage" aria-busy="true">
+        <p class="visually-hidden" role="status">Getting the kids…</p>
+        <atw-portrait [kid]="selected()" src="" size="hero" state="loading" />
+        <div atw-stack [center]="true" class="kid-stage__lines">
+          <atw-skeleton shape="title" />
+          <atw-skeleton shape="text" />
+        </div>
+      </section>
+    } @else {
+      <section class="kid-stage" aria-live="polite">
+        @for (kid of [chosen()]; track kid.id) {
+          <div class="kid-stage__kid" [attr.data-kid]="kid.id">
+            <atw-portrait
+              [kid]="kid.id"
+              [src]="kid.picture"
+              [alt]="kid.name"
+              size="hero"
+              [state]="pictures()"
+            />
+            <div>
+              <h2 class="kid-stage__name">{{ kid.name }}</h2>
+              <p class="kid-stage__tagline">{{ kid.tagline }}</p>
+              <p class="kid-stage__bio">{{ kid.description }}</p>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <section atw-stack gap="lg" [middle]="true">
+      @if (pictures() === 'failed') {
+        <atw-alert heading="The kids’ pictures didn’t load">
+          <p>These little drawings stand in. You can still pick and play.</p>
+          <button
+            atw-text-button
+            slot="actions"
+            type="button"
+            icon="retry"
+            (click)="tryPicturesAgain()"
+          >
+            Try the pictures again
+          </button>
+        </atw-alert>
+      }
+      <atw-kid-picker
+        [kids]="kids()"
+        [selected]="selected()"
+        [pictures]="pictures() === 'failed' ? 'failed' : 'loaded'"
+        [loading]="pictures() === 'loading'"
+        (picked)="select($event)"
+      />
+      <div atw-panel size="sm">
+        <atw-nickname
+          [value]="nicknameWords()"
+          [loading]="pictures() === 'loading'"
+          (newName)="newName()"
+        />
+      </div>
+      @if (pictures() === 'loading') {
+        <button atw-toy-button type="button" size="xl" [block]="true" disabled>I’m ready!</button>
+      } @else {
+        <button atw-toy-button type="button" size="xl" [block]="true" (click)="confirm()">
+          I’m {{ chosen().name }}!
+        </button>
+      }
+    </section>
+  </main>
+</atw-screen>
