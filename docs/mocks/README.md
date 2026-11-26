@@ -47,9 +47,7 @@ bar at the bottom that links its sibling states and switches the theme.
 
 | Folder | What it holds |
 |---|---|
-| `assets/tokens.css` | Every colour, size, radius, shadow, duration and breakpoint. The only place a raw value lives. |
-| `assets/ui.css` | The component kit every mock shares: BEM blocks, states carried by attributes. |
-| `assets/fonts/` | Fredoka and Nunito, bundled (SIL Open Font License, licences beside them). |
+| `assets/tokens.css`, `assets/ui.css` | Two one-line files that import the design system's `tokens/tokens.css` and `assets/components.css`. Every colour, size and component lives there: see [docs/design-system](../design-system/README.md). |
 | `assets/img/` | The cast's portraits and the two classroom pictures from the prototype, resized. |
 | `assets/mock.css`, `assets/mock.js` | The mock bar and notes. Not product UI. |
 | `pages/`, `dialogs/`, `notifications/` | One file per screen per state, listed in `manifest.json`. |

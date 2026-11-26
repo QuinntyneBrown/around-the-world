@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Responsive | Around the World design system</title>
+<meta name="description" content="Every screen works from the narrowest phone to the widest desktop, and Duel fills the screen at all of them.">
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="../assets/components.css">
+<link rel="stylesheet" href="../assets/ds.css">
+</head>
+<body id="top">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="ds-shell">
+  <nav class="ds-nav" aria-label="Design system">
+    <div class="ds-nav__brand"><a href="../index.html">Around the World DS</a><button class="ds-theme-toggle" type="button" aria-pressed="false">☾ Dark</button></div>
+    <details open><summary>Foundations</summary><ul><li><a href="../foundations/color.html">Color</a></li><li><a href="../foundations/typography.html">Typography</a></li><li><a href="../foundations/spacing.html">Spacing</a></li><li><a href="../foundations/layout.html">Layout</a></li><li><a href="../foundations/elevation.html">Elevation</a></li><li><a href="../foundations/shape.html">Shape</a></li><li><a href="../foundations/motion.html">Motion</a></li><li><a href="../foundations/iconography.html">Iconography</a></li><li><a href="../foundations/theming.html">Theming</a></li><li><a href="../foundations/responsive.html">Responsive</a></li><li><a href="../foundations/accessibility.html">Accessibility</a></li><li><a href="../foundations/content.html">Content</a></li></ul></details><details open><summary>Components</summary><ul><li><a href="../components/toy-button.html">Toy button</a></li><li><a href="../components/icon-button.html">Icon button</a></li><li><a href="../components/text-button.html">Text button</a></li><li><a href="../components/kid-chip.html">Kid chip</a></li><li><a href="../components/top-bar.html">Top bar</a></li><li><a href="../components/skip-link.html">Skip link</a></li><li><a href="../components/screen.html">Screen and stack</a></li><li><a href="../components/panel.html">Panel</a></li><li><a href="../components/portrait.html">Portrait</a></li><li><a href="../components/kid-tag.html">Kid tag</a></li><li><a href="../components/badge.html">Badge</a></li><li><a href="../components/pill.html">Pill</a></li><li><a href="../components/kid-picker.html">Kid picker</a></li><li><a href="../components/nickname.html">Nickname</a></li><li><a href="../components/mode-card.html">Mode card</a></li><li><a href="../components/code-letters.html">Code letters</a></li><li><a href="../components/code-field.html">Code field</a></li><li><a href="../components/field-message.html">Field message</a></li><li><a href="../components/room-code.html">Room code</a></li><li><a href="../components/summary.html">Summary</a></li><li><a href="../components/player-card.html">Player card</a></li><li><a href="../components/toggle-chip.html">Toggle chip</a></li><li><a href="../components/table-key.html">Table key</a></li><li><a href="../components/choice.html">Choice</a></li><li><a href="../components/segmented.html">Segmented choice</a></li><li><a href="../components/switch.html">Switch</a></li><li><a href="../components/listener.html">Listener</a></li><li><a href="../components/level-meter.html">Level meter</a></li><li><a href="../components/duel-hud.html">Duel HUD</a></li><li><a href="../components/timer-bar.html">Timer bar</a></li><li><a href="../components/world-ring.html">World ring</a></li><li><a href="../components/flash-card.html">Flash card</a></li><li><a href="../components/number-pad.html">Number pad</a></li><li><a href="../components/stamp-card.html">Stamp card</a></li><li><a href="../components/sticker.html">Sticker</a></li><li><a href="../components/status-overlay.html">Status overlay</a></li><li><a href="../components/world-map.html">World Map room</a></li><li><a href="../components/map-toast.html">Map message</a></li><li><a href="../components/standings.html">Standings</a></li><li><a href="../components/podium.html">Podium</a></li><li><a href="../components/passport.html">Passport</a></li><li><a href="../components/alert.html">Alert and banner</a></li><li><a href="../components/toast.html">Toast</a></li><li><a href="../components/spinner.html">Spinner</a></li><li><a href="../components/skeleton.html">Skeleton</a></li><li><a href="../components/notice.html">Notice</a></li><li><a href="../components/dialog.html">Dialog</a></li></ul></details><details open><summary>Patterns</summary><ul><li><a href="../patterns/forms.html">Choices and the code field</a></li><li><a href="../patterns/feedback.html">Feedback and loading</a></li><li><a href="../patterns/empty-and-error.html">Empty and error states</a></li><li><a href="../patterns/navigation.html">Navigation and screen structure</a></li><li><a href="../patterns/dialogs.html">Dialogs and overlays</a></li><li><a href="../patterns/lists.html">Lists: players, standings and stamps</a></li><li><a href="../patterns/notifications.html">Notifications</a></li><li><a href="../patterns/content-and-tone.html">Content and tone</a></li></ul></details>
+  </nav>
+  <main id="main" class="ds-main">
+    <header class="ds-header">
+      <p class="ds-kicker">Foundation</p>
+      <h1>Responsive</h1>
+      <p class="ds-lead">Every screen works from the narrowest phone to the widest desktop, and Duel fills the screen at all of them.</p>
+      <div class="ds-meta"><span class="ds-pill ds-pill--ok">WCAG 2.2 AA</span><span class="ds-pill">Status: stable</span></div>
+      <ul class="ds-toc"><li><a href="#overview">Overview</a></li><li><a href="#screens">Screen by screen</a></li><li><a href="#height">Short screens</a></li><li><a href="#touch">Touch and pointer</a></li><li><a href="#testing">Testing matrix</a></li><li><a href="#usage">Usage</a></li></ul>
+    </header>
+<section class="ds-section" id="overview"><h2><a href="#overview">Overview</a></h2>
+<p>Styles start at 320px and add columns as the window grows. Width decides the layout; height matters on the two screens that never scroll.</p>
+</section>
+<section class="ds-section" id="screens"><h2><a href="#screens">Screen by screen</a></h2>
+<div class="ds-table-wrap"><table class="ds-table"><thead><tr><th scope="col">Screen</th><th scope="col">Phone</th><th scope="col">Tablet (768px)</th><th scope="col">Laptop and up (992px)</th></tr></thead><tbody><tr><td>Home</td><td>Classroom on top, title and Play under it</td><td>The same</td><td>Title and Play in a column beside the classroom</td></tr><tr><td>Pick Your Kid</td><td>Chosen kid, roster, nickname, button</td><td>The same, larger</td><td>Chosen kid beside the roster</td></tr><tr><td>Solo Or Friends</td><td>Two cards stacked</td><td>Side by side</td><td>Side by side</td></tr><tr><td>Room</td><td>One centred column</td><td>The same</td><td>The same</td></tr><tr><td>Lobby</td><td>Code, setup, Start, then desks 2 across</td><td>Desks 3 across</td><td>A side column beside the desks; 4 across from 1200px</td></tr><tr><td>Game Setup</td><td>Maths, tour, speed, Go</td><td>The same</td><td>Maths beside tour and speed</td></tr><tr><td>Mic Check</td><td>Bolt above the words</td><td>Bolt beside the words</td><td>The same, larger</td></tr><tr><td>Duel</td><td>Number pad under the card; a line of text for the desk</td><td>Pad beside the card; the world ring shows</td><td>Larger card</td></tr><tr><td>World Map</td><td>Zooms to your own kid</td><td>The whole room</td><td>The whole room</td></tr><tr><td>Podium</td><td>Steps, passport, buttons</td><td>The same</td><td>Steps beside the passport</td></tr></tbody></table></div>
+</section>
+<section class="ds-section" id="height"><h2><a href="#height">Short screens</a></h2>
+<p>A phone turned on its side is about 390px tall. Duel still fills it without scrolling: under 672px tall the card and keys shrink, and under 544px tall the world ring gives way to “Desk 5 of 12” in the HUD. The flash card and the pad are both whole.</p>
+</section>
+<section class="ds-section" id="touch"><h2><a href="#touch">Touch and pointer</a></h2>
+<ul><li>Every target is at least 44 × 44px; number pad keys never go below 44px tall.</li><li>Nothing depends on hover.</li><li>Dialogs are sheets from the bottom edge under 576px.</li></ul>
+</section>
+<section class="ds-section" id="testing"><h2><a href="#testing">Testing matrix</a></h2>
+<div class="ds-table-wrap"><table class="ds-table"><thead><tr><th scope="col">Width × height</th><th scope="col">Why</th></tr></thead><tbody><tr><td>320 × 568</td><td>The narrowest phone</td></tr><tr><td>360 × 800</td><td>A common phone</td></tr><tr><td>576, 768, 992, 1200 wide</td><td>Each breakpoint</td></tr><tr><td>844 × 390</td><td>A phone on its side</td></tr><tr><td>1920 × 1080</td><td>A classroom display</td></tr><tr><td>200% zoom at 1280</td><td>Reflow</td></tr></tbody></table></div><p>The mocks were checked for sideways scroll at 360, 768 and 1280px in both themes, and Duel for any scroll at 320 × 568, 360 × 640 and 844 × 390.</p>
+</section>
+<section class="ds-section" id="usage"><h2><a href="#usage">Usage</a></h2>
+<ul><li>Write the phone layout first and add to it with <code>min-width</code> queries.</li><li>Use the four breakpoints; a component may add a height query when it lives on Duel.</li></ul>
+</section>
+
+    <footer class="ds-footer"><span>Around the World design system · extracted from <a href="../../mocks/index.html">docs/mocks</a></span><a href="#top">Back to top</a></footer>
+  </main>
+</div>
+<script src="../assets/ds.js"></script>
+</body>
+</html>
