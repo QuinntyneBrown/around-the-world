@@ -60,4 +60,94 @@ test.describe('A solo duel', () => {
     await expect(duel.answerBox).toHaveAccessibleName('Your answer: nothing yet');
     await expect(duel.padKeys).toHaveCount(12);
   });
+
+  test('@critical a child answers with the number pad first and wins the duel', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a child on Duel, the clock held so no classmate answers yet
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer, left, sign, right } = await duel.card();
+
+    // When the child presses the answer's digits
+    await duel.pressDigits(answer);
+
+    // Then the digits show on the flash card as they are pressed
+    await expect(duel.answerBox).toHaveText(String(answer));
+    await expect(duel.answerBox).toHaveAccessibleName(`Your answer: ${answer}`);
+
+    // When the child presses Go
+    await duel.go.click();
+
+    // Then the child wins: the card shows the answer and "You got it!", and the pad is gone
+    await expect(duel.result).toHaveText(`= ${answer} You got it!`);
+    await expect(duel.announcement).toHaveText(
+      `${left} ${sign} ${right} is ${answer}. You got it!`,
+    );
+    await expect(duel.numberPad).toHaveCount(0);
+  });
+
+  test('takes three digits at most, Delete removes the last, and Go with none gives no answer', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a child on Duel, the clock held
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    await expect(duel.answerBox).toHaveText('?');
+
+    // When the child presses four digits
+    await duel.pressDigits('1234');
+
+    // Then the fourth is ignored
+    await expect(duel.answerBox).toHaveText('123');
+
+    // When the child presses Delete three times and then Go
+    await duel.deleteKey.click();
+    await expect(duel.answerBox).toHaveText('12');
+    await duel.deleteKey.click();
+    await duel.deleteKey.click();
+    await duel.go.click();
+
+    // Then no answer is given: the box waits with "?" and the child is not frozen
+    await expect(duel.answerBox).toHaveText('?');
+    await expect(duel.result).toHaveCount(0);
+    await expect(duel.go).toBeEnabled();
+  });
+
+  test('takes digits, Backspace and Enter from the keyboard as the pad’s keys', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a child on Duel with a keyboard, the clock held
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+
+    // When the child types a wrong digit, Backspace, the answer and Enter
+    await duel.typeKeys('9', 'Backspace');
+    await expect(duel.answerBox).toHaveText('?');
+    await duel.typeKeys(String(answer));
+    await expect(duel.answerBox).toHaveText(String(answer));
+    await duel.typeKeys('Enter');
+
+    // Then the answer is given, and the child wins
+    await expect(duel.result).toHaveText(`= ${answer} You got it!`);
+  });
 });
