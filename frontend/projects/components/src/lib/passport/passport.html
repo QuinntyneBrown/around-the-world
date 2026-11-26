@@ -1,0 +1,24 @@
+@if (loading()) {
+  <atw-skeleton shape="panel" class="passport passport--loading" />
+} @else {
+  <div class="passport" aria-labelledby="passport-title">
+    <div class="passport__head">
+      <atw-portrait [kid]="kid()" [src]="picture()" />
+      <div>
+        <h2 class="passport__title" id="passport-title">Your passport</h2>
+        <p class="numeric">{{ line() }}</p>
+      </div>
+    </div>
+    <ul class="passport__stamps" [class.passport__stamps--long]="long()" aria-label="Stamps">
+      @for (stamp of stamps(); track $index) {
+        @if (stamp.reached) {
+          <li class="stamp">{{ stamp.country }}</li>
+        } @else {
+          <li class="stamp stamp--missing">
+            <span aria-hidden="true">?</span><span class="visually-hidden">Not reached</span>
+          </li>
+        }
+      }
+    </ul>
+  </div>
+}

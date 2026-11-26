@@ -70,3 +70,35 @@ export interface TourState {
   readonly stamps: readonly number[];
   readonly phase: TourPhase;
 }
+
+/** How a tour ended (L2-006): someone went all the way round, or its time limit passed. */
+export type TourEnding = 'allTheWayRound' | 'timeLimit';
+
+/** One page of a passport: a desk's country, stamped when the player reached it (L2-035 2). */
+export interface PassportPage {
+  readonly desk: number;
+  readonly country: string;
+  readonly stamped: boolean;
+}
+
+/**
+ * How a tour ended, as the Podium shows it (docs/detailed-designs/tour/end-tour/). Published
+ * by `GameSession.result` once the tour is over. It holds at most one place for each of the
+ * five kids and one page for each desk, so it is bounded by the tour (L2-048 criterion 5).
+ */
+export interface TourResult {
+  readonly ending: TourEnding;
+  readonly tourLength: number;
+  /** The id of the player who won: all the way round first, or the furthest on time. */
+  readonly winner: string;
+  /** The winner's distance travelled. */
+  readonly winnerDistance: number;
+  /** The places the screens name: the five kids, from 1st, as the standings (ADR 0024). */
+  readonly places: readonly StandingsEntry[];
+  readonly players: readonly TourPlayer[];
+  /** The device's player's place among `places`. */
+  readonly yourPlace: number;
+  /** The device's player's passport: one page for each desk, from desk 1. */
+  readonly passport: readonly PassportPage[];
+  readonly countriesReached: number;
+}

@@ -1,0 +1,95 @@
+// The passport block of docs/design-system/assets/components.css: the head, and a tile for each
+// desk, three across (four for 24 desks), four (six) from 576px. Stamps are tilted and dashed;
+// a tile not reached is a question mark with no edge. Upright under reduced motion.
+:host {
+  display: block;
+}
+
+.passport {
+  background: var(--color-passport-bg);
+  color: var(--color-passport-fg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.passport--loading {
+  min-height: 16rem;
+}
+
+.passport__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.passport__title {
+  font: var(--text-h3);
+}
+
+.passport__stamps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.passport__stamps--long {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: var(--space-1);
+  text-align: center;
+  border-radius: var(--radius-md);
+  background: var(--color-passport-slot);
+  border: var(--border-width-thick) dashed var(--color-passport-fg);
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+  rotate: -4deg;
+  overflow-wrap: anywhere;
+}
+
+.stamp:nth-child(even) {
+  rotate: 3deg;
+}
+
+.stamp--missing {
+  border-color: transparent;
+  rotate: none;
+  color: var(--color-passport-missing);
+  font: var(--text-h4);
+}
+
+.passport__stamps--long .stamp {
+  aspect-ratio: 4 / 3;
+}
+
+@media (min-width: 36rem) {
+  .passport {
+    padding: var(--space-6);
+  }
+
+  .passport__stamps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .passport__stamps--long {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .stamp {
+    font-size: var(--font-size-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp,
+  .stamp:nth-child(even) {
+    rotate: none;
+  }
+}

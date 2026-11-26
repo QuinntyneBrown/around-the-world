@@ -1,3 +1,5 @@
+import { type PassportPage } from '@atw/api';
+
 /**
  * One player's passport (docs/detailed-designs/tour/travel-round-ring/): a stamp for each desk
  * they reached by a hop (L2-002 criterion 2, ADR 0022). It holds at most one stamp a desk, so
@@ -17,5 +19,14 @@ export class Passport {
   /** The desks stamped, in the order reached. */
   get stamps(): readonly number[] {
     return this.desks;
+  }
+
+  /** One page for each desk of the tour, in desk order, stamped when reached (L2-035 2). */
+  pages(countries: readonly string[]): PassportPage[] {
+    return countries.slice(0, this.tourLength).map((country, index) => ({
+      desk: index + 1,
+      country,
+      stamped: this.desks.includes(index + 1),
+    }));
   }
 }

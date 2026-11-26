@@ -1,7 +1,20 @@
-import { type TourMove } from '@atw/api';
+import { type TourEnding, type TourMove, type TourResult } from '@atw/api';
+import { countryOfDesk } from './countries';
 import { type DuelSide } from './duel';
 import { Passport } from './passport';
 import { Standings } from './standings';
+
+/** The time limit of each tour length, in game time (L2-006 criterion 2, ADR 0024). */
+const TIME_LIMITS_MS: Readonly<Record<number, number>> = {
+  6: 3 * 60_000,
+  12: 6 * 60_000,
+  24: 12 * 60_000,
+};
+
+/** How long a tour of this length may last before it ends on time (L2-006 criterion 2). */
+export function timeLimitMs(tourLength: number): number {
+  return TIME_LIMITS_MS[tourLength] ?? Number.POSITIVE_INFINITY;
+}
 
 /**
  * The ring of a tour and the only place on the device where it changes
@@ -19,6 +32,7 @@ export class Tour {
     readonly tourLength: number,
     traveller: string,
     seated: readonly { desk: number; player: string }[],
+    private readonly endsAtMs: number,
   ) {
     // Desk 1 is the traveller's own desk and stays empty (L2-007 criteria 2 and 4).
     this.holders = Array.from({ length: tourLength }, () => null);
@@ -31,18 +45,22 @@ export class Tour {
     this.travelling = traveller;
     this.beside = this.nextHeld(1).desk;
     this.standings.reach(traveller, 1, 0);
+    // The first traveller's distance of 1 counts desk 1, and so does their passport (ADR 0024).
+    this.passports.get(traveller)?.stamp(1);
   }
 
   /**
    * Starts a tour: the traveller beside desk 2 with a distance travelled of 1, desk 1 empty,
-   * and each seated player at their desk with 0 (L2-007).
+   * and each seated player at their desk with 0 (L2-007). The time limit passes at `endsAtMs`
+   * on the game's clock (L2-006 criterion 2).
    */
   static start(
     tourLength: number,
     traveller: string,
     seated: readonly { desk: number; player: string }[],
+    endsAtMs = Number.POSITIVE_INFINITY,
   ): Tour {
-    return new Tour(tourLength, traveller, seated);
+    return new Tour(tourLength, traveller, seated, endsAtMs);
   }
 
   /** The traveller. */
@@ -79,9 +97,47 @@ export class Tour {
     return this.standings.ordered();
   }
 
-  /** Whether a traveller has gone all the way round (L2-006 criterion 5). */
-  get over(): boolean {
-    return this.distanceOf(this.travelling) >= this.tourLength;
+  /**
+   * How the tour has ended, asked after each decided duel: all the way round when a player's
+   * distance travelled equals the tour length, on time when the time limit has passed, or null
+   * while it goes on (L2-006 criteria 1, 2 and 5). A duel in progress is never cut short.
+   */
+  ending(atMs: number): TourEnding | null {
+    const furthest = this.standings.ordered()[0];
+    if (furthest && furthest.distance >= this.tourLength) return 'allTheWayRound';
+    return atMs >= this.endsAtMs ? 'timeLimit' : null;
+  }
+
+  /**
+   * The result of an ended tour (L2-006 criteria 3, 4 and 6, L2-035): the winner, the places
+   * of the players the screens name, numbered among them, the player's own place and their
+   * passport, one page for each desk (ADR 0024).
+   */
+  result(
+    ending: TourEnding,
+    own: string,
+    shown: (player: string) => boolean,
+  ): Omit<TourResult, 'players'> {
+    const ordered = this.standings.ordered();
+    const winner = ordered[0] ?? { player: own, distance: 0 };
+    const places = ordered
+      .filter(({ player }) => shown(player))
+      .map((entry, index) => ({ place: index + 1, ...entry }));
+    const passport =
+      this.passports
+        .get(own)
+        ?.pages(Array.from({ length: this.tourLength }, (_, index) => countryOfDesk(index + 1))) ??
+      [];
+    return {
+      ending,
+      tourLength: this.tourLength,
+      winner: winner.player,
+      winnerDistance: winner.distance,
+      places,
+      yourPlace: places.find(({ player }) => player === own)?.place ?? places.length + 1,
+      passport,
+      countriesReached: passport.filter(({ stamped }) => stamped).length,
+    };
   }
 
   /**

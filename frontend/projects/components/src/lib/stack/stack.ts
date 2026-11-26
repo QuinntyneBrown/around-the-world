@@ -15,6 +15,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     '[class.stack--lg]': "gap() === 'lg'",
     '[class.stack--center]': 'center()',
     '[class.stack--middle]': 'middle()',
+    '[class.stack--flush]': 'flush()',
   },
 })
 export class Stack {
@@ -23,4 +24,6 @@ export class Stack {
   readonly center = input(false);
   /** Centres the items down the column. */
   readonly middle = input(false);
+  /** No gap: the items set their own space, as the Podium's columns do. */
+  readonly flush = input(false);
 }
