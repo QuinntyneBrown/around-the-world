@@ -36,3 +36,4 @@ requirements and designs leave.
 | [0027](0027-pausing-leaving-and-recovering.md) | Pausing, leaving and recovering: the held clock, Back during a game, Not Found and Something Went Wrong | Accepted |
 | [0028](0028-drawing-the-classroom.md) | Drawing the classroom: the scenes' format and paths, the stand-in, the countries, one plan for the room, the hop's look and the detail's steps | Accepted |
 | [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |
+| [0030](0030-classmates-with-the-on-device-model.md) | Classmates with the on-device model: readiness, the sessions, the prompts, the decision and its deadline | Accepted |

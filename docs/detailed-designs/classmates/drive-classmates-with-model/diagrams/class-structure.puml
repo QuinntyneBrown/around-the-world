@@ -15,11 +15,19 @@ title Class structure — Drive classmates with the on-device model
 
 interface ClassmateModel {
   +isReady(): Promise<boolean>
-  +openSession(profile: ClassmateProfile): Promise<ClassmateModelSession>
+  +openSession(profile: ClassmateModelProfile): Promise<ClassmateModelSession>
 }
 interface ClassmateModelSession {
   +decide(card: FlashCard, signal: AbortSignal): Promise<ModelDecision | null>
   +destroy(): void
+}
+class LazyClassmateModel {
+  +isReady(): Promise<boolean>
+  +openSession(profile: ClassmateModelProfile): Promise<ClassmateModelSession>
+}
+class OnDeviceClassmateModel {
+  +isReady(): Promise<boolean>
+  +openSession(profile: ClassmateModelProfile): Promise<ClassmateModelSession>
 }
 class OnDeviceModelSession {
   -primed: LanguageModel
@@ -43,7 +51,7 @@ class ClassmateAgent {
   -session: ClassmateModelSession | null
   +useSession(session: ClassmateModelSession): void
   +decide(card: FlashCard): ClassmateDecision
-  +decideWithModel(card: FlashCard, signal: AbortSignal): Promise<ClassmateDecision | null>
+  +decideWithModel(card: FlashCard, signal: AbortSignal, notBeforeMs: number): Promise<ClassmateDecision | null>
 }
 class ClassmateProfile {
   +skill: SkillLevel
@@ -51,12 +59,16 @@ class ClassmateProfile {
   +preferredMaths: ReadonlySet<MathsKind>
 }
 class SoloGame {
-  -sessions: ClassmateModelSession[]
+  -sessions: Map<string, ClassmateModelSession>
   -openSessions(): Promise<void>
-  -release(): void
+  -dropSessions(): void
 }
 
 ClassmateModelSession <|.. OnDeviceModelSession
+ClassmateModel <|.. LazyClassmateModel
+ClassmateModel <|.. OnDeviceClassmateModel
+LazyClassmateModel ..> OnDeviceClassmateModel : imports dynamically
+OnDeviceClassmateModel ..> OnDeviceModelSession : creates
 ClassmateModel ..> ClassmateModelSession : opens
 OnDeviceModelSession ..> ClassmatePrompt : builds prompts
 OnDeviceModelSession ..> parseModelDecision : reads output

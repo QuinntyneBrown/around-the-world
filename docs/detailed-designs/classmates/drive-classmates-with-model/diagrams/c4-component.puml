@@ -4,20 +4,25 @@ LAYOUT_WITH_LEGEND()
 title Components — Drive classmates with the on-device model
 
 Container_Boundary(game, "game application") {
-  Component(solo, "SoloGame", "Service behind GAME_SESSION", "Starts the tour first, opens the sessions, keeps them for the tour and destroys them at its end")
+  Component(routes, "Solo group", "Lazy route group", "Binds CLASSMATE_MODEL to LazyClassmateModel")
 }
 Container_Boundary(classmates, "domain library — classmates/") {
+  Component(lazy, "LazyClassmateModel", "Implementation behind CLASSMATE_MODEL", "Not ready at once without LanguageModel; imports the model code dynamically")
   Component(agent, "ClassmateAgent", "One for each classmate", "Uses a valid model decision that arrives in time, else its profile")
-  Component(session, "OnDeviceModelSession", "Implementation behind CLASSMATE_MODEL", "One primed session for each classmate")
+  Component(session, "OnDeviceModelSession", "Lazy chunk on-device-model", "One primed session for each classmate")
   Component(prompt, "ClassmatePrompt", "Pure helper", "Builds prompts from profile and flash card only")
   Component(parse, "parseModelDecision", "Pure helper", "Accepts an answer and a time, discards the rest")
 }
 Container_Boundary(tour, "domain library — tour/") {
+  Component(solo, "SoloGame", "Service behind GAME_SESSION", "Starts the tour first, opens the sessions, keeps them for the tour and destroys them at its end")
   Component(duel, "Duel", "Rules of the game", "Decides correct, frozen and winner")
 }
 System_Ext(model, "On-device model", "Chrome's built-in Prompt API")
 
-Rel(solo, session, "Opens when ready, destroys at the end")
+Rel(routes, lazy, "Binds")
+Rel(solo, lazy, "isReady, openSession, through CLASSMATE_MODEL")
+Rel(lazy, session, "Imports dynamically, opens")
+Rel(solo, session, "Destroys at the end")
 Rel(solo, agent, "Hands a session to, asks for a decision")
 Rel(agent, session, "decide(card, signal)")
 Rel(session, prompt, "Builds prompts with")

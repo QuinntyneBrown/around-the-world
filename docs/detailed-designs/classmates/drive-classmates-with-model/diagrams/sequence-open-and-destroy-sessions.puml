@@ -17,9 +17,9 @@ skinparam package {
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
   participant "DuelPage" as page
-  participant "SoloGame" as solo
 end box
 box "Frontend — domain" #E0F2FE
+  participant "SoloGame" as solo
   participant "ClassmateAgent" as agent
   participant "OnDeviceModelSession" as session
   participant "ClassmatePrompt" as prompt
@@ -28,12 +28,12 @@ participant "On-device model\n(browser)" as model
 actor -> solo : "Go!" starts the solo tour
 solo --> page : First flash card, agents playing from their profiles
 page --> actor : Flash card shown, with no wait for the model
-solo -> session : Import the model code dynamically, isReady()
+solo -> session : isReady() through LazyClassmateModel, which imports the model code dynamically
 session -> model : Ask whether the model is available
 alt the model is downloaded and ready
   model --> session : Available
   session --> solo : true
-  loop each classmate
+  loop each classmate, one after another in desk order, until one cannot be opened
     solo -> session : openSession(profile)
     session -> prompt : priming(profile)
     prompt --> session : Profile only
@@ -52,7 +52,7 @@ loop each duel of the tour
   solo -> solo : Keep every session (L2-021 criterion 6)
 end
 actor -> page : The tour ends, or the child leaves it (Home from the Podium or from Pause)
-page -> solo : Tour over or left
+page -> solo : Tour over (Podium), left, or Play again
 loop each session
   solo -> session : destroy()
   session -> model : Abort pending prompts, destroy the session (L2-021 criterion 6)

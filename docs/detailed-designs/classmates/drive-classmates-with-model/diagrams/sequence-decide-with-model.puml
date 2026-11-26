@@ -14,10 +14,8 @@ skinparam package {
   FontColor #101828
   BackgroundColor #F9FAFB
 }
-box "Frontend — game" #E0F2FE
-  participant "SoloGame" as solo
-end box
 box "Frontend — domain" #E0F2FE
+  participant "SoloGame" as solo
   participant "ClassmateAgent" as agent
   participant "OnDeviceModelSession" as session
   participant "parseModelDecision" as parse
@@ -27,7 +25,7 @@ participant "On-device model\n(browser)" as model
 solo -> agent : decide(card)
 agent --> solo : Profile decision: answer and time
 solo -> solo : Schedule the answer at the profile's time
-solo -> agent : decideWithModel(card, signal)
+solo -> agent : decideWithModel(card, signal, notBeforeMs)
 agent -> session : decide(card, signal)
 session -> model : Prompt a clone with the flash card only (L2-042 criterion 3)
 alt output arrives before the profile's time
