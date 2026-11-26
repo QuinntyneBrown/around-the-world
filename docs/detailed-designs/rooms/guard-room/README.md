@@ -119,8 +119,9 @@ The backend holds no personal data (`L2-046`):
   `ConnectionToken`. A nickname is never held or sent as text (`L2-046` criterion 1).
 - The room store holds no account, no real name, no audio and no address of a device. The rate
   limiter counts by address in memory, for the length of its window only, and writes no address
-  to the store. A room is deleted when its last player has left, or when nobody has done
-  anything in it for 10 minutes **(to confirm)**, and the store then holds nothing about it
+  to the store. A room is deleted when its last player has left, or when nobody has done anything in it for
+  10 minutes **(to confirm)**: `IdleRoomSweeper`, a hosted service, sends `DeleteIdleRoomsCommand`
+  once a minute on `TimeProvider` (ADR 0031). The store then holds nothing about it
   (`L2-046` criterion 2, `L2-027` criteria 3 and 4,
   [`rooms/decide-game-on-server`](../decide-game-on-server/README.md)). A room whose game is
   over is kept while its players are at the Podium, so that they can return to its Lobby and

@@ -54,7 +54,8 @@ Frontend:
     disabled, and the card says "Playing with friends needs the internet." (`L2-022`
     criterion 6). The banner is a status, not an alert. The page learns that the device has no network from
     `NETWORK`: `BrowserNetwork` reads `navigator.onLine` and listens for the browser's `online`
-    and `offline` events, and stops listening when the page goes (ADR 0031).
+    and `offline` events, and stops listening when the page goes (ADR 0031). Solo Or Friends fetches the solo game's code and the classmates' agents when it
+    opens (`warmSoloGame`), so "Play solo" still plays with no network (ADR 0031).
 - **`RoomsApi`** — HTTP client contract in `api`, bound to `ROOMS_API`. `makeRoom(kid, nickname)`
   sends `POST /api/rooms`, on the game's own origin, with the kid id and the nickname's two list
   indexes, and nothing else (`L2-040` criterion 1). `FetchRoomsApi` implements it over the

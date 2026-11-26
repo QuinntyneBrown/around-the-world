@@ -26,6 +26,11 @@ off localhost or a page error (`AGENTS.md`, E2E).
   model is not downloaded, which would start a download, is a problem
   (docs/adr/0030-classmates-with-the-on-device-model.md). By default the microphone is not expected and the
   model is unavailable, so a classmate plays from its profile.
+- Journey 12 adds `backend.holdBack` (an answer held until the spec releases it, the
+  submitting state), `backend.unreachable` (no response at all, until the spec answers it) and
+  `backend.requests()` (every API request with its JSON body, so a spec proves what the game
+  sent), and `network.offline()` and `network.online()` (Playwright's `setOffline`, which sets
+  `navigator.onLine` and fails every request) (docs/adr/0031-making-a-room.md).
 - The overridden `page` fixture routes every request: off localhost is refused, `/api/` and
   `/hubs/` are answered only from the `backend` fixture (`answer`, `hub`), and any other
   localhost request (the build, its fonts, the classroom's assets) goes through.
