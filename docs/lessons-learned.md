@@ -1216,3 +1216,65 @@ the lessons that fit.
 - *Let a short-lived thing live on the game's clock* (15, 4): confirmed by the audit: the duel's
   timers and the stickers are bounded by the game's clock, so no general buffer was built.
 
+
+## Journey 19: Make every screen work for every child
+
+**What slowed it.**
+
+- Duel on a phone 320 × 568 px held upright had no height to spare. Each extra (a frozen line,
+  a banner, a two-line nickname) pushed the pad under the footer, and the prototype's own mock
+  overlapped the same way. Measuring each part's top and height at that size, for each state,
+  showed the budget in pixels; moving the desk into the duel strip cost more than it saved
+  (the strip grew 150 px at 320 px wide), so the line of text gives way to a banner instead.
+- A sweep that measures straight after a resize catches entrances mid-flight: a dialog sheet
+  still sliding up, a podium step still rising (contrast 1.76 to 1 on a step fading in), the
+  skip link still sliding down. Waiting for every animation that plays once fixed all three;
+  waiting for every animation hung on the infinite ones (the level meter, the shimmer).
+- Playwright needs a test's fixtures destructured, so a sweep cannot take `(fakes) =>`; and
+  `import.meta` is unavailable in specs, which Playwright loads as CommonJS.
+- The first overlap rule flagged messages by design over the screen (a toast over "Start the
+  race", a received sticker over the sticker bar, ADR 0035). A message is now a live region
+  placed over the screen and is measured against itself.
+- The design described seven parts (`Viewport`, `LiveRegion`, `AlertMessage`, `ChoiceButton`,
+  `duelAnnouncement`, `messageForCode`, a `breakpoints` partial) that earlier journeys had
+  built under other names or done without; matching each to the code took a pass of its own.
+
+**New lessons.**
+
+1. Keep one registry of the states a sweep visits, each reached through the page objects and
+   the fixture, and run every sweep and the default-run checks (targets, Tab order, skip link)
+   over it: a new screen joins all of them with one entry.
+2. Walk a screen with Tab by numbering its controls in page order first, then check each step
+   goes to the next: it proves every control is reached, in order, with no positive
+   `tabindex`, without a selector per screen.
+3. Type and press Enter as a child does (`keyboard.type` then `press('Enter')` at once): a
+   handler that reads an input signal sees the value before zoneless change detection has run.
+   Read the native element on Enter.
+4. A fragment link (`#main`) under `<base href="/">` resolves to the root and leaves the
+   screen; a skip link must move the focus itself.
+5. Before raising a sweep's measurement to a rule, let the page rest: one frame for the layout,
+   then every finite animation finished.
+6. Replace a design's literal breakpoints with a named partial in a library every build shares
+   (`includePaths`), and compare the built CSS's media queries before and after.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the sweeps and the new spec ran
+  against the build; `main` is 253.53 kB and the initial total 274.39 kB.
+- *Check a fake once by hand* (01, 2): the duel strip's name test was run against a build
+  without the portrait fix and failed on "Cosmic Llama" breaking inside a word; the skip link
+  and Enter specs failed on the real bugs first.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place (the
+  partial is a stylesheet).
+- *Build a component the first time a screen needs it* (01, 4): no component was added;
+  Portrait, FlashCard, NumberPad, ConnectionBanner, ModeCard, SkipLink and CodeField were
+  extended in `@atw/components` and the design system's CSS, and marked in its README.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0039
+  records the sweeps, axe-core, the named breakpoints and why no `Viewport` contract was built.
+- *Tag one spec per feature `@critical`* (02, 5): a whole solo tour by keyboard alone.
+- *Measure the initial bundle against the base commit* (03, 2): `main` grew 0.22 kB, the skip
+  link's handler, within the 275 kB warning.
+- *Keep fast-changing input in the component that owns it* (04, 3): the code field's Enter
+  now reads its own element.
+- *Measure overlap at three sizes* (15, 1): extended to eight sizes and 200% zoom by the
+  responsive and accessibility sweeps.
