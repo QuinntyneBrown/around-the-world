@@ -798,3 +798,85 @@ the lessons that fit.
   in the mocks too.
 - *Put a browser resource behind a count the fixture can read* (09, 1): not needed; the
   network listener is released with its route.
+
+## Journey 13: Join a room and wait in the Lobby
+
+**What slowed it.**
+
+- EF Core marks an entity with a client-made `Guid` key, found through a navigation, as
+  modified rather than added; the first join answered 500 until `RoomPlayer.Id` was configured
+  `ValueGeneratedNever`.
+- EF Core InMemory has no transactions: a save that fails its concurrency check has already
+  written its added rows, so two racing joins left 9 players in a room of 8. The rule is proved
+  with a store double that refuses the whole save, as the room store does, injected through
+  `IAppDbContext`; racing two real requests proves nothing on InMemory.
+- After a join was refused, Backspace in the code field did nothing: Chrome put the caret at
+  the start once the field was disabled and enabled again, and the fourth letter was then
+  refused by `maxlength`. The field moves the caret to the end before each key.
+- A room's link is the Lobby's own address, so joining from it navigates to the address already
+  shown, which the router ignores; the join navigates with `onSameUrlNavigation: 'reload'`.
+- `model()`, `afterNextRender` and `viewChild()` in one lazy component moved 1.25 kB of
+  `@angular/core` into `main`: esbuild splits by module, and the framework's modules are in
+  `main`.
+- Reading the boxes' text straight after typing raced the zoneless render; retrying
+  assertions (`toHaveText` on the list) fixed it.
+
+**New lessons.**
+
+1. Before using a framework API no screen used yet, build and compare `main`: a lazy chunk's
+   first use of a framework module's export lands in the initial bundle.
+2. A backend rule that relies on the store's unit of work is proved through a store double
+   that refuses the whole save; EF Core InMemory writes part of a failed save.
+3. Give an invisible input that stands in for drawn boxes a fixed caret, and test editing it
+   after it was disabled and enabled again.
+4. Fake a real-time channel in the shared fixture at its protocol (SignalR's JSON records over
+   `routeWebSocket`), with the tokens presented and the methods invoked recorded, so specs
+   prove what the game sends and that it closes the connection.
+5. A notification that leaves by itself is timed by a small pausable timer with its own unit
+   tests on a fake clock; the spec proves only that it leaves and that a failure stays.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build,
+  which showed the 1.25 kB in `main` at once.
+- *Check a fake once by hand* (01, 2): the join handler without its retry failed the race test,
+  the join without its push failed the hub test with the state that did arrive, and Room
+  ignoring `room_full` failed its spec.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place, and
+  `@microsoft/signalr` is imported by `api` only, dynamically.
+- *Build a component the first time a screen needs it* (01, 4): CodeField, FieldMessage, Toast
+  and ToastRegion added; PlayerCard and PlayerList (`loading`), IconButton (`onCode`),
+  TextButton (on `<a>`), Stack (`narrow`) and Icon (copy, person) extended; each marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0032
+  fills the designs' gaps and records the budget.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the SignalR client is its
+  own lazy chunk, imported dynamically by the room group's chunk only.
+- *A link or button block is an attribute component* (02, 2): CodeField on `<label>`,
+  FieldMessage on `<p>`, ToastRegion on `<div>`.
+- *Drive states through the fixture* (02, 3): `roomHub` (serves, holds back, refuses, drops,
+  changes) and `clipboard` (refuses, copied).
+- *Tag one spec per feature `@critical`* (02, 5): a friend joins and waits; a friend who joins
+  appears in the host's Lobby with a passing message.
+- *Put the page in the group that provides its service* (03, 1): the room group provides the
+  connection and `FriendsGame`, so leaving the group leaves the room and closes the
+  connection.
+- *Measure the initial bundle against the base commit* (03, 2): a worktree build of journey
+  12's commit, compared module by module, found the framework code and then the 0.96 kB.
+- *Prove a hand-over with a unit test* (03, 4): `FriendsGame`'s tests prove the connect, the
+  lost room, "Try again", the leave and the release when the group is destroyed.
+- *Prefer signals and outputs to `effect()`* (04, 2): the Lobby's messages are a
+  `linkedSignal` over the room; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the count of a full room reads
+  "8 of 8 players".
+- *Put a browser resource behind a count the fixture can read* (09, 1): `roomHub` counts the
+  open connections, proving the release on "Leave the room" and on Back.
+- *Read the chunk table before binding a framework service* (12, 1): CDK `Clipboard` stays in
+  the Lobby's chunk.
+- *Give the production limits a fixture of their own* (12, 3): the `join-room` limit is lifted
+  in `ApiFixture` and kept in `ThrottledApiFixture`.
+- *Await a background job through a pipeline behaviour* (12, 4): hub tests await each room state
+  through a client that records what arrived, by what it holds.
+- *Record what the game sent* (12, 5): the join's body and the tokens the connections presented.

@@ -135,6 +135,15 @@ or "Couldn't copy the link" with "Say the code out loud instead: {the letters}."
 alert that stays until it is dismissed). A message leaves by itself after 4 seconds and waits
 while it is pointed at or focused. The page holds three at most; a fourth drops the oldest.
 
+**The initial budget.** Room's route, the guard that matches only the visit's own room, and
+what `main` now shares with the Room and Lobby chunks add 0.96 kB to `main` (251.35 kB to
+252.31 kB; 272.17 kB to 273.13 kB in all), measured module by module against the base commit.
+`CodeField` keeps to the framework code every screen already loads (an `input` and `output`
+pair rather than `model()`, `ngAfterViewInit` rather than `afterNextRender`), which saved
+another 1.25 kB. The initial warning moves from 273 kB to 274 kB (ADR 0031); the error stays at
+285 kB. The SignalR client is a lazy chunk of its own (about 56 kB), imported dynamically by the
+room group's chunk.
+
 **The contracts.** `@atw/api` gains `RoomsApi.joinRoom`, the codes `invalid_code`,
 `room_not_found`, `room_full` and `game_started`, `RoomConnection` behind `ROOM_CONNECTION`, and
 `RoomSession` behind `ROOM_SESSION`, which the Lobby reads: the entry, the room, the state of
