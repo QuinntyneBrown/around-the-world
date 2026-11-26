@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room · ready | Around the World mocks</title>
+<meta name="mock:kind" content="page">
+<meta name="mock:screen" content="room">
+<meta name="mock:state" content="ready">
+<meta name="mock:requirements" content="L2-023 L2-040 L2-045 L2-054">
+<meta name="description" content="Room with all four letters: Join can be pressed.">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/ui.css">
+<link rel="stylesheet" href="../../assets/mock.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the game</a>
+<div class="screen">
+<header class="topbar"><a class="icon-btn" href="../../pages/solo-or-friends/default.html" aria-label="Back"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></a><h1 class="topbar__title">Join a room</h1><div class="topbar__slot"></div></header>
+<main id="main" class="screen__body screen__body--center screen__body--narrow">
+  <div>
+    <h2>What’s the code?</h2>
+    <p class="text-lg text-muted" id="code-help">Ask the friend who made the room. It’s 4 letters.</p>
+  </div>
+  <label class="code-field">
+    <span class="visually-hidden">Room code</span>
+    <input class="code-field__input" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="4" value="BOLT" aria-describedby="code-help code-msg" autofocus>
+    <span class="code-field__box" aria-hidden="true">B</span><span class="code-field__box" aria-hidden="true">O</span><span class="code-field__box" aria-hidden="true">L</span><span class="code-field__box" aria-hidden="true">T</span>
+  </label>
+  <p id="code-msg" class="field-message" role="status"></p>
+  <div class="stack" style="width: 100%; max-width: var(--layout-panel-narrow);"><a class="toy-btn toy-btn--friends toy-btn--xl toy-btn--block" href="../../pages/lobby/guest.html">Join</a></div>
+</main>
+</div>
+<nav class="mock-bar" aria-label="Mock navigation">
+  <a class="mock-bar__home" href="../../index.html" aria-label="All mocks">⌂</a>
+  <span class="mock-bar__screen">Room</span>
+  <ul class="mock-bar__states"><li><a href="default.html">default</a></li><li><a href="empty.html">empty</a></li><li><a href="ready.html" aria-current="page">ready</a></li><li><a href="loading.html">loading</a></li><li><a href="submitting.html">submitting</a></li><li><a href="invalid.html">invalid</a></li><li><a href="full.html">full</a></li><li><a href="started.html">started</a></li><li><a href="rate-limited.html">rate-limited</a></li><li><a href="error.html">error</a></li></ul>
+  <button type="button" data-theme-toggle aria-pressed="false">☾ Dark</button>
+  <button type="button" data-chrome-toggle aria-label="Hide mock chrome">×</button>
+</nav>
+<script src="../../assets/mock.js"></script>
+</body>
+</html>

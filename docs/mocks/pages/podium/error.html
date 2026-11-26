@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Podium · error | Around the World mocks</title>
+<meta name="mock:kind" content="page">
+<meta name="mock:screen" content="podium">
+<meta name="mock:state" content="error">
+<meta name="mock:requirements" content="L2-006 L2-035">
+<meta name="description" content="Podium when the room was lost after the game: the passport stays and the child can make or join a new room.">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/ui.css">
+<link rel="stylesheet" href="../../assets/mock.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the game</a>
+<div class="screen">
+<main id="main" class="screen__body screen__body--wide-first">
+  <section class="stack" style="gap: 0;">
+    <h1 class="podium__headline">Cosmic Llama made it round first!</h1>
+    <p class="podium__cheer">Nia does a star jump.</p>
+    <ol class="podium__steps" aria-label="The top 3"><li class="podium__place" data-kid="zuri"><img class="podium__picture" src="../../assets/img/kid-zuri.jpg" alt=""><div class="podium__step"><span class="podium__rank numeric" aria-label="2nd place">2</span><span class="podium__name">You</span></div></li><li class="podium__place podium__place--first" data-kid="nia"><img class="podium__picture" src="../../assets/img/kid-nia.jpg" alt=""><div class="podium__step"><span class="podium__rank numeric" aria-label="1st place">1</span><span class="podium__name">Cosmic Llama</span></div></li><li class="podium__place podium__place--third" data-kid="kenji"><img class="podium__picture" src="../../assets/img/kid-kenji.jpg" alt=""><div class="podium__step"><span class="podium__rank numeric" aria-label="3rd place">3</span><span class="podium__name">Turbo Panda</span></div></li></ol>
+  </section>
+  <section class="stack" style="gap: 0;">
+    <div class="passport" aria-labelledby="passport-title">
+      <div class="passport__head"><img class="portrait" data-kid="zuri" src="../../assets/img/kid-zuri.jpg" alt="" width="384" height="384"><div><h2 class="passport__title" id="passport-title">Your passport</h2><p class="numeric">10 of 12 countries · 2nd place</p></div></div>
+      <ul class="passport__stamps" aria-label="Stamps"><li class="stamp">France</li><li class="stamp">Egypt</li><li class="stamp">Japan</li><li class="stamp">UK</li><li class="stamp">Italy</li><li class="stamp">USA</li><li class="stamp">Brazil</li><li class="stamp">India</li><li class="stamp">Kenya</li><li class="stamp">China</li><li class="stamp stamp--missing"><span aria-hidden="true">?</span><span class="visually-hidden">Not reached</span></li><li class="stamp stamp--missing"><span aria-hidden="true">?</span><span class="visually-hidden">Not reached</span></li></ul>
+    </div>
+    <div style="margin-top: var(--space-6);"><div class="alert alert--warning" role="alert"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 4-2.5M19 13a10 10 0 0 0-3.4-2.3M2 9a15 15 0 0 1 4.2-2.7M22 9a15 15 0 0 0-10-3.9M12 20h.01"/></svg><div class="alert__body"><p class="alert__title">We lost the room</p><p>Your passport is safe here. To play with your friends again, make or join a new room.</p></div></div></div>
+    <div class="action-row"><a class="toy-btn toy-btn--xl toy-btn--block" href="../../pages/solo-or-friends/default.html">Play with friends</a><a class="toy-btn toy-btn--paper" href="../../pages/home/played.html"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg>Home</a></div>
+    
+  </section>
+</main>
+</div>
+<nav class="mock-bar" aria-label="Mock navigation">
+  <a class="mock-bar__home" href="../../index.html" aria-label="All mocks">⌂</a>
+  <span class="mock-bar__screen">Podium</span>
+  <ul class="mock-bar__states"><li><a href="default.html">default</a></li><li><a href="second.html">second</a></li><li><a href="unplaced.html">unplaced</a></li><li><a href="time-up.html">time-up</a></li><li><a href="friends.html">friends</a></li><li><a href="two-players.html">two-players</a></li><li><a href="long.html">long</a></li><li><a href="loading.html">loading</a></li><li><a href="error.html" aria-current="page">error</a></li></ul>
+  <button type="button" data-theme-toggle aria-pressed="false">☾ Dark</button>
+  <button type="button" data-chrome-toggle aria-label="Hide mock chrome">×</button>
+</nav>
+<script src="../../assets/mock.js"></script>
+</body>
+</html>

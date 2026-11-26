@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connection Banner · danger | Around the World mocks</title>
+<meta name="mock:kind" content="notification">
+<meta name="mock:screen" content="connection-banner">
+<meta name="mock:state" content="danger">
+<meta name="mock:requirements" content="L2-029">
+<meta name="description" content="Too few players remain, so the tour ends and the Podium is next.">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/ui.css">
+<link rel="stylesheet" href="../../assets/mock.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the game</a>
+<div class="screen screen--fill duel">
+  <img class="duel__scene" src="../../assets/img/scene-duel.jpg" alt="">
+  <div class="duel__scrim"></div>
+  <div class="alert alert--danger banner" role="alert"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4.3a4 4 0 0 1 0 7.4M22 21a7 7 0 0 0-4-6.3"/></svg><div class="alert__body"><p><strong>Everyone else has left.</strong> The tour ends here. On to the podium!</p></div></div>
+  <header class="duel__hud"><div class="duel-hud"><div class="duel-hud__row"><div class="duelist" data-kid="zuri"><img class="portrait portrait--md portrait--ring" data-kid="zuri" src="../../assets/img/kid-zuri.jpg" alt="" width="384" height="384"><div class="duelist__text"><p class="duelist__name">You</p><p class="duelist__role">Travelling</p></div></div><span class="duel-hud__vs" aria-hidden="true">vs</span><div class="duelist duelist--flip" data-kid="nia"><img class="portrait portrait--md portrait--ring" data-kid="nia" src="../../assets/img/kid-nia.jpg" alt="" width="384" height="384"><div class="duelist__text"><p class="duelist__name">Cosmic Llama</p><p class="duelist__role">Holds Italy</p></div></div><p class="duel-hud__desk numeric">Desk 5 of 12</p></div><div class="timer-bar timer-bar--paused" data-kid="zuri" role="progressbar" aria-label="Time to answer" aria-valuemin="0" aria-valuemax="6" aria-valuenow="6" aria-valuetext="The clock is stopped"><div class="timer-bar__fill" style="--value: 100%;"></div></div></div><div class="world-ring"><svg class="world-ring__svg" viewBox="0 0 132 132" role="img" aria-label="The ring of 12 desks: you are at desk 5"><circle class="world-ring__track" cx="66" cy="66" r="52"/><circle class="world-ring__desk world-ring__desk--start" cx="66.0" cy="14.0" r="4.5"/><circle class="world-ring__desk" cx="92.0" cy="21.0" r="4.5"/><circle class="world-ring__desk" cx="111.0" cy="40.0" r="4.5"/><circle class="world-ring__desk" cx="118.0" cy="66.0" r="4.5"/><circle class="world-ring__desk" cx="111.0" cy="92.0" r="4.5"/><circle class="world-ring__desk" cx="92.0" cy="111.0" r="4.5"/><circle class="world-ring__desk" cx="66.0" cy="118.0" r="4.5"/><circle class="world-ring__desk" cx="40.0" cy="111.0" r="4.5"/><circle class="world-ring__desk" cx="21.0" cy="92.0" r="4.5"/><circle class="world-ring__desk" cx="14.0" cy="66.0" r="4.5"/><circle class="world-ring__desk" cx="21.0" cy="40.0" r="4.5"/><circle class="world-ring__desk" cx="40.0" cy="21.0" r="4.5"/><circle class="world-ring__racer" data-kid="nia" cx="92.0" cy="111.0" r="6.5"/><circle class="world-ring__racer" data-kid="milo" cx="92.0" cy="21.0" r="6.5"/><circle class="world-ring__racer" data-kid="pip" cx="118.0" cy="66.0" r="6.5"/><circle class="world-ring__racer world-ring__racer--me" data-kid="zuri" cx="111.0" cy="92.0" r="9"/></svg><p class="world-ring__label numeric">Desk 5 of 12</p></div><a class="icon-btn" href="../../dialogs/leave-game/default.html" aria-label="Leave the game"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></a></header>
+  <div class="duel__progress"><p class="pill numeric">Italy · desk 5 of 12</p></div>
+  <main id="main" class="duel__stage">
+    <h1 class="visually-hidden">Duel at Italy</h1>
+    <p class="visually-hidden" role="status" aria-live="assertive">Time is up. It was 24. A new card is coming.</p>
+    <div class="flash-card"><p class="flash-card__sum" aria-label="6 times 4">6 × 4</p><div class="flash-card__foot"><p class="flash-card__result flash-card__result--quiet"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Time’s up! It was 24. Here comes a new card…</p></div></div>
+    
+  </main>
+  <footer class="duel__foot"></footer>
+  <div class="sticker-region" role="status" aria-live="polite"></div>
+  
+</div>
+<nav class="mock-bar" aria-label="Mock navigation">
+  <a class="mock-bar__home" href="../../index.html" aria-label="All mocks">⌂</a>
+  <span class="mock-bar__screen">Connection Banner</span>
+  <ul class="mock-bar__states"><li><a href="info.html">info</a></li><li><a href="success.html">success</a></li><li><a href="warning.html">warning</a></li><li><a href="danger.html" aria-current="page">danger</a></li></ul>
+  <button type="button" data-theme-toggle aria-pressed="false">☾ Dark</button>
+  <button type="button" data-chrome-toggle aria-label="Hide mock chrome">×</button>
+</nav>
+<script src="../../assets/mock.js"></script>
+</body>
+</html>

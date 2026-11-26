@@ -1,0 +1,436 @@
+{
+  "project": "Around the World",
+  "required_states": {
+    "page": [
+      "default",
+      "loading",
+      "empty",
+      "error"
+    ],
+    "dialog": [
+      "default",
+      "busy",
+      "invalid"
+    ],
+    "notification": [
+      "info",
+      "success",
+      "warning",
+      "danger"
+    ]
+  },
+  "screens": [
+    {
+      "id": "home",
+      "kind": "page",
+      "title": "Home",
+      "route": "/",
+      "requirements": [
+        "L2-013",
+        "L2-015",
+        "L2-030",
+        "L2-031",
+        "L2-032",
+        "L2-036",
+        "L2-039"
+      ],
+      "states": [
+        "default",
+        "empty",
+        "loading",
+        "error",
+        "played",
+        "muted"
+      ],
+      "not_applicable": {}
+    },
+    {
+      "id": "pick-your-kid",
+      "kind": "page",
+      "title": "Pick Your Kid",
+      "route": "/kid",
+      "requirements": [
+        "L2-013",
+        "L2-014",
+        "L2-030",
+        "L2-037"
+      ],
+      "states": [
+        "default",
+        "milo",
+        "renamed",
+        "loading",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "There are always five kids to pick from; the roster is never empty."
+      }
+    },
+    {
+      "id": "solo-or-friends",
+      "kind": "page",
+      "title": "Solo Or Friends",
+      "route": "/play",
+      "requirements": [
+        "L2-019",
+        "L2-022",
+        "L2-030",
+        "L2-045",
+        "L2-054"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "submitting",
+        "error",
+        "rate-limited",
+        "offline"
+      ],
+      "not_applicable": {
+        "empty": "The two ways to play are fixed; there is no collection that could be empty."
+      }
+    },
+    {
+      "id": "room",
+      "kind": "page",
+      "title": "Room",
+      "route": "/room",
+      "requirements": [
+        "L2-023",
+        "L2-040",
+        "L2-045",
+        "L2-054"
+      ],
+      "states": [
+        "default",
+        "empty",
+        "ready",
+        "loading",
+        "submitting",
+        "invalid",
+        "full",
+        "started",
+        "rate-limited",
+        "error"
+      ],
+      "not_applicable": {}
+    },
+    {
+      "id": "lobby",
+      "kind": "page",
+      "title": "Lobby",
+      "route": "/room/:code",
+      "requirements": [
+        "L2-018",
+        "L2-024",
+        "L2-025",
+        "L2-029"
+      ],
+      "states": [
+        "default",
+        "empty",
+        "guest",
+        "full",
+        "edited",
+        "loading",
+        "error"
+      ],
+      "not_applicable": {}
+    },
+    {
+      "id": "game-setup",
+      "kind": "page",
+      "title": "Game Setup",
+      "route": "/setup",
+      "requirements": [
+        "L2-016",
+        "L2-017",
+        "L2-018"
+      ],
+      "states": [
+        "default",
+        "friends",
+        "all-maths",
+        "easy",
+        "times-off",
+        "last-one",
+        "loading",
+        "submitting",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "A setup always has values: the defaults start a game with no changes."
+      }
+    },
+    {
+      "id": "mic-check",
+      "kind": "page",
+      "title": "Mic Check",
+      "route": "/mic",
+      "requirements": [
+        "L2-012"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "listening",
+        "not-heard",
+        "heard",
+        "denied",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "Mic Check has no collection; it always shows one question."
+      }
+    },
+    {
+      "id": "duel",
+      "kind": "page",
+      "title": "Duel",
+      "route": "/duel",
+      "requirements": [
+        "L2-001",
+        "L2-004",
+        "L2-005",
+        "L2-009",
+        "L2-010",
+        "L2-011",
+        "L2-028",
+        "L2-029",
+        "L2-033",
+        "L2-038",
+        "L2-050",
+        "L2-051"
+      ],
+      "states": [
+        "default",
+        "pad",
+        "pad-typed",
+        "right",
+        "wrong",
+        "wrong-pad",
+        "lost",
+        "timeout",
+        "hop",
+        "watching",
+        "friends",
+        "no-speech",
+        "voice-failed",
+        "long",
+        "loading",
+        "reconnecting",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "A duel always has a flash card; the screen opens only when a game is on (L2-030)."
+      }
+    },
+    {
+      "id": "world-map",
+      "kind": "page",
+      "title": "World Map",
+      "route": "/map",
+      "requirements": [
+        "L2-002",
+        "L2-003",
+        "L2-034",
+        "L2-037",
+        "L2-038"
+      ],
+      "states": [
+        "default",
+        "hop",
+        "sit",
+        "desk-holder",
+        "short",
+        "long",
+        "loading",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "The ring always has its desks and players while a game is on; the screen opens only then (L2-030)."
+      }
+    },
+    {
+      "id": "podium",
+      "kind": "page",
+      "title": "Podium",
+      "route": "/podium",
+      "requirements": [
+        "L2-006",
+        "L2-035"
+      ],
+      "states": [
+        "default",
+        "second",
+        "unplaced",
+        "time-up",
+        "friends",
+        "two-players",
+        "long",
+        "loading",
+        "error"
+      ],
+      "not_applicable": {
+        "empty": "A tour that has ended always has places and a passport; the screen opens only then (L2-030)."
+      }
+    },
+    {
+      "id": "not-found",
+      "kind": "page",
+      "title": "Not Found",
+      "route": "/**",
+      "requirements": [
+        "L2-030"
+      ],
+      "states": [
+        "default"
+      ],
+      "not_applicable": {
+        "loading": "This screen loads nothing and holds nothing; it only points Home.",
+        "empty": "This screen loads nothing and holds nothing; it only points Home.",
+        "error": "This screen loads nothing and holds nothing; it only points Home."
+      }
+    },
+    {
+      "id": "something-went-wrong",
+      "kind": "page",
+      "title": "Something Went Wrong",
+      "route": "/error",
+      "requirements": [
+        "L2-054"
+      ],
+      "states": [
+        "default"
+      ],
+      "not_applicable": {
+        "loading": "This screen is itself the error state; it loads nothing and holds nothing.",
+        "empty": "This screen is itself the error state; it loads nothing and holds nothing.",
+        "error": "This screen is itself the error state; it loads nothing and holds nothing."
+      }
+    },
+    {
+      "id": "pause",
+      "kind": "dialog",
+      "title": "Pause",
+      "opens_from": "duel",
+      "requirements": [
+        "L2-033"
+      ],
+      "states": [
+        "default"
+      ],
+      "not_applicable": {
+        "busy": "Pausing a solo game sends nothing anywhere, so there is nothing to wait for.",
+        "invalid": "The dialog has no inputs."
+      }
+    },
+    {
+      "id": "leave-game",
+      "kind": "dialog",
+      "title": "Leave Game",
+      "opens_from": "duel",
+      "requirements": [
+        "L2-033"
+      ],
+      "states": [
+        "default",
+        "busy"
+      ],
+      "not_applicable": {
+        "invalid": "The dialog has no inputs."
+      }
+    },
+    {
+      "id": "settings",
+      "kind": "dialog",
+      "title": "Settings",
+      "opens_from": "home",
+      "requirements": [
+        "L2-011",
+        "L2-015",
+        "L2-032",
+        "L2-039"
+      ],
+      "states": [
+        "default",
+        "muted",
+        "no-speech"
+      ],
+      "not_applicable": {
+        "busy": "A setting is kept on the device the moment it changes; nothing is sent.",
+        "invalid": "The dialog has only switches, which cannot be invalid."
+      }
+    },
+    {
+      "id": "lobby-toast",
+      "kind": "notification",
+      "title": "Lobby Message",
+      "opens_from": "lobby",
+      "requirements": [
+        "L2-024",
+        "L2-025"
+      ],
+      "states": [
+        "info",
+        "success",
+        "warning",
+        "danger",
+        "stacked"
+      ],
+      "not_applicable": {}
+    },
+    {
+      "id": "map-toast",
+      "kind": "notification",
+      "title": "World Map Message",
+      "opens_from": "world-map",
+      "requirements": [
+        "L2-034",
+        "L2-038"
+      ],
+      "states": [
+        "info",
+        "success",
+        "warning"
+      ],
+      "not_applicable": {
+        "danger": "Nothing on World Map fails in a way a message reports; losing a desk is gentle, never an alarm (L2-038)."
+      }
+    },
+    {
+      "id": "sticker",
+      "kind": "notification",
+      "title": "Sticker",
+      "opens_from": "duel",
+      "requirements": [
+        "L2-028"
+      ],
+      "states": [
+        "info",
+        "stacked"
+      ],
+      "not_applicable": {
+        "success": "A sticker is a cheer, not the result of an action; it has one look.",
+        "warning": "A sticker never warns of anything.",
+        "danger": "A sticker never reports a failure; one that cannot be sent is simply dropped (L2-028)."
+      }
+    },
+    {
+      "id": "connection-banner",
+      "kind": "notification",
+      "title": "Connection Banner",
+      "opens_from": "duel",
+      "requirements": [
+        "L2-029"
+      ],
+      "states": [
+        "info",
+        "success",
+        "warning",
+        "danger"
+      ],
+      "not_applicable": {}
+    }
+  ]
+}
