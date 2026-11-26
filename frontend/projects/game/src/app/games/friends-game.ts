@@ -139,7 +139,7 @@ export class FriendsGame implements RoomSession, GameSession {
   /** Sends the answer, a number and nothing else, while the card is open and not frozen. */
   answer(value: number): void {
     const duel = this.duel();
-    if (!duel || duel.outcome !== 'open' || duel.frozen) return;
+    if (!duel || duel.role === 'watching' || duel.outcome !== 'open' || duel.frozen) return;
     this.connection.answer(value).catch(() => undefined);
   }
 

@@ -141,10 +141,12 @@ export class DuelPage {
   /** What the answer box shows: the entry, the wrong answer while frozen, or nothing. */
   protected readonly answerBox = computed(() => {
     const duel = this.duel();
-    if (!duel || duel.outcome !== 'open' || this.byVoice()) return null;
+    if (!duel || duel.outcome !== 'open' || duel.role === 'watching' || this.byVoice()) return null;
     return duel.frozen ? String(duel.wrongAnswer ?? '') : this.entry();
   });
   protected readonly open = computed(() => this.duel()?.outcome === 'open');
+  /** A player of a game with friends who is not in the duel watches it (L2-028 criterion 1). */
+  protected readonly watching = computed(() => this.duel()?.role === 'watching');
   protected readonly sum = computed(() => {
     const duel = this.duel();
     return duel ? DuelWords.sum(duel.card) : undefined;

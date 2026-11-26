@@ -384,10 +384,9 @@ test.describe('Play a race with friends', () => {
     // When the host duels a classmate at Japan, Nia not in it
     roomHub.game(game({ travellerDesk: 3, duel: { number: 2, desk: 3, deskHolder: 'c3' } }));
 
-    // Then she watches it on World Map (L2-028 is journey 15's)
-    await clock.pass(500);
-    await expect(page).toHaveURL(/\/map$/);
-    await expect(map.where).toHaveText('You’re sitting at Egypt · Speedy Otter is travelling');
+    // Then she watches it on Duel (L2-028 criterion 1, ADR 0035)
+    await expect(page).toHaveURL(/\/duel$/);
+    await expect(duel.result).toHaveText('Watching… your turn is next');
   });
 
   test('a card nobody answers in time shows its answer to the players in the duel', async ({

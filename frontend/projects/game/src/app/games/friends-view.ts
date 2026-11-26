@@ -1,5 +1,6 @@
 import {
   type DeskState,
+  type DuelRole,
   type DuelState,
   type Duellist,
   type GameScreen,
@@ -79,14 +80,16 @@ export const FriendsView = {
   },
 
   /**
-   * The screen the game is at: Duel for a duel the device's player is in, World Map for anyone
-   * else's and after a decision, and the Podium once World Map has shown the move that ended the
-   * tour for its message's time (L2-030 criteria 4 and 5, L2-035 criterion 8).
+   * The screen the game is at: Duel while a card is open or its time has run out, for the
+   * players in the duel and those watching it (L2-028 criteria 1 and 8, ADR 0035); before the
+   * first card, World Map for a player not in the first duel; World Map after a decision, and
+   * the Podium once World Map has shown the move that ended the tour for its message's time
+   * (L2-030 criteria 4 and 5, L2-035 criterion 8).
    */
   screen(seen: Seen): GameScreen {
     const { state, you } = seen;
-    const inDuel = FriendsView.inDuel(state, you);
-    if (state.phase !== 'decided' && state.phase !== 'over') return inDuel ? 'duel' : 'world-map';
+    if (state.phase === 'starting') return FriendsView.inDuel(state, you) ? 'duel' : 'world-map';
+    if (state.phase !== 'decided' && state.phase !== 'over') return 'duel';
     const since = FriendsView.sinceDecided(seen);
     const mapAt = FriendsView.mapAfterMs(seen);
     if (since < mapAt) return 'duel';
@@ -108,15 +111,25 @@ export const FriendsView = {
     }));
   },
 
-  /** The duel the device's player is in, as Duel shows it; null while none is (L2-033). */
+  /**
+   * The duel being played, as Duel shows it, from the device's player's side: the traveller, the
+   * desk holder, or watching when they are in neither role (L2-028 criterion 1, L2-033); null
+   * before the first card.
+   */
   duel(seen: Seen, nameOf: NameOf): DuelState | null {
     const { state, you } = seen;
     const duel = state.duel;
-    if (state.phase === 'starting' || !duel || !FriendsView.inDuel(state, you)) return null;
+    if (state.phase === 'starting' || !duel) return null;
     const players = FriendsView.players(state, you, nameOf);
-    const side = duel.traveller === you ? 'traveller' : 'deskHolder';
+    const side: DuelRole =
+      duel.traveller === you ? 'traveller' : duel.deskHolder === you ? 'deskHolder' : 'watching';
     const open = duel.outcome === 'open';
-    const frozenMs = side === 'traveller' ? duel.travellerFrozenMs : duel.deskHolderFrozenMs;
+    const frozenMs =
+      side === 'traveller'
+        ? duel.travellerFrozenMs
+        : side === 'deskHolder'
+          ? duel.deskHolderFrozenMs
+          : 0;
     const frozen = open && seen.sinceReceivedMs < frozenMs;
     const wrong = side === 'traveller' ? duel.travellerWrong : duel.deskHolderWrong;
     const move = state.lastMove;
