@@ -3,12 +3,14 @@ import { GAME_SESSION, type Duellist, type FlashCard as Card } from '@atw/api';
 import {
   DuelHud,
   FlashCard,
+  NumberEntry,
   NumberPad,
   Pill,
   Screen,
   TimerBar,
   WorldRing,
   type DuelHudPlayer,
+  type PadKey,
 } from '@atw/components';
 import { kidById } from '@atw/domain';
 import { DuelWords } from './duel-words';
@@ -31,8 +33,8 @@ export class DuelPage {
   private readonly session = inject(GAME_SESSION);
 
   protected readonly duel = this.session.duel;
-  /** The digits typed, and the card and freeze they were typed for. */
-  private readonly typed = signal<{ card?: Card; frozen?: boolean; digits: string }>({
+  /** The digits typed, and the card they were typed for. */
+  private readonly typed = signal<{ card?: Card; digits: string }>({
     digits: '',
   });
   /**
@@ -42,7 +44,7 @@ export class DuelPage {
   protected readonly entry = computed(() => {
     const typed = this.typed();
     const duel = this.duel();
-    return typed.card === duel?.card && typed.frozen === duel?.frozen ? typed.digits : '';
+    return typed.card === duel?.card ? typed.digits : '';
   });
   /** What the answer box shows: the entry, the wrong answer while frozen, or nothing. */
   protected readonly answerBox = computed(() => {
@@ -73,15 +75,21 @@ export class DuelPage {
     return this.player(duel?.deskHolder, `Holds ${duel?.country}`);
   });
 
-  protected type(digits: string): void {
-    const duel = this.duel();
-    this.typed.set({ card: duel?.card, frozen: duel?.frozen, digits });
-  }
-
-  /** Gives the answer; the entry empties, and while frozen the card shows the wrong answer. */
-  protected answer(value: number): void {
+  /** A key of the number pad: a digit or Delete changes the entry, Go gives it (L2-010). */
+  protected press(key: PadKey): void {
+    const entry = this.entry();
+    if (key === 'delete') return this.type(NumberEntry.removeLast(entry));
+    if (key !== 'go') return this.type(NumberEntry.add(entry, key));
+    const value = NumberEntry.value(entry);
+    if (value === null) return;
+    // The entry empties once an answer is given; while frozen the card shows the wrong answer.
     this.type('');
     this.session.answer(value);
+  }
+
+  private type(digits: string): void {
+    const duel = this.duel();
+    this.typed.set({ card: duel?.card, digits });
   }
 
   private player(duellist: Duellist | undefined, role: string): DuelHudPlayer | undefined {

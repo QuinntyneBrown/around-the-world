@@ -33,12 +33,7 @@
         [tone]="line().tone"
       />
       @if (open()) {
-        <atw-number-pad
-          [disabled]="duel.frozen"
-          [entry]="entry()"
-          (entryChange)="type($event)"
-          (go)="answer($event)"
-        />
+        <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>
   } @else {
