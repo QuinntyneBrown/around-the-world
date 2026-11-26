@@ -31,6 +31,7 @@ export class DuelPage {
   readonly ringLabel: Locator;
   readonly ringRacers: Locator;
   readonly progress: Locator;
+  readonly hudDesk: Locator;
   readonly numberPad: Locator;
   readonly padKeys: Locator;
   readonly go: Locator;
@@ -50,6 +51,7 @@ export class DuelPage {
     this.ringLabel = this.ring.locator('.world-ring__label');
     this.ringRacers = this.ring.locator('.world-ring__racer');
     this.progress = page.locator('.duel__progress .pill');
+    this.hudDesk = page.locator('.duel-hud__desk');
     this.numberPad = page.getByRole('group', { name: 'Number pad' });
     this.padKeys = this.numberPad.getByRole('button');
     this.go = this.numberPad.getByRole('button', { name: 'Go', exact: true });
@@ -96,6 +98,62 @@ export class DuelPage {
       if (/^\d+$/.test(key)) for (const digit of key) await this.page.keyboard.press(digit);
       else await this.page.keyboard.press(key);
     }
+  }
+
+  /** The kids on the world ring, in the order drawn, the device's own player marked "(you)". */
+  racerKids(): Promise<string[]> {
+    return this.ringRacers.evaluateAll((racers) =>
+      racers.map((racer) => {
+        const kid = racer.getAttribute('data-kid') ?? '';
+        return racer.classList.contains('world-ring__racer--me') ? `${kid} (you)` : kid;
+      }),
+    );
+  }
+
+  /** Whether the number pad sits under the flash card or beside it. */
+  async padPlacement(): Promise<'under' | 'beside'> {
+    const card = await this.flashCard.boundingBox();
+    const pad = await this.numberPad.boundingBox();
+    if (!card || !pad) throw new Error('The flash card or the pad is not shown');
+    return pad.y >= card.y + card.height - 1 ? 'under' : 'beside';
+  }
+
+  /**
+   * Whether the flash card is the largest thing on the screen, as the mocks draw it: its sum is
+   * the largest type, and nothing on the stage is wider than the card.
+   */
+  async cardIsLargest(): Promise<boolean> {
+    const card = await this.flashCard.boundingBox();
+    const pad = await this.numberPad.boundingBox();
+    if (!card || !pad) throw new Error('The flash card or the pad is not shown');
+    const largestType = await this.page.evaluate(() => {
+      const sum = document.querySelector('.flash-card__sum');
+      let largestOther = 0;
+      for (const element of document.querySelectorAll('.duel *')) {
+        if (element === sum || !element.textContent?.trim()) continue;
+        largestOther = Math.max(largestOther, parseFloat(getComputedStyle(element).fontSize));
+      }
+      return sum !== null && parseFloat(getComputedStyle(sum).fontSize) > largestOther;
+    });
+    return largestType && card.width >= pad.width;
+  }
+
+  /** Whether the element's content fits it, with nothing cut off. */
+  fits(locator: Locator): Promise<boolean> {
+    return locator.evaluate((element) => element.scrollWidth <= element.clientWidth);
+  }
+
+  /** Whether the element is wholly inside the window. */
+  async inView(locator: Locator): Promise<boolean> {
+    const box = await locator.boundingBox();
+    const size = this.page.viewportSize();
+    if (!box || !size) return false;
+    return (
+      box.y >= 0 &&
+      box.x >= 0 &&
+      box.y + box.height <= size.height &&
+      box.x + box.width <= size.width
+    );
   }
 
   /** Whether the page scrolls either way. */

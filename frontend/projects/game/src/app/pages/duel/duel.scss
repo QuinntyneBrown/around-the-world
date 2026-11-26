@@ -94,9 +94,15 @@
   }
 }
 
+// A phone turned on its side: the pad goes beside the card so both are whole (L2-050 5).
 @media (max-height: 34rem) {
   .duel__progress {
     display: none;
+  }
+
+  .duel__stage {
+    flex-direction: row;
+    gap: var(--space-4);
   }
 
   .duel__hud {
