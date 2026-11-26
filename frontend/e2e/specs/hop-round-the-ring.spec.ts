@@ -217,6 +217,41 @@ test.describe('Hopping round the ring', () => {
   });
 });
 
+test.describe('World Map’s messages and its way back', () => {
+  test('a message stays for about 1.6 seconds, and “Back to the card” returns at once', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a child on World Map after a hop, its message showing
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    await duel.answerWithPad((await duel.card()).answer);
+    await clock.pass(1000);
+    await clock.pass(1200);
+    const map = new WorldMapPage(page);
+    await expect(map.message).toHaveText('You walk on to Japan!');
+    await expect(page.locator('.map-toast-region')).toHaveAttribute('aria-live', 'polite');
+
+    // When 1.5 seconds have passed, the message and World Map stay
+    await clock.pass(1500);
+    await expect(map.message).toHaveText('You walk on to Japan!');
+    await expect(page).toHaveURL(/\/map$/);
+
+    // When the child chooses "Back to the card" before the message has gone
+    await map.back.click();
+
+    // Then Duel returns at once with the next flash card
+    await expect(page).toHaveURL(/\/duel$/);
+    await expect(duel.heading).toHaveText('Duel at Japan');
+    await expect(duel.answerBox).toHaveText('?');
+  });
+});
+
 test.describe('World Map at every width', () => {
   const SIZES = [
     { name: 'phone', width: 390, height: 844, view: 'zoom' },
