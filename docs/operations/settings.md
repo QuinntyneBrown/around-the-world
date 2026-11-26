@@ -22,7 +22,6 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | `RateLimits:Health:WindowSeconds` | `RateLimits__Health__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 17 |
 | `RateLimits:Answers:PerSecond` | `RateLimits__Answers__PerSecond` | How many answers one hub connection may send in a second; the rest are dropped. 5 when absent (`L2-045` criterion 3, [ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
 | `RateLimits:Stickers:PerSecond` | `RateLimits__Stickers__PerSecond` | How many stickers one hub connection may send in a second; the rest are dropped. 1 when absent (`L2-028` criterion 5, [ADR 0035](../adr/0035-watching-a-duel-and-stickers.md)). | Journey 17 |
-
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `OTEL_EXPORTER_OTLP_ENDPOINT` | Where traces, metrics and logs are exported by OTLP (on Azure Container Apps, set by its managed OpenTelemetry agent, which forwards to Azure Monitor). Absent: nothing is exported ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). OpenTelemetry's other standard `OTEL_EXPORTER_OTLP_*` variables (protocol, headers) apply as usual. | Journey 17 |
 | `OTEL_SERVICE_NAME` | `OTEL_SERVICE_NAME` | The service's name in telemetry; `around-the-world-api` when absent. | Journey 17 |
 
