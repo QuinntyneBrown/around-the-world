@@ -68,6 +68,9 @@ public sealed class Duel
     public DuelSide? SideOf(string player) =>
         player == Traveller ? DuelSide.Traveller : player == DeskHolder ? DuelSide.DeskHolder : null;
 
+    /// <summary>Whether the player is the duel's traveller or its desk holder.</summary>
+    public bool Holds(string player) => SideOf(player) is not null;
+
     /// <summary>When the side's freeze ends, or null when it was never frozen.</summary>
     public DateTimeOffset? FrozenUntil(DuelSide side) =>
         side == DuelSide.Traveller ? TravellerFrozenUntil : DeskHolderFrozenUntil;

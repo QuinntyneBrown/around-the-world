@@ -192,6 +192,16 @@ public sealed class Room
     }
 
     /// <summary>
+    /// Whether the player may send a sticker: only while the room's game is played, and only when
+    /// the current duel does not hold them (L2-028 criterion 4, docs/adr/0035). A sticker changes
+    /// nothing in the room and is not activity.
+    /// </summary>
+    public bool MaySendSticker(RoomPlayer player) =>
+        Status == RoomStatus.Playing
+        && Game is { Phase: not GamePhase.Over }
+        && Game.Duel?.Holds(player.Id.ToString()) != true;
+
+    /// <summary>
     /// Runs what the game's clock has made due by now: a card, a classmate's answer, a card's time
     /// running out (docs/adr/0033). Time passing is not activity. Answers whether anything changed.
     /// </summary>

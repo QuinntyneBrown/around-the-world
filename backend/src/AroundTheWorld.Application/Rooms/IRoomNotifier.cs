@@ -27,4 +27,13 @@ public interface IRoomNotifier
     /// it: every player sees the same game (L2-026 criterion 5, L2-027 criterion 1).
     /// </summary>
     Task GameChangedAsync(Guid roomId, GameStateDto game, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sends a sticker to every connection attached to the room, the sender's included
+    /// (L2-028 criterion 3, docs/adr/0035).
+    /// </summary>
+    Task StickerShownAsync(Guid roomId, StickerShownDto sticker, CancellationToken cancellationToken);
 }
+
+/// <summary>A sticker as the room's players are sent it: its id, 1 to 6, and the sender's player id.</summary>
+public sealed record StickerShownDto(int Sticker, string From);
