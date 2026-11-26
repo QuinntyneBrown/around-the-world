@@ -21,7 +21,7 @@ box "Frontend — game" #E0F2FE
   participant "FriendsGame" as session
 end box
 box "Frontend — components" #E0F2FE
-  participant "StickerTray" as tray
+  participant "StickerBar" as tray
 end box
 box "Frontend — api" #E0F2FE
   participant "RoomConnection" as conn
@@ -37,7 +37,7 @@ end box
 box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
   database "Room store" as db
 end box
-session --> page : duel signal: the device's player is in neither role
+session --> page : duel signal with the role watching (ADR 0035)
 page --> actor : Flash card, who is duelling, timer bar, "Watching… your turn is next"; no number pad, no microphone (L2-028 criterion 1)
 page -> tray : Show the six stickers: one for each kid, and Bolt, to confirm (L2-028 criteria 2, 6)
 actor -> tray : Choose a sticker
@@ -54,7 +54,7 @@ else within the limit
   alt the id is not one of the six (L2-028 criterion 4)
     handler --> hub : Ignored
   else the id is one of the six
-    handler -> db : Load the room the token names
+    handler -> db : Load the room the token names (RoomPlayerBehaviour)
     db --> handler : Room with its current Duel
     handler -> duel : Holds(sender)
     alt the sender is in the duel (L2-028 criterion 4)
@@ -62,10 +62,10 @@ else within the limit
       handler --> hub : Ignored
     else the sender is watching
       duel --> handler : false
-      handler -> hub : IRoomNotifier.StickerShown(sticker id, sender)
+      handler -> hub : IRoomNotifier.StickerShownAsync(sticker id, sender)
       hub --> conn : StickerShown to the whole room
       conn --> session : Sticker id and sender
-      session -> session : Add to the bounded buffer, remove after about 2 seconds
+      session -> session : Keep the newest 3, each for 2 seconds of the game's clock (ADR 0035)
       session --> page : stickers signal
       page --> others : The sticker with the sender's kid and name at the edge of Duel, newest at the bottom, about 2 seconds (L2-028 criteria 3, 7)
     end

@@ -14,40 +14,50 @@ skinparam class {
 title Class structure — Watch a duel and send a sticker
 
 class DuelPage <<frontend, game>> {
-  +watching: Signal<boolean>
-  +sendSticker(id: StickerId): void
+  #duel: Signal<DuelState | null>
+  #stickers: Signal<ShownSticker[]>
+  #send(id: StickerId): void
 }
-class StickerTray <<frontend, components>> {
-  +stickers: InputSignal<StickerId[]>
+class StickerBar <<frontend, components>> {
+  +stickers: InputSignal<StickerChoice[]>
   +chosen: OutputEmitterRef<StickerId>
 }
+class StickerRegion <<frontend, components>>
+class StickerPop <<frontend, components>> {
+  +kid, picture, words, from
+}
+class STICKERS <<frontend, domain>> {
+  +id: StickerId (1 to 6)
+  +words: string
+  +kid: KidId | 'bolt'
+}
 interface GameSession <<frontend, api>> {
-  +duel: Signal<DuelState>
-  +ownRole: Signal<'traveller' | 'deskHolder' | 'watching'>
+  +duel: Signal<DuelState | null>  (role 'watching')
   +stickers: Signal<ShownSticker[]>
   +sendSticker(id: StickerId): void
 }
 class FriendsGame <<frontend, game>> {
-  -shown: ShownSticker[] (bounded)
+  -received: ShownSticker[] (at most 3, 2 s each on the game's clock)
 }
 class ShownSticker <<frontend, api>> {
+  +key: number
   +sticker: StickerId
   +kid: KidId
-  +playerId: string
-  +sender: string ("You" or the nickname)
+  +from: string ("You" or the nickname)
 }
 interface RoomConnection <<frontend, api>> {
   +sendSticker(id: StickerId): Promise<void>
-  +onStickerShown(handler): void
+  events.stickerShown(sticker)
 }
 class RoomHub {
-  +SendSticker(stickerId: int): Task
+  +SendSticker(sticker: int): Task
 }
 class HubRateLimitFilter {
   +InvokeMethodAsync(context, next): ValueTask<object?>
+  1 SendSticker a second, kept in the connection's Items
 }
 class SendStickerCommand {
-  +int StickerId
+  +int Sticker
 }
 class SendStickerCommandHandler {
   +Handle(command: SendStickerCommand): Task
@@ -56,25 +66,32 @@ class StickerId <<value object>> {
   +int Value
   +{static} TryParse(value: int, out id: StickerId): bool
 }
+class Room {
+  +MaySendSticker(player: RoomPlayer): bool
+}
 class Duel {
-  +Guid Traveller
-  +Guid DeskHolder
-  +Holds(player: Guid): bool
+  +string Traveller
+  +string DeskHolder
+  +Holds(player: string): bool
 }
 interface IRoomNotifier {
-  +StickerShown(room: Room, sticker: StickerId, sender: Guid): Task
+  +StickerShownAsync(roomId: Guid, sticker: StickerShownDto): Task
 }
 
-DuelPage --> StickerTray : shows while watching
+DuelPage --> StickerBar : shows while watching
+DuelPage --> StickerRegion : shows received stickers in
+StickerRegion o-- "0..3" StickerPop
+DuelPage ..> STICKERS : words and pictures
 DuelPage ..> GameSession : reads through GAME_SESSION
 FriendsGame ..|> GameSession
-FriendsGame *-- "0..n, bounded" ShownSticker
+FriendsGame *-- "0..3" ShownSticker
 FriendsGame ..> RoomConnection : uses
 RoomConnection ..> RoomHub : SendSticker / StickerShown
 HubRateLimitFilter ..> RoomHub : filters
 RoomHub ..> SendStickerCommand : sends
 SendStickerCommandHandler ..> SendStickerCommand : handles
 SendStickerCommandHandler ..> StickerId : parses
-SendStickerCommandHandler ..> Duel : asks who is duelling
+SendStickerCommandHandler ..> Room : asks whether the sender may
+Room ..> Duel : asks who is duelling
 SendStickerCommandHandler ..> IRoomNotifier : announces
 @enduml
