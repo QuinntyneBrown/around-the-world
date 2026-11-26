@@ -72,6 +72,7 @@ flash card, duel, hop, room, code, host, classmates, sticker, passport, stamp.
 | 11 | The losing line is a button inside the card. | The same words on a quiet pill that leads to World Map. | It is the only action after losing, and it must not look like a second answer. |
 | 12 | No dark theme. | A dark theme built from the same roles (a night classroom). | The mock set is themed through tokens in light and dark. Whether the game ships dark is an open question; the light theme is the design. |
 | 13 | The player list marks you by position. | "(you)" in words, and "You" in the standings with an outline. | L2-024, L2-034 (6). |
+| 14 | The flash card's sum and answer box are plain text. | Each is `role="img"` named in words ("6 times 4", "Your answer: 24"). | ARIA does not let a paragraph or a plain `div` be named, so the names were lost (L2-051). |
 
 States the prototype does not draw were added from the requirements: loading, errors, offline,
 too many tries, a browser with no speech recognition, a flash card nobody answers, a lost room,

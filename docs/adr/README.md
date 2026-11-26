@@ -20,7 +20,11 @@ requirements and designs leave.
 | [0011](0011-player-record-on-the-device.md) | The player's record is one versioned JSON entry in `localStorage` | Accepted |
 | [0012](0012-interactive-components-on-native-elements.md) | A design-system component that is a link or a button sits on the native element | Accepted |
 | [0013](0013-pictures-arriving-and-failing.md) | Home's and Pick Your Kid's loading and error states follow their pictures | Accepted |
-| [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted |
+| [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted; `initial` warning superseded by 0021 |
 | [0015](0015-critical-path-in-ci.md) | CI runs the behaviour specs tagged `@critical` | Accepted |
 | [0016](0016-solo-game-route-group.md) | The solo game is a lazy route group that holds Game Setup and the game screens | Accepted |
 | [0017](0017-game-setup-rules-and-states.md) | Game Setup's rules, how the setup is kept, and the states a solo game reaches | Accepted |
+| [0018](0018-flash-card-ranges.md) | The numbers of a flash card, how its kind is picked and what counts as the same card | Accepted |
+| [0019](0019-classmate-profiles.md) | The classmates' profiles, how the class is seated and how a classmate answers | Accepted |
+| [0020](0020-solo-duel-clock-and-states.md) | The solo duel: its clock, its timings, the states journey 04 reaches and how specs drive it | Accepted |
+| [0021](0021-initial-budget-with-the-duel.md) | The initial budget of `game` once Duel plays a duel | Accepted |
