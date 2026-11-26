@@ -246,10 +246,11 @@ diagram shows no backend container, because a solo game sends no request to the 
 
 ### Components
 
-`SoloGame` asks `ClassFactory` for the class, starts the `Tour` and applies each duel's result to
-it. `Tour` keeps the `Standings` and stamps a `Passport`. `WorldMapPage` reads `TourState` through
-`GameSession`, binds the World Map message to `MapToast` and hands the move to the classroom's
-renderer.
+`SoloGame` asks `ClassFactory` for the class, starts the `Tour`, applies each duel's result to
+it and works out the classmates' duels with `ClassmatesDuel`. `Tour` keeps the `Standings` and
+stamps a `Passport`. `WorldMapPage` reads `TourState` through `GameSession`, binds the World Map
+message to `MapToast` and draws the room with `WorldMap` until the classroom's renderer comes in
+journey 09.
 
 ![C4 component view for travelling round the ring](diagrams/c4-component.png)
 
@@ -273,8 +274,9 @@ with a distance travelled of 1 (`L2-007`).
 
 `Tour.applyDuel` moves the traveller on and stamps their passport when the traveller won
 (`L2-002`), or swaps the traveller and the desk holder when the desk holder won (`L2-003`). World
-Map plays the hop and its message and, when the message has stayed for about 1.6 seconds or the
-child chooses "Back to the card", calls `continue()`. Duel returns when the device's player is in the next duel; otherwise World Map
+Map plays the hop and its message; `SoloGame` moves on when the message has stayed for 1.6
+seconds on the game's clock, or at once when the child chooses "Back to the card"
+(`continue()`). Duel returns when the device's player is in the next duel; otherwise World Map
 stays while two classmates duel (`L2-034` criterion 7).
 
 ![Sequence diagram for moving round the ring after a duel](diagrams/sequence-move-after-duel.png)
