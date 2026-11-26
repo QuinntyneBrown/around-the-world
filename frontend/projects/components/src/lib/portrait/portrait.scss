@@ -55,6 +55,14 @@
   border-radius: calc(var(--radius-xl) + var(--radius-xs));
 }
 
+// A duellist's portrait on the narrowest phones, so both names fit whole beside it.
+@include bp.narrow-phone {
+  :host-context(.duelist) .portrait {
+    width: 2.25rem;
+    border-radius: var(--radius-sm);
+  }
+}
+
 @include bp.from(sm) {
   .portrait--md {
     width: 3.5rem;

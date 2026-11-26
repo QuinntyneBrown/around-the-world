@@ -133,12 +133,31 @@
     padding-block: var(--space-1) var(--space-2);
     min-height: 0;
   }
+
+  // With the pad beside the card, the way to switch sits under the card, beside the pad, and
+  // takes none of the height the card and the pad need (L2-050 criteria 5 and 7).
+  .duel--pad .duel__stage {
+    align-items: flex-start;
+  }
+
+  .duel--pad .duel__foot {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 50%;
+  }
 }
 
 @include bp.below(md, low) {
+  // A banner across the top leaves no room for the line of text, which gives way to it; the
+  // duel strip still names the country ("Holds Egypt").
+  .duel--banner .duel__progress {
+    display: none;
+  }
+
   .duel__stage {
-    padding-block: var(--space-2);
-    gap: var(--space-2);
+    padding-block: var(--space-1);
+    gap: var(--space-1);
   }
 
   .duel__foot {

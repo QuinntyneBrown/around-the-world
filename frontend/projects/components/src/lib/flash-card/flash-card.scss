@@ -203,3 +203,24 @@
     font: var(--text-h1);
   }
 }
+
+// A short phone held upright (under 768 px wide and 672 px tall): the pad is under the card, so
+// the card is tighter still; while frozen, the line under it ("Not 26! Frozen for a sec…") names
+// the wrong answer and takes the answer box's place, so the pad keeps its room (L2-050 1).
+@include bp.below(md, low) {
+  :host {
+    padding-block: var(--space-2);
+  }
+
+  .flash-card__sum {
+    font-size: var(--font-size-5xl);
+  }
+
+  .flash-card__foot {
+    margin-top: var(--space-1);
+  }
+
+  :host(.flash-card--frozen) .answer-box {
+    display: none;
+  }
+}

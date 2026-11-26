@@ -88,6 +88,10 @@
 }
 
 @include bp.below(md, low) {
+  :host {
+    gap: var(--space-1);
+  }
+
   .number-pad__key {
     height: var(--target-min);
     font: var(--text-h3);

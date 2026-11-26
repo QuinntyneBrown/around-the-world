@@ -7,8 +7,15 @@ import { LeaveGameDialog } from '../pages/leave-game.dialog';
 import { LobbyPage } from '../pages/lobby.page';
 import { PodiumPage } from '../pages/podium.page';
 import { RoomPage } from '../pages/room.page';
+import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
 import { WorldMapPage } from '../pages/world-map.page';
-import { focused, smallTargets, stepsOutOfOrder, walkWithTab } from '../support/layout';
+import {
+  focused,
+  layoutProblems,
+  smallTargets,
+  stepsOutOfOrder,
+  walkWithTab,
+} from '../support/layout';
 import { gameState, joinedRoom, player, roomState } from '../support/rooms';
 import { SCREENS } from '../support/screens';
 
@@ -27,6 +34,8 @@ const NEW_CHILD = {
   wayOfAnswering: 'numberPad' as const,
   setup: { kinds: ['times'], tables: [2, 3, 4, 5], tourLength: 6, cardSpeed: 'normal' },
 };
+// The narrowest phone the game is laid out for, held upright.
+const NARROWEST = { width: 320, height: 568 };
 /** The waits after a duel the child wins as the traveller: "You got it!" and the stamp. */
 const HOP_MS = 1000 + 1200;
 /** How long World Map's message stays. */
@@ -249,5 +258,129 @@ test.describe('A whole tour by keyboard alone', () => {
     await page.keyboard.press('Escape');
     await expect(leave.dialog).toHaveCount(0);
     await expect(duel.leave).toBeFocused();
+  });
+});
+
+test.describe('Duel on the narrowest phone', () => {
+  test('a friend’s two-word nickname wraps between its words, never inside one', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clock,
+    voice,
+    microphone,
+    network,
+    clipboard,
+  }) => {
+    // Given the host of a race on the narrowest phone, duelling Cosmic Llama
+    await page.setViewportSize(NARROWEST);
+    await SCREENS.find((one) => one.mock === 'pages/duel/friends')!.reach({
+      page,
+      device,
+      backend,
+      roomHub,
+      clock,
+      voice,
+      microphone,
+      network,
+      clipboard,
+    });
+
+    // Then each name and role in the duel strip breaks only between words, and nothing overlaps
+    const duel = new DuelPage(page);
+    expect(await duel.named(duel.deskHolder)).toEqual(['Cosmic Llama', 'Holds Egypt']);
+    expect(await duel.breaksInsideAWord(duel.traveller)).toBe(false);
+    expect(await duel.breaksInsideAWord(duel.deskHolder)).toBe(false);
+    expect(await layoutProblems(page)).toEqual([]);
+  });
+
+  test('a frozen child’s flash card, number pad and way to switch stand apart', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clock,
+    voice,
+    microphone,
+    network,
+    clipboard,
+  }) => {
+    // Given a child on the narrowest phone who answered wrong and is frozen
+    await page.setViewportSize(NARROWEST);
+    await SCREENS.find((one) => one.mock === 'pages/duel/wrong-pad')!.reach({
+      page,
+      device,
+      backend,
+      roomHub,
+      clock,
+      voice,
+      microphone,
+      network,
+      clipboard,
+    });
+    const duel = new DuelPage(page);
+
+    // Then the flash card says so, the pad waits under it, and nothing overlaps or is cut off
+    await expect(duel.result).toContainText('Frozen for a sec…');
+    await expect(duel.numberPad).toBeVisible();
+    await expect(duel.progress).toBeVisible();
+    expect(await duel.scrolls()).toBe(false);
+    expect(await layoutProblems(page)).toEqual([]);
+  });
+
+  test('the connection’s banner across the top takes the place of the desk’s line, and nothing overlaps', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clock,
+    voice,
+    microphone,
+    network,
+    clipboard,
+  }) => {
+    // Given the host of a race on the narrowest phone, back after a lost connection
+    await page.setViewportSize(NARROWEST);
+    await SCREENS.find((one) => one.mock === 'notifications/connection-banner/success')!.reach({
+      page,
+      device,
+      backend,
+      roomHub,
+      clock,
+      voice,
+      microphone,
+      network,
+      clipboard,
+    });
+    const duel = new DuelPage(page);
+
+    // Then the banner says so across the top in one line, the line of text gives way to it
+    // while the duel strip still names the country, and the flash card, the pad and the footer
+    // all fit without overlapping
+    await expect(duel.banner).toContainText('You’re back!');
+    await expect(duel.progress).toBeHidden();
+    expect(await duel.named(duel.deskHolder)).toEqual(['Cosmic Llama', 'Holds Egypt']);
+    await expect(duel.numberPad).toBeVisible();
+    expect(await duel.scrolls()).toBe(false);
+    expect(await layoutProblems(page)).toEqual([]);
+  });
+});
+
+test.describe('Solo Or Friends on a tablet', () => {
+  test('“Make a room” and “Join a room” stay inside their card where the two cards stand side by side', async ({
+    page,
+    device,
+  }) => {
+    // Given a child on a tablet held upright, where the two ways to play stand side by side
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await device.keeps({ version: 1, kid: 'zuri', nickname: { adjective: 0, animal: 0 } });
+    const solo = new SoloOrFriendsPage(page);
+    await solo.open();
+    await expect(solo.joinRoom).toBeVisible();
+    expect(await solo.modesSideBySide()).toBe(true);
+
+    // Then no control sticks out of its card, cut off or overlapping
+    expect(await layoutProblems(page)).toEqual([]);
   });
 });
