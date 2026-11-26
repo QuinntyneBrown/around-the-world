@@ -14,6 +14,7 @@ import type { KidId } from '@atw/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Bean {
-  readonly kid = input.required<KidId>();
+  /** The kid, or "classmate" for the plain bean of a further classmate, with no accessory. */
+  readonly kid = input.required<KidId | 'classmate'>();
   readonly large = input(false);
 }

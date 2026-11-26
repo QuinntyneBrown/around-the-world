@@ -15,7 +15,7 @@ const KID_PICTURES = /\/img\/kid-\w+\.jpg$/;
 const DEFAULT_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 test.describe('Solo Or Friends', () => {
-  test('@critical a child chooses Play solo and Go! with the defaults, and Duel gets ready', async ({
+  test('@critical a child chooses Play solo and Go! with the defaults, and Duel deals a card', async ({
     page,
   }) => {
     // Given a new child picks Zuri from Home
@@ -41,11 +41,11 @@ test.describe('Solo Or Friends', () => {
     // When the child chooses "Go!" with no changes
     await setup.chooseGo();
 
-    // Then Duel opens and gets the first flash card ready, with no request to a backend
+    // Then Duel opens with the first flash card, with no request to a backend
+    // (its loading state stands only until then: docs/adr/0020, and the page's unit test)
     const duel = new DuelPage(page);
     await expect(page).toHaveURL(/\/duel$/);
-    await expect(duel.status).toHaveText('Getting the first card ready…');
-    await expect(duel.getReady).toHaveText('Get ready…');
+    await expect(duel.sum).toHaveText(/\d+ × \d+/);
   });
 
   test('shows both ways to play, with the classmates the child did not pick', async ({
