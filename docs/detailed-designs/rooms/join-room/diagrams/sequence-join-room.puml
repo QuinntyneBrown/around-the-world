@@ -19,7 +19,7 @@ box "Frontend — game" #E0F2FE
   participant "RoomPage" as page
 end box
 box "Frontend — components" #E0F2FE
-  participant "CodeBoxes" as boxes
+  participant "CodeField" as boxes
 end box
 box "Frontend — api" #E0F2FE
   participant "RoomsApi" as client
@@ -42,7 +42,7 @@ page --> actor : "Join" enabled once four letters are held (L2-023 criterion 2)
 actor -> page : Choose "Join"
 page --> actor : Field disabled; "Join" disabled, reads "Joining…"; "Finding your friends…" (L2-023 criterion 7)
 page -> client : joinRoom(code, kid, nickname indexes)
-client -> controller : POST /rooms/join
+client -> controller : POST /api/rooms/join
 alt the backend cannot be reached (L2-023 criterion 9)
   client --> page : ApiError backend_unreachable
   page --> actor : Alert "We can't reach the game right now. Check the internet and try again."; "Join" usable, "Play solo instead"

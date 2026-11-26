@@ -19,7 +19,7 @@ class RoomPage <<frontend, game>> {
   +refusal: Signal<string | null>
   +join(): void
 }
-class CodeBoxes <<frontend, components>> {
+class CodeField <<frontend, components>> {
   +value: ModelSignal<string>
   +invalid: InputSignal<boolean>
   +disabled: InputSignal<boolean>
@@ -68,10 +68,10 @@ interface IRoomNotifier {
   +RoomChanged(room: Room): Task
 }
 
-RoomPage --> CodeBoxes : shows
+RoomPage --> CodeField : shows
 RoomPage ..> RoomsApi : calls through ROOMS_API
 RoomPage ..> ApiError : branches on code
-RoomsApi ..> RoomsController : POST /rooms/join
+RoomsApi ..> RoomsController : POST /api/rooms/join
 RoomsController ..> JoinRoomCommand : sends
 JoinRoomCommandValidator ..> JoinRoomCommand : validates
 JoinRoomCommandHandler ..> JoinRoomCommand : handles
