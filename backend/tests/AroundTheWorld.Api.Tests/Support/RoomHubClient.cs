@@ -21,6 +21,8 @@ internal sealed class RoomHubClient : IAsyncDisposable
     private readonly List<(Func<RoomStateBody, bool> Wanted, TaskCompletionSource<RoomStateBody> Done)> _waiting = [];
     private readonly List<(string Json, GameStateBody Game)> _games = [];
     private readonly List<(Func<GameStateBody, bool> Wanted, TaskCompletionSource<GameStateBody> Done)> _waitingGames = [];
+    private readonly List<StickerShownBody> _stickers = [];
+    private readonly List<(Func<StickerShownBody, bool> Wanted, TaskCompletionSource<StickerShownBody> Done)> _waitingStickers = [];
     private readonly TaskCompletionSource<Exception?> _closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private RoomHubClient(HubConnection connection)
@@ -28,6 +30,7 @@ internal sealed class RoomHubClient : IAsyncDisposable
         Connection = connection;
         connection.On<RoomStateBody>("RoomChanged", Received);
         connection.On<JsonElement>("GameChanged", ReceivedGame);
+        connection.On<StickerShownBody>("StickerShown", ReceivedSticker);
         connection.Closed += error =>
         {
             _closed.TrySetResult(error);
@@ -128,6 +131,41 @@ internal sealed class RoomHubClient : IAsyncDisposable
         }
     }
 
+    /// <summary>The first sticker received, now or later, that is what the test wants.</summary>
+    public async Task<StickerShownBody> WaitForStickerAsync(string what, Func<StickerShownBody, bool> wanted)
+    {
+        var done = new TaskCompletionSource<StickerShownBody>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            var already = _stickers.FirstOrDefault(wanted);
+            if (already is not null)
+            {
+                return already;
+            }
+
+            _waitingStickers.Add((wanted, done));
+        }
+
+        try
+        {
+            return await done.Task.WaitAsync(Timeout, TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"No sticker {what} arrived; what did arrive: {DescribeStickers()}.");
+            throw;
+        }
+    }
+
+    /// <summary>Every sticker received, in order.</summary>
+    public IReadOnlyList<StickerShownBody> Stickers()
+    {
+        lock (_gate)
+        {
+            return [.. _stickers];
+        }
+    }
+
     /// <summary>Completes when the server has closed the connection; fails after the timeout.</summary>
     public async Task<Exception?> ClosedAsync()
     {
@@ -177,6 +215,27 @@ internal sealed class RoomHubClient : IAsyncDisposable
         }
 
         ready.ForEach(done => done.TrySetResult(game));
+    }
+
+    private void ReceivedSticker(StickerShownBody sticker)
+    {
+        List<TaskCompletionSource<StickerShownBody>> ready;
+        lock (_gate)
+        {
+            _stickers.Add(sticker);
+            ready = [.. _waitingStickers.Where(waiter => waiter.Wanted(sticker)).Select(waiter => waiter.Done)];
+            _waitingStickers.RemoveAll(waiter => waiter.Wanted(sticker));
+        }
+
+        ready.ForEach(done => done.TrySetResult(sticker));
+    }
+
+    private string DescribeStickers()
+    {
+        lock (_gate)
+        {
+            return _stickers.Count == 0 ? "nothing" : string.Join("; ", _stickers);
+        }
     }
 
     private string DescribeGames()

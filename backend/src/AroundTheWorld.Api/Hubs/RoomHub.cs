@@ -3,6 +3,7 @@ using AroundTheWorld.Application.Rooms.LeaveRoom;
 using AroundTheWorld.Application.Rooms.PlayAgain;
 using AroundTheWorld.Application.Rooms.Reconnect;
 using AroundTheWorld.Application.Rooms.SaveSetup;
+using AroundTheWorld.Application.Rooms.SendSticker;
 using AroundTheWorld.Application.Rooms.StartGame;
 using AroundTheWorld.Application.Rooms.SubmitAnswer;
 using MediatR;
@@ -27,6 +28,9 @@ public sealed class RoomHub(ISender sender) : Hub
     /// <summary>The event that carries the game's new state to the room's players (docs/adr/0033).</summary>
     public const string GameChanged = nameof(GameChanged);
 
+    /// <summary>The event that carries a sticker to the room's players (docs/adr/0035).</summary>
+    public const string StickerShown = nameof(StickerShown);
+
     /// <summary>Attaches the connection to its player's room and sends it the room as it stands.</summary>
     public override Task OnConnectedAsync() => sender.Send(new ReconnectCommand(), Context.ConnectionAborted);
 
@@ -41,6 +45,12 @@ public sealed class RoomHub(ISender sender) : Hub
     /// which a client claims a win, a hop or the end of a tour (L2-026 criterion 2).
     /// </summary>
     public Task SubmitAnswer(int answer) => sender.Send(new SubmitAnswerCommand(answer), Context.ConnectionAborted);
+
+    /// <summary>
+    /// A watching player's sticker, its id and nothing else (L2-028 criteria 2 and 3): there is no
+    /// method by which a player sends text.
+    /// </summary>
+    public Task SendSticker(int sticker) => sender.Send(new SendStickerCommand(sticker), Context.ConnectionAborted);
 
     /// <summary>"Play again" from the Podium: the room returns to its Lobby (L2-035 criterion 3).</summary>
     public Task PlayAgain() => sender.Send(new PlayAgainCommand(), Context.ConnectionAborted);
