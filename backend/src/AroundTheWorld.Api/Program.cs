@@ -18,6 +18,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorCodeWriter>();
 builder.Services.AddRoomRateLimits(builder.Configuration);
+builder.Services.AddHostedService<IdleRoomSweeper>();
 
 var app = builder.Build();
 

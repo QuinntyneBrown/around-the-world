@@ -1,6 +1,8 @@
 using AroundTheWorld.Application.Rooms;
+using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
 using AroundTheWorld.Domain.Rooms;
 using AroundTheWorld.Infrastructure.Persistence;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -23,6 +25,15 @@ namespace AroundTheWorld.Api.Tests.Support;
 public class ApiFixture : WebApplicationFactory<Program>
 {
     private readonly string _storeName = $"room-store-{Guid.NewGuid():N}";
+
+    private readonly SweepWatcher _sweeps = new();
+
+    /// <summary>
+    /// Completes when the idle rooms have been swept at that time or later, so a test awaits the
+    /// sweep after advancing <see cref="Clock"/> instead of sleeping; it fails after 10 seconds,
+    /// naming the last sweep that did arrive.
+    /// </summary>
+    public Task SweepAt(DateTimeOffset at) => _sweeps.WaitForAsync(at, TimeSpan.FromSeconds(10));
 
     /// <summary>The clock of the backend under test. Advance it; never sleep.</summary>
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 1, 5, 9, 0, 0, TimeSpan.Zero));
@@ -49,6 +60,9 @@ public class ApiFixture : WebApplicationFactory<Program>
 
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(Clock);
+
+            services.AddSingleton(_sweeps);
+            services.AddTransient<IPipelineBehavior<DeleteIdleRoomsCommand, int>, SweepSignal>();
         });
     }
 
@@ -93,4 +107,59 @@ internal sealed class ScriptedCodes(IReadOnlyList<string> codes) : IRoomCodeGene
     private int _next;
 
     public RoomCode Draw() => RoomCode.From(codes[Math.Min(Interlocked.Increment(ref _next) - 1, codes.Count - 1)]);
+}
+
+/// <summary>Records each sweep of idle rooms the backend finished, by the time it swept at.</summary>
+internal sealed class SweepWatcher
+{
+    private readonly Lock _gate = new();
+    private readonly List<(DateTimeOffset At, TaskCompletionSource Done)> _waiting = [];
+    private DateTimeOffset? _last;
+
+    public async Task WaitForAsync(DateTimeOffset at, TimeSpan timeout)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (_last >= at)
+            {
+                return;
+            }
+
+            _waiting.Add((at, done));
+        }
+
+        try
+        {
+            await done.Task.WaitAsync(timeout, TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"No sweep at {at:O} arrived; the last was at {(_last is { } last ? last.ToString("O") : "none")}.");
+        }
+    }
+
+    public void Swept(DateTimeOffset at)
+    {
+        List<TaskCompletionSource> ready;
+        lock (_gate)
+        {
+            _last = _last is { } last && last > at ? last : at;
+            ready = [.. _waiting.Where(waiter => waiter.At <= at).Select(waiter => waiter.Done)];
+            _waiting.RemoveAll(waiter => waiter.At <= at);
+        }
+
+        ready.ForEach(done => done.TrySetResult());
+    }
+}
+
+/// <summary>Tells the <see cref="SweepWatcher"/> once a sweep of idle rooms has been saved.</summary>
+internal sealed class SweepSignal(SweepWatcher sweeps) : IPipelineBehavior<DeleteIdleRoomsCommand, int>
+{
+    public async Task<int> Handle(DeleteIdleRoomsCommand request, RequestHandlerDelegate<int> next, CancellationToken cancellationToken)
+    {
+        var deleted = await next(cancellationToken);
+        sweeps.Swept(request.Now);
+        return deleted;
+    }
 }
