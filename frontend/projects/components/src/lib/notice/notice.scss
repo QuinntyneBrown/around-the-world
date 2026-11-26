@@ -1,0 +1,42 @@
+// The notice block of docs/design-system/assets/components.css: centred at every width, the
+// actions wrapping.
+:host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+}
+
+.notice__art {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  color: var(--color-fg-accent);
+  margin-bottom: var(--space-2);
+}
+
+.notice__title {
+  font: var(--text-h1);
+}
+
+.notice__text {
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+  max-width: 26rem;
+}
+
+.notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}

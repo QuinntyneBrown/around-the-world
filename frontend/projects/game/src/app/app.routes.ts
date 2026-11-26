@@ -29,4 +29,19 @@ export const routes: Routes = [
     path: '',
     loadChildren: () => import('./games/solo-game.routes').then((m) => m.SOLO_GAME_ROUTES),
   },
+  {
+    // A failure of the game itself; GameErrorHandler opens it without changing the address.
+    path: 'error',
+    title: 'Something went wrong · Around the World',
+    loadComponent: () =>
+      import('./pages/something-went-wrong/something-went-wrong').then(
+        (m) => m.SomethingWentWrongPage,
+      ),
+  },
+  {
+    // An address that leads to no screen (L2-030 criterion 9); it must stay the last route.
+    path: '**',
+    title: 'Not found · Around the World',
+    loadComponent: () => import('./pages/not-found/not-found').then((m) => m.NotFoundPage),
+  },
 ];
