@@ -87,7 +87,7 @@
           </atw-flash-card>
         }
       }
-      @if (open() && !byVoice()) {
+      @if (open() && !byVoice() && !watching()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>

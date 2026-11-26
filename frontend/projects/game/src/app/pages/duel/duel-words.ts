@@ -51,7 +51,7 @@ export const DuelWords = {
    * on", or "You keep Italy · Kenji hops on" for the desk holder (L2-033 criteria 8 and 11).
    */
   pill(duel: DuelState): string | null {
-    if (duel.outcome !== 'won' || DuelWords.youWon(duel)) return null;
+    if (duel.outcome !== 'won' || duel.role === 'watching' || DuelWords.youWon(duel)) return null;
     const rival = DuelWords.rival(duel);
     return duel.role === 'deskHolder'
       ? `${DuelWords.yourDesk(duel)} · ${rival} hops on`
@@ -62,6 +62,12 @@ export const DuelWords = {
   line(duel: DuelState): CardLine {
     if (duel.outcome === 'timedOut') {
       return { result: `Time’s up! It was ${duel.answer}. Here comes a new card…`, tone: 'timeUp' };
+    }
+    if (duel.role === 'watching') {
+      // A player who is not in the duel watches it (L2-028 criterion 1).
+      return duel.outcome === 'won' && duel.winner
+        ? { result: `${duel[duel.winner].name} said ${duel.answer} first.`, tone: 'plain' }
+        : { result: 'Watching… your turn is next', tone: 'quiet' };
     }
     if (duel.outcome === 'won') {
       return DuelWords.youWon(duel)
@@ -80,6 +86,11 @@ export const DuelWords = {
     const sum = DuelWords.sum(duel.card);
     if (duel.outcome === 'timedOut')
       return `Time is up. It was ${duel.answer}. A new card is coming.`;
+    if (duel.role === 'watching') {
+      return duel.outcome === 'won' && duel.winner
+        ? `${duel[duel.winner].name} said ${duel.answer} first.`
+        : `You are watching. ${duel.traveller.name} against ${duel.deskHolder.name}: ${sum}.`;
+    }
     if (duel.outcome === 'won') {
       return DuelWords.youWon(duel)
         ? `${sum} is ${duel.answer}. You got it!`
