@@ -72,9 +72,11 @@ class Duel {
   +timeToAnswerMs: number
   +outcome: DuelOutcome
   +winner: PlayerId | null
-  +answer(player: PlayerId, value: number, atMs: number): AnswerResult
+  +answer: number
+  +give(player: PlayerId, value: number, atMs: number): AnswerResult
   +isFrozen(player: PlayerId, atMs: number): boolean
-  +timeOut(atMs: number): boolean
+  +unfreezesAt(player: PlayerId): number
+  +timeOut(): boolean
 }
 enum AnswerResult {
   ignored

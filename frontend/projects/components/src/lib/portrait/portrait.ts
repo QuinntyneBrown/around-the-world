@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { KidId } from '@atw/api';
 import { Bean } from '../bean/bean';
 import { Skeleton } from '../skeleton/skeleton';
@@ -20,7 +20,8 @@ export type PortraitState = 'loaded' | 'loading' | 'failed';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Portrait {
-  readonly kid = input.required<KidId>();
+  /** The kid, or "classmate" for a classmate who is not one of the five kids: always drawn. */
+  readonly kid = input.required<KidId | 'classmate'>();
   /** The picture's address. */
   readonly src = input.required<string>();
   /** The kid's name when the portrait stands alone; empty beside the name. */
@@ -29,4 +30,8 @@ export class Portrait {
   readonly state = input<PortraitState>('loaded');
   /** A round portrait, as in a stack of classmates. */
   readonly round = input(false);
+  /** A ring in the kid's colour, as on the duel strip. */
+  readonly ring = input(false);
+  /** Loaded, loading or failed; a further classmate has no picture and is always drawn. */
+  protected readonly shown = computed(() => (this.kid() === 'classmate' ? 'failed' : this.state()));
 }

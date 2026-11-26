@@ -37,7 +37,9 @@ the tour ends). The ways of giving an answer are designed in `answering/answer-b
 
 ## Description
 
-The slice is not built yet; the parts below are those the design introduces. The design covers a
+The slice is built for a solo duel by journey 04 (`docs/adr/0020-solo-duel-clock-and-states.md`):
+the hop, the passport stamp, the pill to World Map and Pause come with journeys 05 and 08. The
+parts below are those the design introduces. The design covers a
 solo game, which is decided on the device: the slice has no backend part, and its diagrams show
 frontend libraries only. In a game with friends the server applies the same rules
 (`rooms/decide-game-on-server`).
@@ -56,7 +58,7 @@ frontend libraries only. In a game with friends the server applies the same rule
 - **`FlashCard`** — type in `api`: a kind of maths and two whole numbers. It does not hold the
   answer.
 - **`Duel`** — rule type in `domain`'s `tour/`, and the only place on the device where a duel is
-  decided. `answer(player, value, atMs)` returns `ignored`, `wrong` or `won`:
+  decided. `give(player, value, atMs)` returns `ignored`, `wrong` or `won`:
   - an answer from a player who is neither the traveller nor the desk holder is ignored
     (`L2-001` criterion 3);
   - an answer after the duel is won is ignored (`L2-001` criterion 4);
@@ -65,15 +67,20 @@ frontend libraries only. In a game with friends the server applies the same rule
     (`L2-004` criteria 1 to 3);
   - the first correct answer wins (`L2-001` criteria 1 and 2).
 
-  `timeOut(atMs)` closes an undecided duel with no winner. `Duel` takes the time as an argument
-  and reads no clock, so its unit tests need no waiting.
-- **`GameClock`** — clock in `domain`'s `tour/`. It gives the time played, runs a callback after
-  a number of milliseconds and stops while paused. A fake clock replaces it in unit tests.
-- **`SoloGame`** — game service in the `game` application, provided at the game route and bound
-  to `GAME_SESSION` for a solo game. For each duel the device's player is in, it asks
+  `timeOut()` closes an undecided duel with no winner, and `unfreezesAt(player)` gives when a
+  freeze ends. `Duel` takes the time as an argument and reads no clock, so its unit tests need
+  no waiting.
+- **`GameClock`** — clock in `domain`'s `tour/`. It counts game time from the wall clock it is
+  given (`Date.now`), and `tick()` runs, in time order, each callback whose time has come, with
+  `now()` reading the callback's own time. `SoloGame` ticks it every 100 ms and once more before
+  it takes the child's answer, so on an exact tie the classmate's answer counts first (ADR
+  0020). It will stop while paused (journey 08). A unit test gives it a fake wall clock, and a
+  spec holds the page's `Date.now` through the fixture's `clock`.
+- **`SoloGame`** — game service in `domain`'s `tour/`, provided by the solo route group and
+  bound to `GAME_SESSION` for a solo game (ADR 0016). For each duel the device's player is in, it asks
   `FlashCardMaker` for a card, creates the `Duel`, sets the card's timer on `GameClock` and
   publishes a new `DuelState`. It passes the device's player's answers and the classmate's
-  answers to the same `Duel.answer` method. The classmates and their agents are designed in the
+  answers to the same `Duel.give` method. The classmates and their agents are designed in the
   `classmates` subsystem.
 - **`DuelPage`** — page in `game`. It binds `DuelState` and `TourState` to the presentation
   components and forwards an answer to `GameSession.answer`. A live region tells a screen reader
@@ -149,8 +156,8 @@ larger; its accessible name is "The ring of {tour length} desks: you are at desk
   {country} · {rival} travels on" (`L2-033` criteria 3 and 8). The pill is the only action on
   the screen, and it is drawn so that it does not look like a second answer. No red screen shows
   and no buzzer plays.
-- **timed out** — "Time's up! It was {answer}. Here comes a new card…" (`L2-005` criterion 2;
-  whether the answer is shown is to confirm).
+- **timed out** — "Time's up! It was {answer}. Here comes a new card…", for 2 seconds (`L2-005`
+  criterion 2, ADR 0020).
 
 The live region says each event in words: "New card: 6 × 4. Shout it!" (without "Shout it!" when
 the number pad is the way of answering), "6 × 4 is 24. You got it!", "Not 42. Frozen for one
@@ -165,7 +172,8 @@ A decided duel leaves the Duel screen in one of two ways:
 - When the device's player wins, the right state shows first. `SoloGame` then applies the result
   to the tour and publishes the `TourMove` in `DuelState.hop`, and the hop state shows the
   passport stamp. World Map then opens (`L2-033` criterion 7). `SoloGame` sets both waits on
-  `GameClock`; how long "You got it!" and the passport stamp each stay is `<TO SUPPLY>`.
+  `GameClock`; how long "You got it!" and the passport stamp each stay is journey 05's. Until
+  then "You got it!" stays (ADR 0020).
 - When the device's player loses, the lost state stays until the child chooses the pill "You
   sit at {country} · {rival} travels on". `DuelPage` then calls `GameSession.continue()`,
   `SoloGame` applies the result to the tour, and World Map opens (`L2-033` criterion 8).
@@ -182,9 +190,9 @@ with friends (`L2-028`).
 The time to answer is 10 seconds for Chill, 6 seconds for Normal and 3 seconds for Lightning
 (`L2-005`). When that time passes with no correct answer, `SoloGame` calls `Duel.timeOut`, the
 timed out state shows, nobody hops, and a new duel starts for the same two players over a new
-flash card with nobody frozen (`L2-005` criterion 2, to confirm). How long the timed out state
-stays before the new card is `<TO SUPPLY>`. The Duel screen shows no clock for the tour's own
-time limit (`L2-006` criterion 2, to confirm; `tour/end-tour`).
+flash card with nobody frozen (`L2-005` criterion 2). The timed out state stays 2 seconds
+before the new card (ADR 0020). The Duel screen shows no clock for the tour's own time limit
+(`L2-006` criterion 2, to confirm; `tour/end-tour`).
 
 "Pause" stops `GameClock`, so the card's timer, a freeze and the classmate's answer all wait. On
 "Keep playing" the same flash card resumes with the same time remaining. "Go home" calls
@@ -193,21 +201,26 @@ time limit (`L2-006` criterion 2, to confirm; `tour/end-tour`).
 `SoloGame` cancels every timer when the game route is destroyed. It holds one `Duel` at a time
 and keeps no list of the duels played (`L2-048` criterion 5).
 
-Open points:
+Decisions and open points:
 
-- What follows a card whose time runs out, and whether the answer is shown: `L2-005`
-  criterion 2 marks both to confirm.
-- Which of two correct answers given at the same reading of the clock wins on the device:
-  `<TO SUPPLY>`.
-- What the Duel screen shows when the device's player is the desk holder, including the words
-  of a duel lost or won by a player who holds a desk: `<TO SUPPLY>`. Every mock draws the
-  device's player as the traveller.
-- How long "You got it!" and the passport stamp each stay before World Map opens:
-  `<TO SUPPLY>`.
-- How a classmate who is not one of the five kids is named on the duel strip: `<TO SUPPLY>`.
-  `L2-033` criterion 6 names only the device's player, another player and the five kids.
+- A card whose time runs out shows its answer for 2 seconds, then the same two players duel
+  over a new card with nobody frozen (ADR 0020, `L2-005` criterion 2).
+- Of two correct answers given at the same reading of the clock, the classmate's counts first:
+  `SoloGame` ticks the clock before it takes the child's answer (ADR 0020).
+- A classmate who is not one of the five kids is named "Classmate" on the duel strip and is
+  drawn as the plain bean (ADR 0019).
+- Until journey 05, a decided duel stays shown: "You got it!" when the child won, and "{rival}
+  said {answer} first. So close!" when they lost, the live region adding "You sit at
+  {country}." The pill "You sit at {country} · {rival} travels on", the passport stamp, how long
+  each stays, and Duel with the device's player as the desk holder come with World Map
+  (journey 05).
+- On a screen under 544 px tall the number pad sits beside the flash card at any width, so both
+  are whole on a phone turned on its side.
+- Duel's error state is a game with friends that lost its connection (journey 16); the
+  watching, friends and reconnecting states are journeys 14 to 16's, and the voice states
+  journey 07's.
 - Whether a lost duel waits for the child to choose the pill in a game with friends:
-  `<TO SUPPLY>`.
+  `<TO SUPPLY>` (journey 14).
 
 The screen follows the mocks `docs/mocks/pages/duel/` (states `default`, `pad`, `pad-typed`,
 `right`, `wrong`, `wrong-pad`, `lost`, `timeout`, `hop`, `long` and `loading`),
@@ -223,7 +236,7 @@ level-1 (L1) requirement, cited by identifier.
 |-------|--------------|-------------|
 | `L2-001` | `L1-001` | A duel shall be between the traveller and the desk holder of the desk the traveller stands beside, over one flash card, and the first correct answer shall win the duel; an answer from a player who is neither shall be ignored, and a correct answer given after the duel is won shall leave the result unchanged. |
 | `L2-004` | `L1-001` | A wrong answer shall freeze the player who gave it for 1 second, during which every answer that player gives shall be ignored and the rival shall not be frozen; the Duel screen shall say so in words ("Frozen for a sec…") and disable the number pad, and the flash card shall shake once, be outlined and name the answer given ("Not {answer}! Frozen for a sec…"). |
-| `L2-005` | `L1-001` | Each flash card shall have a time to answer set by the card speed (Chill 10 seconds, Normal 6 seconds, Lightning 3 seconds), the timer bar shall drain over that time in the traveller's colour, and when the time runs out with no correct answer nobody shall hop and the same two players shall duel over a new flash card with nobody frozen (to confirm); the mocks draw the flash card saying "Time's up! It was {answer}. Here comes a new card…", and whether the answer is shown is to confirm. |
+| `L2-005` | `L1-001` | Each flash card shall have a time to answer set by the card speed (Chill 10 seconds, Normal 6 seconds, Lightning 3 seconds), the timer bar shall drain over that time in the traveller's colour, and when the time runs out with no correct answer nobody shall hop and the same two players shall duel over a new flash card with nobody frozen, the flash card first saying "Time's up! It was {answer}. Here comes a new card…" for 2 seconds. |
 | `L2-033` | `L1-009` | The Duel screen shall show the flash card, the traveller and the desk holder each with their kid, name and role ("Travelling", "Holds {country}"), the timer bar, the world ring and "Desk {n} of {tour length}"; it shall name the device's own player "You", another player by their nickname and a classmate who is one of the five kids by the kid's name; when the player wins, the flash card shall show the answer and "You got it!", the passport stamp shall then stand in place of the flash card and World Map shall then open; when the player loses, the flash card shall say who answered first ("{rival} said {answer} first. So close!") and that the player sits at that country, with no red screen and no buzzer, and shall offer "You sit at {country} · {rival} travels on" as a quiet pill, the only action on the screen, which opens World Map; in a solo game Pause shall stop the clock and open a dialog ("Paused", "The clock is stopped. Your desk at {country} is waiting.") that offers "Keep playing", which Escape and the close button also do, and "Go home"; in a game with friends Pause shall be replaced by Leave, which shall ask first ("Leave the game?", "The race carries on without you, and you can't come back to this one.") and offer "Stay and play" and "Leave", which tells the room and opens Home; the Duel screen shall fill the screen without scrolling at any width, and the flash card shall be the largest thing on it. |
 
 ## Diagrams
@@ -274,7 +287,7 @@ duel stays until the child chooses the pill under the card. World Map opens afte
 
 When the card's time passes with no correct answer, `Duel` closes with no winner. The flash card
 says that the time is up, nobody hops, and the same two players duel over a new flash card
-(`L2-005` criterion 2, to confirm).
+(`L2-005` criterion 2).
 
 ![Sequence diagram for a flash card that runs out of time](diagrams/sequence-time-runs-out.png)
 

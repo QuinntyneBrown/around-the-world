@@ -22,6 +22,7 @@
 }
 
 .duel__hud,
+.duel__progress,
 .duel__stage,
 .duel__foot {
   position: relative;
@@ -33,6 +34,12 @@
   align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-3);
+}
+
+.duel__progress {
+  display: flex;
+  justify-content: center;
+  margin-top: calc(-1 * var(--space-1));
 }
 
 .duel__stage {
@@ -69,20 +76,53 @@
   }
 }
 
+// From 768 px the world ring replaces the pill and the pad sits beside the card (L2-050).
 @media (min-width: 48rem) {
+  .duel__progress {
+    display: none;
+  }
+
   .duel__stage {
     flex-direction: row;
     gap: var(--space-8);
   }
 }
 
+@media (min-width: 62rem) {
+  .duel__stage {
+    gap: var(--space-10);
+  }
+}
+
+// A phone turned on its side: the pad goes beside the card so both are whole (L2-050 5).
 @media (max-height: 34rem) {
+  .duel__progress {
+    display: none;
+  }
+
+  .duel__stage {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+
   .duel__hud {
     padding-block: var(--space-2);
   }
 
   .duel__stage {
     padding-block: var(--space-1);
+  }
+
+  .duel__foot {
+    padding-block: var(--space-1) var(--space-2);
+    min-height: 0;
+  }
+}
+
+@media (max-width: 47.99rem) and (max-height: 42rem) {
+  .duel__stage {
+    padding-block: var(--space-2);
+    gap: var(--space-2);
   }
 
   .duel__foot {

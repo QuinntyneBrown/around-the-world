@@ -1,4 +1,5 @@
 import { InjectionToken, type Signal } from '@angular/core';
+import { type DuelState } from './duel';
 import { type GameSetup } from './game-setup';
 
 /** The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/). */
@@ -16,8 +17,12 @@ export interface GameSession {
   readonly setup: Signal<GameSetup | null>;
   /** The game screen the game is at, or null before it starts. */
   readonly screen: Signal<GameScreen | null>;
+  /** The duel the device's player is in, or null before the first is dealt. */
+  readonly duel: Signal<DuelState | null>;
   /** Starts a game with the setup (L2-018 criterion 1). */
   start(setup: GameSetup): void;
+  /** Gives the device's player's answer to the duel (L2-010); it is ignored when it cannot count. */
+  answer(value: number): void;
 }
 
 export const GAME_SESSION = new InjectionToken<GameSession>('GAME_SESSION');

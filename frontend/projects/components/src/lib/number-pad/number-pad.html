@@ -1,0 +1,31 @@
+@for (digit of digits; track digit) {
+  <button
+    type="button"
+    class="number-pad__key numeric"
+    [disabled]="disabled()"
+    (click)="press(digit)"
+  >
+    {{ digit }}
+  </button>
+}
+<button
+  type="button"
+  class="number-pad__key number-pad__key--delete"
+  aria-label="Delete"
+  [disabled]="disabled()"
+  (click)="press('delete')"
+>
+  <atw-icon name="delete" size="lg" />
+</button>
+<button type="button" class="number-pad__key numeric" [disabled]="disabled()" (click)="press(0)">
+  0
+</button>
+<button
+  type="button"
+  class="number-pad__key number-pad__key--go"
+  aria-label="Go"
+  [disabled]="disabled()"
+  (click)="press('go')"
+>
+  Go
+</button>
