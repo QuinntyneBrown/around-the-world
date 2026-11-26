@@ -121,7 +121,7 @@
       }
     }
   </footer>
-  <div atw-sticker-region>
+  <div atw-sticker-region [watching]="watching()">
     @for (sticker of stickers(); track sticker.key) {
       <p
         atw-sticker-pop

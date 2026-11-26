@@ -138,6 +138,24 @@ export class DuelPage {
     );
   }
 
+  /** Whether any sticker showing overlaps the flash card (L2-028 criterion 7). */
+  async stickersCoverTheCard(): Promise<boolean> {
+    await this.settled();
+    const card = await this.flashCard.boundingBox();
+    if (!card) throw new Error('The flash card is not shown');
+    for (const pop of await this.stickerPops.all()) {
+      const box = await pop.boundingBox();
+      if (!box) continue;
+      const apart =
+        box.x >= card.x + card.width ||
+        box.x + box.width <= card.x ||
+        box.y >= card.y + card.height ||
+        box.y + box.height <= card.y;
+      if (!apart) return true;
+    }
+    return false;
+  }
+
   /** A duellist's name and role, as the duel strip shows them. */
   async named(duellist: Locator): Promise<[string, string]> {
     return [

@@ -24,6 +24,14 @@
   font-weight: var(--font-weight-bold);
 }
 
+// Compact on a phone, so three stay clear of the flash card (L2-028 criterion 7).
+@media (max-width: 35.99rem) {
+  :host {
+    padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
+    font: var(--text-name);
+  }
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;
