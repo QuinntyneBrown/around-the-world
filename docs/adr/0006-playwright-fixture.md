@@ -28,7 +28,10 @@ off localhost or a page error (`AGENTS.md`, E2E).
 - A problem is collected, not thrown, and the fixture fails the spec at its end with the list:
   an unexpected microphone call, an unanswered request or WebSocket, a request off localhost, a
   page error, or a console error (Angular's global error listeners log uncaught errors rather
-  than letting them reach the browser as page errors).
+  than letting them reach the browser as page errors). Journey 08 adds `random.breaks()`, which makes the
+  page's `Math.random` throw from then on so a spec can break the game as a broken browser
+  would; the console error the game then logs is expected (`expectedErrors`), and any other
+  still fails the spec (docs/adr/0027-pausing-leaving-and-recovering.md).
 - The specs run against the production build in `dist/game/browser`, served on localhost by
   `e2e/support/serve.mjs`, on Chromium only, with traces off.
 
