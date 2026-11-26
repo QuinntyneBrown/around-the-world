@@ -1,5 +1,7 @@
 // The world-map view and the art-* parts of docs/design-system/assets/components.css. These are
 // picture colours: the room is the same in light and dark. Kid colours come from `data-kid`.
+
+@use 'breakpoints' as bp;
 :host {
   position: absolute;
   inset: 0;
@@ -24,7 +26,7 @@
   display: none;
 }
 
-@media (min-width: 48rem) {
+@include bp.from(md) {
   .world-map__view--room {
     display: block;
   }

@@ -1,4 +1,6 @@
 // The mode-card block of docs/design-system/assets/components.css, on the panel it renders.
+
+@use 'breakpoints' as bp;
 :host {
   display: contents;
 }
@@ -47,7 +49,7 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .mode-card__actions--two {
     grid-template-columns: 1fr 1fr;
   }

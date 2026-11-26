@@ -1,6 +1,8 @@
 // Home's own layout (docs/mocks/pages/home/; the home block of
 // docs/design-system/assets/components.css). Below 992px the classroom fills the top 46% and
 // the title panel rises over it; from 992px the panel is a left column (L2-050 criterion 4).
+
+@use 'breakpoints' as bp;
 .home {
   display: flex;
   flex-direction: column;
@@ -98,7 +100,7 @@
   align-self: stretch;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .home__panel {
     padding-inline: var(--space-10);
   }
@@ -118,7 +120,7 @@
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   .home {
     flex-direction: row;
   }
@@ -139,7 +141,7 @@
   }
 }
 
-@media (min-width: 75rem) {
+@include bp.from(xl) {
   .home__panel {
     width: 34rem;
   }

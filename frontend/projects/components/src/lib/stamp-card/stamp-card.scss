@@ -1,5 +1,7 @@
 // The stamp-card block of docs/design-system/assets/components.css, on the host element: a
 // dashed, tilted stamp that lands in about 250 ms; upright and faded in under reduced motion.
+
+@use 'breakpoints' as bp;
 :host {
   width: 100%;
   max-width: 28rem;
@@ -37,7 +39,7 @@
   --pill-bg: var(--color-bg-canvas);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .stamp-card__country {
     font: var(--text-hero);
   }

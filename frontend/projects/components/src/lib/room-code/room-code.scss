@@ -1,4 +1,6 @@
 // The room-code block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
   background: var(--color-code-bg);
@@ -29,7 +31,7 @@
   margin-top: var(--space-2);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     padding: var(--space-6);
   }

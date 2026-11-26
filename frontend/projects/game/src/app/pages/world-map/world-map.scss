@@ -1,6 +1,8 @@
 // World Map's own layout, the world-map block of docs/design-system/assets/components.css: the
 // header, the room filling the space between, and the standings at the bottom. It fills the
 // screen and never scrolls.
+
+@use 'breakpoints' as bp;
 .world-map {
   background: var(--color-bg-canvas);
 }
@@ -79,7 +81,7 @@
   padding: var(--space-3);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .world-map__head,
   .world-map__foot {
     padding: var(--space-5);

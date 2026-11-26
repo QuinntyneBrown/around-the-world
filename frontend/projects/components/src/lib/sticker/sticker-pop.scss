@@ -1,4 +1,6 @@
 // The sticker-pop block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   display: inline-flex;
   align-items: center;
@@ -25,7 +27,7 @@
 }
 
 // Compact on a phone, so three stay clear of the flash card (L2-028 criterion 7).
-@media (max-width: 35.99rem) {
+@include bp.below(sm) {
   :host {
     padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
     font: var(--text-name);

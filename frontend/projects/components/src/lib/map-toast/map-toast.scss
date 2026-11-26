@@ -1,5 +1,7 @@
 // The map-toast-region and map-toast blocks of docs/design-system/assets/components.css: the
 // message drops in over 200 ms; under reduced motion it fades.
+
+@use 'breakpoints' as bp;
 :host {
   position: absolute;
   inset-inline: 0;
@@ -32,7 +34,7 @@
   animation: drop-in var(--duration-base) var(--ease-standard);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host(:not(.map-toast-region--inside)) {
     top: 6rem;
   }

@@ -1,4 +1,6 @@
 // The flash-card block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   position: relative;
   width: 100%;
@@ -153,7 +155,7 @@
   font-weight: var(--font-weight-semibold);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     padding: var(--space-8);
   }
@@ -172,13 +174,13 @@
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   .flash-card__sum {
     font-size: var(--font-size-9xl);
   }
 }
 
-@media (max-height: 42rem) {
+@include bp.height(low) {
   :host {
     padding: var(--space-3) var(--space-5);
   }

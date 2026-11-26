@@ -1,4 +1,6 @@
 // The toast-region block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   position: fixed;
   z-index: var(--z-toast);
@@ -11,7 +13,7 @@
   pointer-events: none;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     left: auto;
     width: 24rem;

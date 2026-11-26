@@ -1,5 +1,7 @@
 // Pick Your Kid's own layout: the kid-stage of docs/design-system/assets/components.css. The
 // chosen kid comes forward with a short fade (a fade only with reduced motion).
+
+@use 'breakpoints' as bp;
 .kid-stage,
 .kid-stage__kid {
   display: flex;
@@ -37,7 +39,7 @@
   margin: var(--space-3) auto 0;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .kid-stage__name {
     font: var(--text-display);
   }
