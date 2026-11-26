@@ -38,3 +38,4 @@ requirements and designs leave.
 | [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |
 | [0030](0030-classmates-with-the-on-device-model.md) | Classmates with the on-device model: readiness, the sessions, the prompts, the decision and its deadline | Accepted |
 | [0031](0031-making-a-room.md) | Making a room: the code, the token, the rate limit, the room's life and Solo Or Friends' states | Accepted |
+| [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted |

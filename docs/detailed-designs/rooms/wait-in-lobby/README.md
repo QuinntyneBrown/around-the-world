@@ -35,18 +35,21 @@ Lobby, where the host starts the next game (`L2-035` criterion 3).
 
 ## Description
 
-The slice is not built yet; the parts below are the ones the design introduces. The slice runs
-from the Lobby in the `game` application, over one SignalR connection per player, to the room
-store.
+Journey 12 built the host's Lobby before a friend joins (ADR 0031); journey 13 built joining,
+the live updates, "Copy room link", the passing messages, leaving and the Lobby's loading,
+guest, full and error states (ADR 0032). The host's "Change" and the start are journey 14's.
+The slice runs from the Lobby in the `game` application, over one SignalR connection per
+player, to the room store.
 
 Frontend:
 
 - **`LobbyPage`** — page in `game`, under the top bar titled "Room", whose Back button is named
-  "Leave the room". It reads the room from `FriendsGame` through `GAME_SESSION` and shows four
-  parts (`L2-024` criteria 1 and 5):
+  "Leave the room". It reads the room from `FriendsGame` through `ROOM_SESSION` (journey 14
+  makes `FriendsGame` the room group's `GAME_SESSION` too) and shows four parts (`L2-024`
+  criteria 1 and 5):
   - the code panel: "Room code", the code in the largest type on the screen, the button "Copy
     room link" and "Say it out loud so friends can type it in.". The button copies the room's
-    link with the CDK `Clipboard` service. A copied link shows the message "Link copied" with
+    link, the Lobby's own address `{origin}/room/{CODE}`, with the CDK `Clipboard` service. A copied link shows the message "Link copied" with
     "Send it to a friend to get them in."; a link that cannot be copied shows "Couldn't copy
     the link" with "Say the code out loud instead: {the code's letters}." as an alert, which
     stays until it is dismissed (`L2-024` criterion 4);
@@ -55,19 +58,21 @@ Frontend:
     room shows the new values once the host has saved a change (for example "× + −, ×2 to ×12"
     and "24 desks"; `L2-018` criterion 2). "Answer by" is not a value of `GameSetup` and is not
     sent to the backend: each player chooses voice or the number pad on their own device
-    (`L2-024` criterion 5). Every mock of the Lobby reads "Shouting it!"; what the line reads
-    for a player who answers with the number pad is `<TO SUPPLY>` (to confirm). The card speed
+    (`L2-024` criterion 5). Every mock of the Lobby reads "Shouting it!"; for a player who answers
+    with the number pad the line reads "The number pad" (ADR 0031, to confirm). The card speed
     is not shown. The host alone is offered "Change", which opens Game Setup (`L2-018`
     criterion 5, `player/set-up-game`);
   - the start control. For the host it is "Start the race", disabled while the host is alone,
     with the status "Waiting for at least one friend…" under it, or "{n} kids ready" once a
-    friend is in (`L2-025` criteria 1 and 2). Any other player has no "Start the race" and no
+    friend is in (`L2-025` criteria 1 and 2). Until journey 14 builds the start, "Start the race"
+    stays disabled with a friend in too (ADR 0032). Any other player has no "Start the race" and no
     "Change", and sees a panel "You're in!" with "Waiting for {host's nickname} to start…"
     (`L2-025` criterion 3);
   - `PlayerList` under the heading "In the classroom".
 
   "Leave the room" leaves the room for Solo Or Friends without asking (`L2-030` criterion 8):
-  the page calls `FriendsGame.leave()`. Whether the host is asked first is to confirm.
+  the page calls `FriendsGame.leave()`, which sends `LeaveRoom`, closes the connection and drops
+  the room from the visit. Whether the host is asked first is to confirm.
 
   The page shows passing messages in a region at the bottom of the screen, across it on a phone
   and at the bottom right from 576 px. A message is a status, shows a dismiss button, leaves by
@@ -75,16 +80,21 @@ Frontend:
   newest at the bottom, three at most (`docs/design-system/patterns/notifications.html`). When
   a player joins, every other Lobby in the room shows "{nickname} joined" with "as {kid}" once
   (`L2-024` criterion 6); the page derives it from the player added between two `RoomState`
-  values. The player who becomes the host is shown "You're the host now" with "The host left.
-  You can start the race." (`L2-025` criterion 5). The page holds the messages as a list of
-  `LobbyMessage` values bounded at three.
+  values with `linkedSignal`, and the first state it receives says nothing. The player who
+  becomes the host is shown "You're the host now" with "The host left. You can start the race."
+  (`L2-025` criterion 5). The page holds the messages as a list of `LobbyMessage` values bounded
+  at three; a fourth drops the oldest. They are drawn by `ToastRegion` and `Toast` in
+  `components`, and derived by the pure helper `lobbyNews` beside the page.
 
-  The page has two further states. While the room is arriving, placeholders stand in for the
-  code, the setup and the players, the page is marked busy and a hidden status reads "Getting
-  the room…" (`L2-031` criterion 4). When the connection to the room is lost and cannot be got
+  The page has two further states. While the room is arriving, which is until the connection
+  delivers its first `RoomChanged`, placeholders stand in for the code, the setup and the
+  players, the page is marked busy and a hidden status reads "Getting the room…" (`L2-031`
+  criterion 4). When the connection to the room is lost and cannot be got
   back, an alert takes the place of the start control: "We lost the room" and "The connection
   dropped and we couldn't get back in.", with "Try again" and "Go home", which opens Home
-  (`L2-029` criterion 6); the code, the setup and the players last received stay shown.
+  (`L2-029` criterion 6); the code, the setup and the players last received stay shown. The
+  connection reconnects by itself at once and after 1 and 3 seconds before the alert shows;
+  "Try again" connects afresh with the same token (ADR 0032).
 - **`PlayerList`** — presentation component in `components`; it renders the mocks' `player-grid`
   block. It takes the players, the device's own player id and the capacity of 8. It shows each
   player's kid on the kid's colour, the nickname and "as {kid}", marks the host with a crown
@@ -92,16 +102,19 @@ Frontend:
   and draws each remaining place as "Empty desk" in a dashed outline. The grid has 2 columns, 3
   from 576 px and 4 from 1200 px. The list is a polite live region. Two players with the same
   kid are both shown as that kid and are told apart by their nicknames (`L2-024` criterion 3).
-- **`FriendsGame`** — game service in `game`, provided at the game route. It holds the
-  `RoomState` as a signal, opens `RoomConnection` with the connection token, and replaces the
-  signal's value on each `RoomChanged` event. A `RoomChanged` whose status is `Waiting`, received
+- **`FriendsGame`** — game service in `game`, provided at the room group's route. It holds the
+  `RoomState` as a signal, opens `RoomConnection` with the connection token the visit holds, and
+  replaces the signal's value on each `RoomChanged` event. A `RoomChanged` whose status is `Waiting`, received
   while the Podium is shown, opens the Lobby again
   ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)). It closes the
   connection and removes its handlers when the player leaves the game with friends (`L2-048`
-  criterion 2).
+  criterion 2): on "Leave the room", and when the room group is destroyed any other way, when it
+  sends `LeaveRoom` first.
 - **`RoomConnection`** — SignalR client contract in `api`, bound to `ROOM_CONNECTION`. Its
-  implementation and the SignalR client library are imported dynamically when the Lobby is first
-  entered, so a child who plays only solo never downloads them (`L2-047` criteria 2 and 3).
+  implementation, `SignalRRoomConnection`, loads with the room group's chunk and imports the
+  SignalR client library dynamically when the Lobby first connects, so a child who plays only
+  solo never downloads it (`L2-047` criteria 2 and 3). It connects to `/hubs/room` over
+  WebSockets only, presenting the token as the access token, with the client's logging off.
 - **`RoomState`** — type in `api`: the code, the status, the `GameSetup` and the players, each
   with an id, a `KidId`, the nickname's two list indexes and the host mark. It holds no
   connection token and no way of answering. Each nickname is built on the device from the fixed lists by its indexes and
@@ -110,9 +123,10 @@ Frontend:
 Backend:
 
 - **`RoomHub`** — SignalR hub in `AroundTheWorld.Api`. Each method sends one MediatR request and
-  checks nothing itself. `OnConnectedAsync` sends `ReconnectCommand`, which attaches the
-  connection to the place its token names and adds it to the room's group; the caller then
-  receives the current `RoomState`. `StartGame` sends `StartGameCommand` and `LeaveRoom` sends
+  checks nothing itself. `OnConnectedAsync` sends `ReconnectCommand`, on the first connection
+  and every one after, which attaches the connection to the place its token names and adds it
+  to the room's group; the caller then receives the current `RoomState` as `RoomChanged`. A
+  connection whose token names no player is closed with an error and not told to reconnect. `StartGame` sends `StartGameCommand` and `LeaveRoom` sends
   `LeaveRoomCommand`. No hub request carries a room's code or id: the room is the one the
   connection's token names ([`rooms/guard-room`](../guard-room/README.md)).
 - **`StartGameCommandHandler`** — loads the caller's room and calls `Room.Start`. It saves the
@@ -142,14 +156,14 @@ Below 992 px the Lobby is one column: the code, the setup, the start control, th
 From 992 px a left column 352 px wide holds the code, the setup and the start control, and the
 players stand on the right (`L2-050` criterion 4).
 
-Three points are undecided:
+Decided by journey 13 (ADR 0032): the room's link is the Lobby's own address, which opens Room
+with the code filled in for anyone not in the room; the Lobby tries for about 4 seconds before it
+says the room is lost; "Try again" when the room no longer holds the player is refused and the
+alert returns; and the backend does not remove a waiting player whose connection is lost until
+journey 16 decides the 30 seconds of `L2-029` for the Lobby too.
 
-- The address of the room's link is `<TO SUPPLY>`: the specs fix only that opening it opens Room
-  with the code filled in.
-- `L2-029` criterion 6 fixes what the Lobby shows once the connection cannot be got back. How
-  long the Lobby tries before it says so, what "Try again" does when the room no longer holds
-  the player, and whether the backend removes from a waiting room a player whose connection is
-  lost are `<TO SUPPLY>`: `L2-029` criteria 1 to 5 cover a game that has started.
+One point is undecided:
+
 - Whether the first flash card waits for each player's Mic Check is `<TO SUPPLY>`
   ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)).
 

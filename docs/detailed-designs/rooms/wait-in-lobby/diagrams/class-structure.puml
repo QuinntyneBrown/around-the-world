@@ -81,7 +81,7 @@ interface IRoomNotifier {
 }
 
 LobbyPage --> PlayerList : shows
-LobbyPage ..> FriendsGame : reads through GAME_SESSION
+LobbyPage ..> FriendsGame : reads through ROOM_SESSION
 FriendsGame ..> RoomConnection : uses through ROOM_CONNECTION
 FriendsGame --> RoomState : holds
 RoomState *-- "1..8" RoomPlayerState
