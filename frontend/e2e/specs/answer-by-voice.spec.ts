@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { expect, test } from '../fixtures/test';
+import { expect, test, type FakeVoice } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
 import { MicCheckPage } from '../pages/mic-check.page';
@@ -270,6 +270,115 @@ test.describe('Mic Check', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 });
+
+test.describe('Answering by voice', () => {
+  test('a shouted number answers the flash card, and words that are no number cost nothing', async ({
+    page,
+    device,
+    clock,
+    microphone,
+    voice,
+  }) => {
+    // Given a child who passed Mic Check, on Duel with voice, and the clock held
+    await device.keeps(ZURI);
+    await microphone.grant();
+    await clock.hold();
+    const duel = await duelByVoice(page, voice);
+    const card = await duel.card();
+
+    // Then the flash card shows that the mic listens, and no number pad (L2-009 criterion 4)
+    await expect(duel.shout).toHaveText(/Shout it!/);
+    await expect(duel.announcement).toHaveText(`New card: ${card.left} × ${card.right}. Shout it!`);
+    await expect(duel.numberPad).toHaveCount(0);
+    await expect(duel.useNumberPad).toBeVisible();
+    await expect.poll(() => voice.listening()).toBe(1);
+
+    // When the child says something that is not a number
+    await voice.say('um, hang on');
+
+    // Then no answer is given and the child is not frozen (L2-009 criterion 2)
+    await expect(duel.shout).toBeVisible();
+    await expect(duel.result).toHaveCount(0);
+
+    // When the child shouts the answer in words
+    await voice.say(inWords(card.answer));
+
+    // Then the child wins the duel, and recognition stops (L2-009 criteria 1 and 5)
+    await expect(duel.result).toHaveText(`= ${card.answer} You got it!`);
+    await expect(duel.shout).toHaveCount(0);
+    await expect.poll(() => voice.listening()).toBe(0);
+  });
+
+  test('a wrong number freezes the child, and listening stops until the freeze ends', async ({
+    page,
+    device,
+    clock,
+    microphone,
+    voice,
+  }) => {
+    // Given a child on Duel with voice, and the clock held
+    await device.keeps(ZURI);
+    await microphone.grant();
+    await clock.hold();
+    const duel = await duelByVoice(page, voice);
+    const card = await duel.card();
+    const wrong = card.answer + 1;
+
+    // When the child shouts a wrong number
+    await voice.say(String(wrong));
+
+    // Then the child is frozen and recognition is not running (L2-009 criteria 3 and 5)
+    await expect(duel.result).toHaveText(`Not ${wrong}! Frozen for a sec…`);
+    await expect(duel.shout).toHaveCount(0);
+    await expect.poll(() => voice.listening()).toBe(0);
+    await expect(duel.useNumberPad).toBeVisible();
+
+    // When the freeze ends, the card listens again
+    await clock.pass(1000);
+    await expect(duel.shout).toBeVisible();
+    await expect.poll(() => voice.listening()).toBe(1);
+  });
+});
+
+/** The words of a whole number under 1000, as a child says them: "twenty-four". */
+function inWords(value: number): string {
+  const units = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen'];
+  const moreTeens = ['seventeen', 'eighteen', 'nineteen'];
+  const tens = [
+    '',
+    '',
+    'twenty',
+    'thirty',
+    'forty',
+    'fifty',
+    'sixty',
+    'seventy',
+    'eighty',
+    'ninety',
+  ];
+  const under100 = (n: number): string => {
+    if (n < 10) return units[n];
+    if (n < 20) return [...teens, ...moreTeens][n - 10];
+    return n % 10 === 0 ? tens[n / 10] : `${tens[Math.floor(n / 10)]}-${units[n % 10]}`;
+  };
+  if (value < 100) return under100(value);
+  const rest = value % 100;
+  const hundreds = `${units[Math.floor(value / 100)]} hundred`;
+  return rest === 0 ? hundreds : `${hundreds} and ${under100(rest)}`;
+}
+
+/** Passes Mic Check with voice: "Turn on mic", "Ready!" and "Let’s go!". Duel listens. */
+async function duelByVoice(page: Page, voice: FakeVoice): Promise<DuelPage> {
+  const mic = await openMicCheck(page);
+  await mic.turnOnMic.click();
+  await expect.poll(() => voice.listening()).toBe(1);
+  await voice.say('Ready!');
+  await mic.letsGo.click();
+  const duel = new DuelPage(page);
+  await expect(duel.sum).toHaveText(/\d+ × \d+/);
+  return duel;
+}
 
 /** Opens Game Setup and chooses "Go!", which opens Mic Check. */
 async function openMicCheck(page: Page): Promise<MicCheckPage> {
