@@ -137,7 +137,7 @@ Backend, in `AroundTheWorld.Api`, `AroundTheWorld.Application` and `AroundTheWor
 
 The message that carries a setup holds setup values only and no free text (`L2-040`
 criterion 1). The check that the caller's connection belongs to the room is designed in the
-`rooms` subsystem (`L2-043`). The engine of the room store is `<TO SUPPLY>`. Whether a new room
+`rooms` subsystem (`L2-043`). The engine of the room store is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`). Whether a new room
 starts from the default setup or from the setup kept on the host's device is `<TO SUPPLY>`.
 Whether a host who saves a setup in a room also changes the setup kept on the host's own device
 is `<TO SUPPLY>`.

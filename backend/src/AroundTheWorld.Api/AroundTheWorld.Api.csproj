@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Controllers and SignalR hubs; the composition root. Depends on Infrastructure. -->
+  <ItemGroup>
+    <ProjectReference Include="..\AroundTheWorld.Infrastructure\AroundTheWorld.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AroundTheWorld.Api.Tests" />
+  </ItemGroup>
+</Project>

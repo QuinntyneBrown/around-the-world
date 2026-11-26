@@ -12,7 +12,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 
 | # | Journey | Description | Effort (days) | % complete |
 |---|---|---|---|---|
-| 01 | [Scaffold the workspace](prompts/01-scaffold-the-workspace.md) | Angular and .NET workspaces, test fixtures, verify script and CI pipeline. | 5 | 0% |
+| 01 | [Scaffold the workspace](prompts/01-scaffold-the-workspace.md) | Angular and .NET workspaces, test fixtures, verify script and CI pipeline. | 5 | 100% |
 | 02 | [Start from Home and pick a kid](prompts/02-start-and-pick-a-kid.md) | Home's Play button, pick one of five kids, get a generated nickname. | 3 | 0% |
 | 03 | [Choose solo and set up the game](prompts/03-choose-solo-and-set-up.md) | Solo Or Friends choice, then maths, tables, tour length and speed. | 3 | 0% |
 | 04 | [Play a solo duel with the number pad](prompts/04-play-a-solo-duel.md) | Flash cards, classmates from profiles, first correct answer wins, wrong answers freeze. | 6 | 0% |
@@ -33,7 +33,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 0% |
 | 20 | [Prove the game is safe for children](prompts/20-keep-children-safe.md) | Audit that nothing a child types or says leaves the device. | 3 | 0% |
 
-**Total effort:** 86 days. **Overall % complete:** 0%.
+**Total effort:** 86 days. **Overall % complete:** 6% (5 of 86 days).
 
 ## Where each journey comes from
 

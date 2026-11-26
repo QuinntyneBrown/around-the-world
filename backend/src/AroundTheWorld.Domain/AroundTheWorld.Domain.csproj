@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Entities and domain services. Depends on nothing. -->
+</Project>

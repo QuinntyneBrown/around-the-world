@@ -100,16 +100,15 @@ source of truth for the code.
 
 ## Project status
 
-Around the World is designed and not yet built. The repository holds the agent instructions
-([`AGENTS.md`](AGENTS.md)), the skills that drive the work (`.claude/skills/`, `.agents/skills/`)
-the requirements ([`docs/specs/L1.md`](docs/specs/L1.md), [`docs/specs/L2.md`](docs/specs/L2.md))
-and the community files. What comes next, in order:
-
-1. The mocks in `docs/mocks/`, transcribed from the prototype, and the design system extracted
-   from them.
-2. The detailed designs, the journeys and their slices.
-3. The scaffold: the Angular workspace, the .NET solution, the test harness and CI.
-4. The game, one slice at a time, each with its failing acceptance test first.
+Around the World is designed, and its walking skeleton is built. The repository holds the agent
+instructions ([`AGENTS.md`](AGENTS.md)), the skills that drive the work (`.claude/skills/`,
+`.agents/skills/`), the requirements ([`docs/specs/`](docs/specs/)), the mocks
+([`docs/mocks/`](docs/mocks/)), the design system ([`docs/design-system/`](docs/design-system/)),
+the detailed designs ([`docs/detailed-designs/`](docs/detailed-designs/)), the journeys
+([`docs/journeys.md`](docs/journeys.md)) and the architecture decisions
+([`docs/adr/`](docs/adr/)). Journey 01 scaffolded the Angular workspace, the .NET solution, the
+test harness and CI. What comes next is the game, one journey at a time, each with its failing
+acceptance test first.
 
 ## How it works
 
@@ -138,8 +137,9 @@ rules are in [`AGENTS.md`](AGENTS.md).
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org) 24 or later, with npm, for the frontend
+- [Node.js](https://nodejs.org) 22.22 or later (or 24.15 or later), with npm, for the frontend
 - The [.NET SDK](https://dotnet.microsoft.com/download) 10, for the backend
+- Chromium for Playwright 1.63 (`cd frontend && npx playwright install chromium`, once)
 - A current Chrome or Edge. Voice answers need a browser with speech recognition and a
   microphone; without them the number pad is used
 
@@ -148,65 +148,63 @@ rules are in [`AGENTS.md`](AGENTS.md).
 ```shell
 git clone https://github.com/QuinntyneBrown/around-the-world.git
 cd around-the-world
+cd frontend && npm ci && npm start                      # the game on http://localhost:4200
+cd backend && dotnet run --project src/AroundTheWorld.Api  # the backend on http://localhost:5189
 ```
 
-There is nothing to run yet. The scaffold adds `frontend/` and `backend/`, and from then on:
-
-```shell
-cd frontend && npm ci && npm start        # http://localhost:4200
-cd backend && dotnet run --project src/AroundTheWorld.Api
-```
+The backend answers `GET /health/live`. A solo game needs no backend. A deployed backend applies
+its room store's migrations with `dotnet run --project src/AroundTheWorld.Api -- migrate` before
+it starts; the settings it needs are in [`docs/operations/settings.md`](docs/operations/settings.md).
 
 ## Build and test
-
-These commands arrive with the scaffold; the table is what the project holds itself to.
 
 | Task | Command | Scope |
 |---|---|---|
 | Format and lint | `cd frontend && npm run format:check && npm run lint` | Prettier, angular-eslint and its dependency boundaries |
-| Unit tests | `cd frontend && npm test` | The unit tests of every frontend project, on a fake clock |
-| Build | `cd frontend && npm run build` | The production build, within the `angular.json` bundle budgets |
-| Behaviour specs | `cd frontend && npx playwright install chromium && npm run e2e` | Playwright on Chromium, with page objects, against fixtures, with no request off localhost |
+| Unit tests | `cd frontend && npm test` | The unit tests of every frontend project (Vitest), on a fake clock |
+| Build | `cd frontend && npm run build` | The production build of `game`, within the `angular.json` bundle budgets |
+| Behaviour specs | `cd frontend && npm run build && npm run e2e` | Playwright on Chromium against the production build, with page objects and the shared fixture, with no request off localhost |
+| End-to-end type check | `cd frontend && npm run e2e:typecheck` | The specs, fixtures and page objects |
 | Backend | `cd backend && dotnet format --verify-no-changes && dotnet test` | Format, build and acceptance tests through the API on EF Core InMemory |
-| Everything | `node tools/verify/verify.mjs` | All of the above, side by side; run it before you push |
+| Everything | `node tools/verify/verify.mjs` | All of the above, one after the other; run it before you push |
 
-No automated test uses a real backend or database, or a network beyond localhost. CI runs lint,
-the builds and one critical acceptance path per feature in under 5 minutes. Unit tests run only
-locally.
+No automated test uses a real backend or database, or a network beyond localhost. CI
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs format, lint, the production
+build, the backend's acceptance tests and the behaviour specs in under 5 minutes. Unit tests run
+only locally.
 
 ## Repository structure
-
-Today:
 
 ```
 around-the-world/
 ├── AGENTS.md                        The purpose, the design, the architecture rules and the workflow
 ├── CLAUDE.md                        Points to AGENTS.md
-├── .claude/skills/                  The skills, for Claude Code
-├── .agents/skills/                  The same skills, for other coding agents
-├── .github/                         Issue and pull request templates
-└── README.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md, LICENSE
-```
-
-As it is built:
-
-```
-around-the-world/
-├── frontend/                        The Angular workspace and its Playwright specs
-│   ├── projects/                      The libraries and the app
-│   └── e2e/                           Behaviour specs, fixtures and page objects
-├── backend/                         The .NET service: Domain, Application, Infrastructure, Api, tests
+├── frontend/                        The Angular workspace (npm commands run here)
+│   ├── projects/
+│   │   ├── game/                      The application: the shell, the routes and the foundations
+│   │   ├── components/                @atw/components: one component per design-system page
+│   │   ├── domain/                    @atw/domain: questions, tour, classmates, voice, storage
+│   │   └── api/                       @atw/api: contracts, tokens and the backend's clients
+│   ├── e2e/                           Behaviour specs, the shared fixture and page objects
+│   ├── eslint.config.mjs              angular-eslint and the dependency boundaries
+│   └── playwright.config.ts           Chromium only, traces off
+├── backend/                         The .NET solution (dotnet commands run here)
+│   ├── src/                           AroundTheWorld.Domain, Application, Infrastructure, Api
+│   └── tests/                         AroundTheWorld.Api.Tests: acceptance tests through the API
 ├── docs/
 │   ├── journeys.md                  The journeys, by value added, with % complete
-│   ├── detailed-journeys.md         Each journey split into slices
-│   ├── lessons-learned.md           What each slice taught
+│   ├── prompts/                     One implementation prompt per journey
+│   ├── lessons-learned.md           What each journey taught
 │   ├── specs/                       Requirements: L1 (high level), L2 (acceptance criteria)
 │   ├── detailed-designs/            One design per feature, grouped by subsystem
 │   ├── mocks/                       HTML mocks, the source of truth for the UI
 │   ├── design-system/               Tokens and components extracted from the mocks
-│   └── adr/                         Architecture decision records
-├── tools/                           verify
-└── .github/                         CI workflow, issue and pull request templates
+│   ├── adr/                         Architecture decision records
+│   └── operations/                  The settings a deployed system needs
+├── tools/verify/verify.mjs          Every CI check and the unit tests, locally
+├── .claude/skills/, .agents/skills/ The skills, for Claude Code and other coding agents
+├── .github/                         The CI workflow, issue and pull request templates
+└── README.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md, LICENSE
 ```
 
 ## Documentation
@@ -216,6 +214,11 @@ around-the-world/
 | [AGENTS.md](AGENTS.md) | Around the World's purpose and scope, its design, the architecture rules and the required workflow |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How a change is proposed and made |
 | Skills (`.claude/skills/`, `.agents/skills/`) | Requirements, mocks, the design system, detailed designs, estimates, feature prompts, Angular and incremental implementation |
+| [docs/journeys.md](docs/journeys.md) | The journeys in build order, with their prompts and % complete |
+| [docs/adr/](docs/adr/README.md) | The architecture decision records |
+| [docs/lessons-learned.md](docs/lessons-learned.md) | What each journey taught |
+| [docs/operations/settings.md](docs/operations/settings.md) | The settings a deployed backend needs |
+| [frontend/projects/components/README.md](frontend/projects/components/README.md) | How each design-system component is built once and reused |
 
 Requirements, mocks, the design system, the detailed designs, the journeys and the architecture
 decisions are written into `docs/` as the work reaches them, and are listed here when they are.

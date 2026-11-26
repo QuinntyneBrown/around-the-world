@@ -132,7 +132,7 @@ Backend:
   the hub. `RoomChanged` and `GameStarted` are sent to the room's group in the same step that
   saves the change. No Lobby polls; this push is what meets the 1 second of `L2-024`
   criterion 2.
-- **Room store** — reached through `IAppDbContext` with EF Core; its engine is `<TO SUPPLY>`.
+- **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`).
 
 On `GameStarted` each device shows Mic Check to a player who needs it, on that player's own
 device, and then Duel (`L2-012` criterion 9, `L2-030` criterion 3). The host's device does the

@@ -9,7 +9,7 @@ System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections")
 System_Boundary(atw, "Around the World") {
   Container(game, "game", "Angular application", "Every screen. Serves its own fonts, scripts, pictures and 3D assets. Builds every client message from closed values")
   Container(api, "AroundTheWorld.Api", "ASP.NET Core, SignalR", "Rooms and games with friends. Accepts typed values only")
-  ContainerDb(store, "Room store", "EF Core, engine <TO SUPPLY>", "A code, the setup, and per player two nickname indexes, a kid, a position and a connection token")
+  ContainerDb(store, "Room store", "EF Core, Azure SQL Database", "A code, the setup, and per player two nickname indexes, a kid, a position and a connection token")
 }
 Rel(child, game, "Uses", "HTTPS, own origin only")
 Rel(game, speech, "Starts and stops a session; reads a transcript on the device")
