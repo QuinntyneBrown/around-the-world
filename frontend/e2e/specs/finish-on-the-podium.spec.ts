@@ -82,4 +82,143 @@ test.describe('Finishing a tour', () => {
     await expect(podium.playAgain).toBeVisible();
     await expect(podium.home).toBeVisible();
   });
+
+  test('when time runs out the tour ends with the current duel, and the furthest travelled wins', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a child on a tour of 12 desks who hopped once, then duels the holder of Japan,
+    // a classmate who answers right and fast
+    await device.keeps(zuriWith(12));
+    await random.always(0);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    await winAndHop(page, clock);
+    await clock.pass(MESSAGE_MS);
+    const duel = new DuelPage(page);
+    await expect(duel.heading).toHaveText('Duel at Japan');
+
+    // When the tour's 6 minutes pass and the classmate then wins the duel
+    await clock.pass(6 * 60_000);
+    await expect(duel.sitPill).toHaveText('You sit at Japan · Classmate travels on');
+
+    // Then the tour ends with that duel: World Map shows it, then the Podium opens
+    await duel.sitPill.click();
+    const map = new WorldMapPage(page);
+    await expect(map.message).toHaveText('So close! You sit down at Japan');
+    await clock.pass(MESSAGE_MS);
+    const podium = new PodiumPage(page);
+    await expect(page).toHaveURL(/\/podium$/);
+
+    // And the headline says time is up and the child travelled furthest
+    await expect(podium.headline).toHaveText('Time’s up! You travelled furthest!');
+    await expect(podium.cheer).toHaveText(
+      '2 desks out of 12. Zuri raises her pencil like a knight.',
+    );
+    expect((await podium.places())[0]).toEqual({ place: '1st place', name: 'You' });
+
+    // And the passport has France, where the tour started, and Japan, reached by the hop
+    await expect(podium.passportLine).toHaveText('2 of 12 countries · 1st place');
+    const tiles = await podium.tiles();
+    expect(tiles).toHaveLength(12);
+    expect(tiles.slice(0, 4)).toEqual(['France', 'Not reached', 'Japan', 'Not reached']);
+  });
+
+  test('a child who came second stands on the second step, and the headline names the winner', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a child on a tour of 6 desks who sat down at Egypt, the classmates answering right
+    // and fast, and the classmates' duels played out until a traveller reaches the child
+    await device.keeps(zuriWith(6));
+    await random.always(0);
+    await clock.hold();
+    await sitDownAtEgyptAndWait(page, clock);
+    const duel = new DuelPage(page);
+    await expect(duel.heading).toHaveText('Duel at Egypt');
+
+    // When the tour's 3 minutes pass and the traveller beats the child, who keeps the desk
+    await clock.pass(3 * 60_000);
+    await expect(duel.sitPill).toHaveText('You keep Egypt · Nia hops on');
+    await duel.sitPill.click();
+    await clock.pass(MESSAGE_MS);
+
+    // Then the Podium names Nia, who travelled furthest, and the child is second
+    const podium = new PodiumPage(page);
+    await expect(podium.headline).toHaveText('Time’s up! Nia travelled furthest!');
+    await expect(podium.cheer).toHaveText('5 desks out of 6. Nia does a star jump.');
+    expect(await podium.places()).toEqual([
+      { place: '1st place', name: 'Nia' },
+      { place: '2nd place', name: 'You' },
+      { place: '3rd place', name: 'Kenji' },
+    ]);
+    expect(await podium.drawnOrder()).toEqual(['You', 'Nia', 'Kenji']);
+    await expect(podium.passportLine).toHaveText('1 of 6 countries · 2nd place');
+    expect(await podium.tiles()).toEqual([
+      'France',
+      'Not reached',
+      'Not reached',
+      'Not reached',
+      'Not reached',
+      'Not reached',
+    ]);
+  });
+
+  test('after a Grand tour the passport has a tile for each of the 24 desks', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a child on a tour of 24 desks who sat down at Egypt and holds it against a traveller
+    await device.keeps(zuriWith(24));
+    await random.always(0);
+    await clock.hold();
+    await sitDownAtEgyptAndWait(page, clock);
+    const duel = new DuelPage(page);
+    await expect(duel.heading).toHaveText('Duel at Egypt');
+
+    // When the tour's 12 minutes pass and the duel ends
+    await clock.pass(12 * 60_000);
+    await duel.sitPill.click();
+    await clock.pass(MESSAGE_MS);
+
+    // Then the passport has 24 tiles, six across on a laptop, with France stamped
+    const podium = new PodiumPage(page);
+    await expect(podium.passportLine).toHaveText(/^1 of 24 countries · \d+(st|nd|rd|th) place$/);
+    const tiles = await podium.tiles();
+    expect(tiles).toHaveLength(24);
+    expect(tiles[0]).toBe('France');
+    expect(tiles.slice(1).every((tile) => tile === 'Not reached')).toBe(true);
+    expect(await podium.columns()).toBe(6);
+
+    // And four across on a phone
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await podium.columns()).toBe(4);
+  });
 });
+
+/**
+ * The child loses the first duel to Kenji and sits down at Egypt; World Map then plays the
+ * classmates' duels until a traveller reaches the child's desk and Duel returns.
+ */
+async function sitDownAtEgyptAndWait(
+  page: Page,
+  clock: { pass(ms: number): Promise<void> },
+): Promise<void> {
+  const setup = new GameSetupPage(page);
+  await setup.open();
+  await setup.chooseGo();
+  const duel = new DuelPage(page);
+  await clock.pass(5000);
+  await duel.sitPill.click();
+  const map = new WorldMapPage(page);
+  await expect(map.message).toHaveText('So close! You sit down at Egypt');
+  await map.back.click();
+}
