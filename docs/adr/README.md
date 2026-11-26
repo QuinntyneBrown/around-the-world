@@ -17,3 +17,6 @@ requirements and designs leave.
 | [0008](0008-bundle-budgets.md) | The production budgets of `game` | Accepted |
 | [0009](0009-health-and-migrations.md) | The live endpoint, the room store's engine and the migrations command | Accepted |
 | [0010](0010-design-system-components.md) | Each design-system component is built once, in `@atw/components` | Accepted |
+| [0011](0011-player-record-on-the-device.md) | The player's record is one versioned JSON entry in `localStorage` | Accepted |
+| [0012](0012-interactive-components-on-native-elements.md) | A design-system component that is a link or a button sits on the native element | Accepted |
+| [0013](0013-pictures-arriving-and-failing.md) | Home's and Pick Your Kid's loading and error states follow their pictures | Accepted |
