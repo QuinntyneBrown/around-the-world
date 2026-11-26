@@ -212,7 +212,7 @@ the lessons that fit.
 - `SoloGame`'s flow for the sit, the classmates' duels and the child as the desk holder was
   written with the first slice's rules, so the second and third slices' specs were green on
   their first run. Each was broken by hand (the desk holder never dealt in, every desk labelled,
-  the zoom never ending) to see it fail for the expected reason.
+  the whole room never shown) to see it fail for the expected reason.
 
 **New lessons.**
 
