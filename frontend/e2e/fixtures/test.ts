@@ -97,10 +97,17 @@ export interface FakeRandom {
    * 0.999 wrong at its slowest (docs/adr/0019-classmate-profiles.md).
    */
   always(value: number): Promise<void>;
+  /**
+   * From now on the page's `Math.random` throws, as a broken browser would: the next flash
+   * card breaks the game (docs/adr/0027). The fixture expects the error the game logs.
+   */
+  breaks(): Promise<void>;
 }
 
 interface Fixtures {
   problems: string[];
+  /** Console errors a spec has set up, which are not problems. */
+  expectedErrors: RegExp[];
   clock: FakeClock;
   random: FakeRandom;
   device: FakeDevice;
@@ -227,6 +234,11 @@ export const test = base.extend<Fixtures>({
   },
 
   // eslint-disable-next-line no-empty-pattern
+  expectedErrors: async ({}, use) => {
+    await use([]);
+  },
+
+  // eslint-disable-next-line no-empty-pattern
   backend: async ({}, use) => {
     await use(new BackendFixtures());
   },
@@ -236,7 +248,7 @@ export const test = base.extend<Fixtures>({
     await use(new PictureFixtures());
   },
 
-  page: async ({ page, problems, backend, pictures }, use) => {
+  page: async ({ page, problems, expectedErrors, backend, pictures }, use) => {
     await page.addInitScript(installBrowserFakes);
     await guardRequests(page, backend as BackendFixtures, pictures as PictureFixtures, problems);
     page.on('pageerror', (error) => problems.push(`Page error: ${error.message}`));
@@ -244,9 +256,10 @@ export const test = base.extend<Fixtures>({
     // logs it instead of letting it reach the browser as a page error. A failed resource
     // load is the request guard's business, and a refused answer may be what a spec set up.
     page.on('console', (message) => {
-      if (message.type() === 'error' && !message.text().startsWith('Failed to load resource')) {
-        problems.push(`Page error: ${message.text()}`);
-      }
+      const text = message.text();
+      if (message.type() !== 'error' || text.startsWith('Failed to load resource')) return;
+      if (expectedErrors.some((expected) => expected.test(text))) return;
+      problems.push(`Page error: ${text}`);
     });
 
     await use(page);
@@ -302,12 +315,20 @@ export const test = base.extend<Fixtures>({
     });
   },
 
-  random: async ({ page }, use) => {
+  random: async ({ page, expectedErrors }, use) => {
     await use({
       always: async (value) => {
         await page.addInitScript((fixed) => {
           Math.random = () => fixed;
         }, value);
+      },
+      breaks: async () => {
+        expectedErrors.push(/Math\.random broke/);
+        await page.evaluate(() => {
+          Math.random = () => {
+            throw new Error('Math.random broke');
+          };
+        });
       },
     });
   },

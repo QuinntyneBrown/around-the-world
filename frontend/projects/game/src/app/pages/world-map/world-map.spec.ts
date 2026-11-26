@@ -23,6 +23,11 @@ describe('WorldMapPage', () => {
       continue: () => undefined,
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
+      kind: 'solo',
+      paused: signal(false),
+      pause: () => undefined,
+      resume: () => undefined,
+      leave: () => Promise.resolve(),
     };
     TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });
     const fixture = TestBed.createComponent(WorldMapPage);

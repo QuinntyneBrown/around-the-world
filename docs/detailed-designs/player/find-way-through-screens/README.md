@@ -31,7 +31,8 @@ Journey 03 built Solo Or Friends and the solo group with `/setup` and `/duel`, g
 `inGameGuard`; Duel shows its loading state until journey 04 deals the first flash card
 (`docs/adr/0016-solo-game-route-group.md`). The rest of the slice is not built yet. The sound button arrives with journey 10, the
 settings button with journey 07, and Home's error state with the 3D classroom in journey 09
-(`docs/adr/0013-pictures-arriving-and-failing.md`). The components below are the ones the
+(`docs/adr/0013-pictures-arriving-and-failing.md`). Journey 08 adds Not Found, Something Went
+Wrong, and Back during a game (`docs/adr/0027-pausing-leaving-and-recovering.md`). The components below are the ones the
 design introduces. The slice
 runs wholly on the device and has no backend part. The routes of a game with friends lead into
 screens that call `AroundTheWorld.Api`; those calls belong to the `rooms` subsystem.
@@ -50,8 +51,8 @@ those `docs/mocks/manifest.json` gives; no requirement fixes them.
 | `/room/:code` | `LobbyPage` | "Make a room"; "Join" on Room; "Play again" on the Podium in a game with friends | Solo Or Friends | `inRoomGuard` |
 | `/setup` (room group) | `GameSetupPage` for the host | "Change" in the Lobby | the Lobby | `inRoomGuard` |
 | `/mic` | `MicCheckPage` | "Go!" in a solo game; "Start the race" in a room | Game Setup in a solo game; the Lobby in a game with friends | `inGameGuard` |
-| `/duel`, `/map`, `/podium` | `DuelPage`, `WorldMapPage`, `PodiumPage` | a game starting | no Back | `inGameGuard` |
-| `/error` | `SomethingWentWrongPage` | a failure of the game itself | no Back | none |
+| `/duel`, `/map`, `/podium` | `DuelPage`, `WorldMapPage`, `PodiumPage` | a game starting | no Back; the browser's Back pauses a game in progress on Duel and World Map, and opens Game Setup once the tour is over | `inGameGuard`; `pauseOnBackGuard` (deactivate) on Duel and World Map |
+| `/error` | `SomethingWentWrongPage` | a failure of the game itself, opened by `GameErrorHandler` without changing the address | no Back | none |
 | `/**` | `NotFoundPage` | an address that leads to no screen | no Back | none |
 
 The column "Back opens" is `L2-030` criterion 8. Mic Check, Duel, World Map and the Podium are
@@ -126,10 +127,20 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
   World Map, the Podium, Not Found and Something Went Wrong have no top bar. World Map's
   header holds "Back to the card", which belongs to `tour/travel-round-ring`. Leaving Duel is
   handled by Pause and Leave, which belong to `tour/play-duel` (`L2-033` criterion 4).
+- **`pauseOnBackGuard`** — functional `CanDeactivate` guard on Duel and World Map. While a
+  solo game is in progress it refuses a navigation the browser started (`popstate`), pauses the
+  game and opens the Pause dialog of `tour/play-duel`, exactly as Pause does (`L2-030`
+  criterion 10). A navigation the game or a button starts is never held, nor is any once the
+  tour is over. `provideRouter` takes `withRouterConfig({ canceledNavigationResolution:
+  'computed' })`, so a refused Back leaves the browser's history as it was
+  (`docs/adr/0027-pausing-leaving-and-recovering.md`). Back from the Podium opens Game Setup,
+  where "Go!" starts a new game with the setup shown.
 - **`NotFoundPage`** — page behind the path `/**`. It reads "This desk isn't on the map" and
   "That page doesn't exist. Let's get you back to the classroom.", and offers one way on, the
   link "Home" (`L2-030` criterion 9). It shows no classroom and has no loading, empty or
-  error state.
+  error state. It composes `Notice` from `components` (the globe, the title, the text and the
+  action) and is the last route, so an unknown address loads only its chunk and, to find no
+  match, the solo group's route table.
 - **`SoloPathPreloading`** — router `PreloadingStrategy`. Once Home is shown and the browser
   is idle, it preloads the chunks of the routes marked as on the way to the first solo duel:
   pick your kid, solo or friends, game setup and the solo group. It never preloads the room
@@ -199,7 +210,8 @@ flash card appears, and its time starts, when Mic Check is left (`L2-012` criter
 criterion 4, and the chunks of the four screens after it are preloaded while the child reads
 Home. The 3D classroom and the classmates' model never hold a screen back (`L2-036`
 criterion 2, `L2-021` criterion 4). The network profile that stands for "a typical school
-connection" in the acceptance test is `<TO SUPPLY>`.
+connection" in the acceptance test is Chrome's network emulation at 10 Mbit/s down, 5 Mbit/s
+up and 40 ms latency, applied through the DevTools protocol; journey 18 writes that test.
 
 The screens follow the mocks `docs/mocks/pages/home/` (states `default`, `empty`, `loading`,
 `error`, `played`, `muted`), `docs/mocks/dialogs/settings/` (states `default`, `muted`,

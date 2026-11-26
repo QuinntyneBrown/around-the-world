@@ -266,7 +266,7 @@ test.describe('Mic Check', () => {
     await expect(page).toHaveURL(/\/setup$/);
 
     // When the child opens Mic Check's address with no game
-    await page.goto('/mic');
+    await mic.open();
 
     // Then Home opens
     await expect(page).toHaveURL(/\/$/);

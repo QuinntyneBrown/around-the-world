@@ -1,0 +1,44 @@
+<atw-dialog
+  heading="Leave the game?"
+  closeLabel="Stay and play"
+  [titleId]="titleId"
+  [closable]="!leaving()"
+  (closed)="stay()"
+>
+  <p>The race carries on without you, and you can’t come back to this one.</p>
+  <button
+    atw-toy-button
+    slot="actions"
+    type="button"
+    size="xl"
+    [block]="true"
+    [disabled]="leaving()"
+    (click)="stay()"
+  >
+    Stay and play
+  </button>
+  @if (leaving()) {
+    <button
+      atw-toy-button
+      slot="actions"
+      type="button"
+      variant="paper"
+      [block]="true"
+      aria-busy="true"
+    >
+      <atw-spinner /> Leaving…
+    </button>
+  } @else {
+    <button
+      atw-toy-button
+      slot="actions"
+      type="button"
+      variant="paper"
+      icon="leave"
+      [block]="true"
+      (click)="leave()"
+    >
+      Leave
+    </button>
+  }
+</atw-dialog>

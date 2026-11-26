@@ -35,6 +35,10 @@ export class WorldMapPage {
     this.yourEntry = this.standings.locator('.standings__item[aria-current="true"]');
   }
 
+  async open(): Promise<void> {
+    await this.page.goto('/map');
+  }
+
   /** The entries of the standings in order. */
   entries(): Promise<ShownStanding[]> {
     return this.standingsItems.evaluateAll((items) =>

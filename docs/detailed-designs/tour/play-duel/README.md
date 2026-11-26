@@ -39,7 +39,8 @@ the tour ends). The ways of giving an answer are designed in `answering/answer-b
 
 The slice is built for a solo duel by journey 04 (`docs/adr/0020-solo-duel-clock-and-states.md`),
 and journey 05 adds the passport stamp, the pill to World Map and Duel with the child as the
-desk holder (`docs/adr/0022-moving-round-the-ring.md`); Pause comes with journey 08. The
+desk holder (`docs/adr/0022-moving-round-the-ring.md`); journey 08 adds Pause and the
+leave-game dialog (`docs/adr/0027-pausing-leaving-and-recovering.md`). The
 parts below are those the design introduces. The design covers a
 solo game, which is decided on the device: the slice has no backend part, and its diagrams show
 frontend libraries only. In a game with friends the server applies the same rules
@@ -47,12 +48,15 @@ frontend libraries only. In a game with friends the server applies the same rule
 
 - **`GameSession`** — contract in the `api` library, bound to the `GAME_SESSION` token at the
   game route. It publishes `duel` (`Signal<DuelState>`) and `tour` (`Signal<TourState>`) and
-  accepts `answer(value)`, `continue()`, `pause()`, `resume()` and `leave()`. `DuelPage` depends
-  on the token only, so the screen does not know which kind of game is played.
+  accepts `answer(value)`, `continue()`, `pause()`, `resume()` and `leave()`. It also publishes
+  `kind` (`solo` or `friends`), which decides whether Duel offers Pause or Leave, and `paused`
+  (`Signal<boolean>`). `leave()` returns a promise that settles once the game is left: at once in
+  a solo game, once the room has been told in a game with friends. An answer given while paused
+  is ignored. `DuelPage` depends on the token only.
 - **`DuelState`** — type in `api`. It holds the `FlashCard`, the desk number, the traveller, the
   desk holder, the device's player's role (`traveller`, `deskHolder` or `watching`), the time to
   answer, the time remaining, whether the device's player is frozen, the wrong answer that froze
-  them, whether the game is paused, the outcome (`open`, `won` or `timedOut`) with the winner
+  them, the outcome (`open`, `won` or `timedOut`) with the winner
   and the answer once decided, and `hop`, the `TourMove` a duel won by the device's player
   earned (`tour/travel-round-ring`). The desk number is the number of the desk the duel is at;
   the first duel of a tour is at desk 2 (`L2-007` criterion 4).
@@ -75,7 +79,8 @@ frontend libraries only. In a game with friends the server applies the same rule
   given (`Date.now`), and `tick()` runs, in time order, each callback whose time has come, with
   `now()` reading the callback's own time. `SoloGame` ticks it every 100 ms and once more before
   it takes the child's answer, so on an exact tie the classmate's answer counts first (ADR
-  0020). It will stop while paused (journey 08). A unit test gives it a fake wall clock, and a
+  0020). `pause()` holds the game time and `resume()` lets it run on from there, never counting
+  the wall time between; while held, `tick()` runs nothing (ADR 0027). A unit test gives it a fake wall clock, and a
   spec holds the page's `Date.now` through the fixture's `clock`.
 - **`SoloGame`** — game service in `domain`'s `tour/`, provided by the solo route group and
   bound to `GAME_SESSION` for a solo game (ADR 0016). For each duel the device's player is in, it asks
@@ -98,14 +103,21 @@ frontend libraries only. In a game with friends the server applies the same rule
   criterion 4). Its title is "Paused" and it reads "The clock is stopped. Your desk at {country}
   is waiting." It offers "Keep playing", which is first and holds the focus when the dialog
   opens, and "Go home". Escape and the dialog's close button, which is named "Keep playing", do
-  what "Keep playing" does. The focus returns to "Pause" when the dialog closes.
+  what "Keep playing" does. The focus returns to "Pause" when the dialog closes. It composes
+  `Dialog` from `components` with the close button named "Keep playing" (`closeLabel`); its
+  code, and CDK's, load on the first press of "Pause" (`open-pause`), as Settings' do (ADR
+  0026). The country is that of the duel's desk. Any close but "Go home" resumes the game. The
+  browser's Back on Duel or World Map opens the same dialog (`player/find-way-through-screens`).
 - **`LeaveGameDialog`** — CDK Dialog in `game`, opened by "Leave the game", which replaces
   "Pause" in a game with friends (`L2-033` criterion 4). Its title is "Leave the game?" and it
   reads "The race carries on without you, and you can't come back to this one." It offers "Stay
   and play", which holds the focus when the dialog opens, and "Leave". "Leave" calls
   `GameSession.leave()`; while the room is being told, "Leave" is busy and reads "Leaving…",
   "Stay and play" is disabled and the close button is not shown. Home then opens. What the room
-  does when a player leaves is designed in the `rooms` subsystem.
+  does when a player leaves is designed in the `rooms` subsystem. It composes `Dialog` with the
+  close button named "Stay and play"; while busy, `closable` is false and Escape is refused. A
+  game with friends arrives with journey 14, so until then its two states are proved by unit
+  tests of the dialog and of Duel with a game of kind `friends`.
 
 Both dialogs are a sheet from the bottom of the screen below 576 px wide and a centred card
 from 576 px up.
@@ -200,7 +212,8 @@ before the new card (ADR 0020). The Duel screen shows no clock for the tour's ow
 
 "Pause" stops `GameClock`, so the card's timer, a freeze and the classmate's answer all wait. On
 "Keep playing" the same flash card resumes with the same time remaining. "Go home" calls
-`GameSession.leave()` and opens Home.
+`GameSession.leave()` and opens Home. While paused Duel shows no "Shout it!", so the device
+stops listening, and listens again on "Keep playing" (ADR 0027).
 
 `SoloGame` cancels every timer when the game route is destroyed. It holds one `Duel` at a time
 and keeps no list of the duels played (`L2-048` criterion 5).

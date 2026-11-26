@@ -357,4 +357,78 @@ describe('SoloGame', () => {
     game.continue();
     expect(game.tour()?.phase).toBe('moving');
   });
+
+  it('holds the card, the classmate and the tour’s time limit while paused (L2-033 4, ADR 0027)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    expect(game.kind).toBe('solo');
+    const card = game.duel()?.card;
+    vi.advanceTimersByTime(1000);
+    game.pause();
+    expect(game.paused()).toBe(true);
+    vi.advanceTimersByTime(600_000);
+    expect(game.duel()).toMatchObject({ card, outcome: 'open', timeLeftMs: 5000 });
+    game.answer(answerOf(game));
+    expect(game.duel()?.outcome).toBe('open');
+
+    game.resume();
+    expect(game.paused()).toBe(false);
+    vi.advanceTimersByTime(4000);
+    expect(game.duel()?.winner).toBe('deskHolder');
+    // The ten minutes paused are not counted: the tour of 6 desks has 3 minutes.
+    game.continue();
+    expect(game.tour()?.phase).toBe('moving');
+  });
+
+  it('holds a freeze while paused, so it ends one second of play after the wrong answer', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const game = await started();
+    game.answer(answerOf(game) + 1);
+    game.pause();
+    vi.advanceTimersByTime(5000);
+    game.resume();
+    vi.advanceTimersByTime(900);
+    expect(game.duel()?.frozen).toBe(true);
+    vi.advanceTimersByTime(100);
+    expect(game.duel()?.frozen).toBe(false);
+  });
+
+  it('stops for good when left, and settles at once (L2-033 4)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    game.pause();
+    await expect(game.leave()).resolves.toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
+    game.resume();
+    vi.advanceTimersByTime(10_000);
+    expect(game.duel()?.outcome).toBe('open');
+  });
+
+  it('starts a new game from Game Setup once the tour is over (ADR 0027)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(180_000);
+    game.continue();
+    game.continue();
+    expect(game.screen()).toBe('podium');
+    const screens: string[] = [];
+    game.watchScreen((screen) => screens.push(screen));
+
+    const grand: GameSetup = { ...SETUP, tourLength: 24 };
+    game.start(grand);
+    expect(screens).toEqual(['duel']);
+    expect(game.result()).toBeNull();
+    expect(game.setup()).toEqual(grand);
+    expect(game.duel()).toMatchObject({ desk: 2, tourLength: 24, outcome: 'open' });
+    vi.advanceTimersByTime(5000);
+    expect(game.duel()?.winner).toBe('deskHolder');
+  });
+
+  it('starts nothing new while a game is in progress', async () => {
+    const game = await started();
+    const card = game.duel()?.card;
+    game.start({ ...SETUP, tourLength: 24 });
+    expect(game.duel()).toMatchObject({ card, tourLength: 6 });
+  });
 });

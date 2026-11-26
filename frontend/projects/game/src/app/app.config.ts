@@ -1,5 +1,9 @@
-import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, withAutoCleanupInjectors } from '@angular/router';
+import {
+  type ApplicationConfig,
+  ErrorHandler,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
+import { provideRouter, withAutoCleanupInjectors, withRouterConfig } from '@angular/router';
 import { DEVICE_STORAGE, PICTURE_LOADER, PLAYER_CHOICES, PLAYER_STORAGE, VISIT } from '@atw/api';
 import {
   deviceStorage,
@@ -8,6 +12,7 @@ import {
   StoredPlayerChoices,
 } from '@atw/domain';
 import { routes } from './app.routes';
+import { GameErrorHandler } from './errors/game-error-handler';
 import { BrowserPictureLoader } from './pictures/browser-picture-loader';
 import { VisitState } from './visit/visit-state';
 
@@ -18,8 +23,15 @@ import { VisitState } from './visit/visit-state';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // Leaving a route group destroys what it provided, such as a game (docs/adr/0016).
-    provideRouter(routes, withAutoCleanupInjectors()),
+    // A failure of the game itself opens Something Went Wrong (docs/adr/0027).
+    { provide: ErrorHandler, useClass: GameErrorHandler },
+    // Leaving a route group destroys what it provided, such as a game (docs/adr/0016). A Back
+    // refused during a game leaves the browser's history as it was (docs/adr/0027).
+    provideRouter(
+      routes,
+      withAutoCleanupInjectors(),
+      withRouterConfig({ canceledNavigationResolution: 'computed' }),
+    ),
     { provide: NicknameGenerator, useFactory: () => new NicknameGenerator() },
     { provide: DEVICE_STORAGE, useFactory: deviceStorage },
     { provide: PLAYER_STORAGE, useClass: LocalPlayerStorage },

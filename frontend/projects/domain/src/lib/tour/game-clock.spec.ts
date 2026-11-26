@@ -53,4 +53,42 @@ describe('GameClock (docs/adr/0020)', () => {
     clock.tick();
     expect(ran).toEqual([]);
   });
+
+  it('holds the game time while paused and runs on from there when resumed (ADR 0027)', () => {
+    const { clock, pass } = clockAt();
+    const ran: string[] = [];
+    clock.after(1000, () => ran.push(`ran at ${clock.now()}`));
+    pass(400);
+    clock.pause();
+    pass(60_000);
+    clock.tick();
+    expect(clock.now()).toBe(400);
+    expect(clock.paused).toBe(true);
+    expect(ran).toEqual([]);
+    clock.resume();
+    expect(clock.paused).toBe(false);
+    expect(clock.now()).toBe(400);
+    pass(599);
+    clock.tick();
+    expect(ran).toEqual([]);
+    pass(1);
+    clock.tick();
+    expect(ran).toEqual(['ran at 1000']);
+  });
+
+  it('counts a second pause, and ignores a pause while paused or a resume while running', () => {
+    const { clock, pass } = clockAt();
+    clock.resume();
+    pass(100);
+    clock.pause();
+    pass(500);
+    clock.pause();
+    pass(500);
+    clock.resume();
+    pass(100);
+    clock.pause();
+    pass(300);
+    clock.resume();
+    expect(clock.now()).toBe(200);
+  });
 });

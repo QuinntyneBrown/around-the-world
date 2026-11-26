@@ -19,6 +19,10 @@ export class Dialog {
   readonly heading = input.required<string>();
   /** The id of the title, which the dialog is named by. */
   readonly titleId = input.required<string>();
+  /** The close button's name: what closing does ("Close", "Keep playing", "Stay and play"). */
+  readonly closeLabel = input('Close');
+  /** False while the dialog cannot be closed (busy): no close button, and the backdrop is inert. */
+  readonly closable = input(true);
   /** Close, or a press on the backdrop. */
   readonly closed = output();
 }

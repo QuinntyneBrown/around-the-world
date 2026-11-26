@@ -74,6 +74,8 @@ flash card, duel, hop, room, code, host, classmates, sticker, passport, stamp.
 | 13 | The player list marks you by position. | "(you)" in words, and "You" in the standings with an outline. | L2-024, L2-034 (6). |
 | 14 | The flash card's sum and answer box are plain text. | Each is `role="img"` named in words ("6 times 4", "Your answer: 24"). | ARIA does not let a paragraph or a plain `div` be named, so the names were lost (L2-051). |
 | 15 | The level meter and the rings move with the child's voice. | They pulse on their own while the device listens, and hold still under reduced motion. | Reading the voice's level would open a second microphone stream beside speech recognition; the words "Shout it!" and "Bolt is listening." carry the state (ADR 0025). |
+| 16 | "Try again" on Something Went Wrong leads Home, as "Home" does. | The mock still links it Home, with a note: the built button loads the game afresh at the address where it broke. | A static mock cannot reload; a fresh load drops whatever the failure spoiled (L2-054 criterion 4, ADR 0027). |
+| 17 | Pause is a button on Duel only. | The browser's Back on Duel or World Map during a solo game opens the same Pause dialog, drawn once over Duel. | A child who presses Back mid-duel is not thrown out of the game (L2-030 criterion 10, ADR 0027). The dialog is the same over World Map, so it is not drawn twice. |
 
 States the prototype does not draw were added from the requirements: loading, errors, offline,
 too many tries, a browser with no speech recognition, a flash card nobody answers, a lost room,

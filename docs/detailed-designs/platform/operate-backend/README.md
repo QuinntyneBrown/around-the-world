@@ -153,12 +153,18 @@ carry one, and what it is, is `<TO SUPPLY>`.
   the backend is never shown. A page passes the words to `AlertMessage`, which renders them as
   text.
 - **`GameErrorHandler`** — Angular `ErrorHandler` of `game`, bound in `app.config.ts`. It
-  catches a failure of the game itself and opens `SomethingWentWrongPage`, passing on no
-  detail of the failure (`L2-054` criterion 4).
+  catches a failure of the game itself, logs it to the browser's console as Angular's own
+  handler does, and opens `SomethingWentWrongPage` at `/error` with `skipLocationChange`, so
+  the address bar keeps the address where the game broke. It opens it once: a failure while it
+  opens, or on it, is only logged. It passes on no detail of the failure (`L2-054` criterion 4,
+  `docs/adr/0027-pausing-leaving-and-recovering.md`).
 - **`SomethingWentWrongPage`** — page of `game` that says "Oops, the game tripped over" and
   "That wasn't you. Try again, and if it keeps happening, tell a grown-up.", and offers "Try
-  again" and "Home". "Home" opens Home. What "Try again" opens is `<TO SUPPLY>`: the mock
-  leads both buttons to Home.
+  again" and "Home". "Home" opens Home. "Try again" loads the game afresh at the address
+  where it broke (a reload), which drops every state the failure may have spoiled: a screen
+  before Duel opens again with the choices kept on the device, and a game screen's address
+  opens Home, since a solo game is held in memory only (ADR 0027). It composes `Notice` from
+  `components` and has no top bar.
 
 The mocks word each message below. Each is shown as an alert, and the screen stays as the
 child left it.

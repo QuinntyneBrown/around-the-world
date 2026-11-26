@@ -23,6 +23,11 @@ describe('DuelPage', () => {
       continue: () => undefined,
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
+      kind: 'solo',
+      paused: signal(false),
+      pause: () => undefined,
+      resume: () => undefined,
+      leave: () => Promise.resolve(),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -70,4 +75,60 @@ describe('DuelPage', () => {
     expect(element.querySelector('.flash-card')?.getAttribute('aria-busy')).toBeNull();
     expect(element.querySelector('.number-pad')).not.toBeNull();
   });
+
+  it('offers Pause in a solo game and “Leave the game” in a game with friends (L2-033 4)', async () => {
+    for (const [kind, offered, notOffered] of [
+      ['solo', 'Pause', 'Leave the game'],
+      ['friends', 'Leave the game', 'Pause'],
+    ] as const) {
+      TestBed.resetTestingModule();
+      const session = {
+        hasGame: signal(true),
+        setup: signal(null),
+        screen: computed(() => 'duel'),
+        duel: signal(EGYPT),
+        tour: signal(null),
+        result: signal(null),
+        kind,
+        paused: signal(false),
+      } as unknown as GameSession;
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: GAME_SESSION, useValue: session },
+          {
+            provide: WAY_OF_ANSWERING,
+            useValue: { way: signal('numberPad'), voiceOffered: signal(false) },
+          },
+        ],
+      });
+      const fixture = TestBed.createComponent(DuelPage);
+      await fixture.whenStable();
+      const hud = (fixture.nativeElement as HTMLElement).querySelector('.duel__hud');
+      const labels = [...(hud?.querySelectorAll('button') ?? [])].map((button) =>
+        button.getAttribute('aria-label'),
+      );
+      expect(labels).toContain(offered);
+      expect(labels).not.toContain(notOffered);
+    }
+  });
 });
+
+/** A duel at Egypt, against Kenji, with the card open. */
+const EGYPT: DuelState = {
+  card: { kind: 'times', left: 6, right: 4 },
+  desk: 2,
+  tourLength: 12,
+  country: 'Egypt',
+  traveller: { name: 'You', kid: 'zuri' },
+  deskHolder: { name: 'Kenji', kid: 'kenji' },
+  role: 'traveller',
+  secondsToAnswer: 6,
+  timeLeftMs: 6000,
+  frozen: false,
+  wrongAnswer: null,
+  outcome: 'open',
+  winner: null,
+  answer: null,
+  ring: [],
+  hop: null,
+};
