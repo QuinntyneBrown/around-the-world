@@ -19,11 +19,11 @@ box "Frontend — game application" #E0F2FE
   participant "Router" as router
   participant "DuelPage" as duel
   participant "GAME_SESSION\n(SoloGame or FriendsGame)" as session
+  participant "StickerBuffer" as buffer
 end box
 box "Frontend — domain library" #E0F2FE
   participant "SpeechVoiceAnswer" as voice
   participant "OnDeviceModelSession" as model
-  participant "BoundedBuffer" as buffer
 end box
 box "Frontend — world library" #E0F2FE
   participant "ThreeClassroomRenderer" as renderer
@@ -49,13 +49,14 @@ opt solo game
 end
 opt Play again
   actor -> session : Play again
-  session -> buffer : clear() before the new tour starts (L2-035 criterion 3)
+  session -> session : Drop the ended tour, its duel and passports (L2-035 criterion 3)
+  session -> buffer : No sticker kept into the new tour
   note over session, conn : A game with friends returns to the room's Lobby;\nthe SignalR connection stays open (L2-035 criterion 3)
 end
 == The child leaves for Home ==
 actor -> router : "Home" on the Podium, "Go home" in Pause or "Leave" in Leave Game
 router -> session : Destroy the game route's injector
-session -> buffer : clear() duels played, stickers, positions (L2-048 criterion 5)
+session -> session : Clear the duel in play, the stickers and the positions (L2-048 criterion 5)
 alt solo game
   session -> model : destroy() any session still open (L2-021 criterion 6)
 else game with friends

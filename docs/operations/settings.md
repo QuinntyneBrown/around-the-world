@@ -30,6 +30,16 @@ templates, and the query string, the path with its values, the device's address 
 agent, log scopes and formatted messages are removed before export. Keep it so: never log a
 nickname's index, a room code, a connection token or a body.
 
+## Frontend (`game`)
+
+The production build in `frontend/dist/game/browser` is served as static files. The host that
+serves it needs no setting from the game, but shall:
+
+| Requirement | Purpose | Added by |
+|---|---|---|
+| Send text (`.js`, `.css`, `.html`, `.json`, `.svg`) compressed with Brotli or gzip, as the browser accepts | The initial bundle is about 274 kB raw and 72 kB compressed; uncompressed, Home's Largest Contentful Paint misses 2.5 seconds on a phone on 4G (`L2-047` criterion 4, [ADR 0038](../adr/0038-opening-fast-and-staying-smooth.md)) | Journey 18 |
+| Answer any path that is not a file with `index.html` | The router's deep links, such as a room's link (`/room/{code}`) | Journey 18 |
+
 ## Deploying
 
 1. Run `dotnet run --project src/AroundTheWorld.Api -- migrate` (from `backend/`, or the
