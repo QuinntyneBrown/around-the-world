@@ -90,13 +90,17 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
 
   async mount(canvas: HTMLCanvasElement): Promise<void> {
     this.canvas = canvas;
+    // The canvas's own background is the scene's sky; an opaque canvas is the cheap one to
+    // composite, and the one a shadow map draws correctly on.
+    const palette = Palette.of(canvas);
+    const background = palette.background();
+    const opaque = background !== '' && !/rgba\(.*,\s*0\)$|transparent/.test(background);
     this.context = canvas.getContext('webgl2', {
-      alpha: true,
+      alpha: !opaque,
       antialias: false,
       powerPreference: 'low-power',
     });
     if (!this.context) throw classroomError('noWebGL');
-    const palette = Palette.of(canvas);
     try {
       this.templates = await loadScenes(palette, this.aborting.signal);
     } catch {
@@ -109,9 +113,7 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     const renderer = new WebGLRenderer({ canvas, context: this.context });
     this.renderer = renderer;
     renderer.shadowMap.type = PCFShadowMap;
-    const background = palette.background();
     const colour = new Color();
-    const opaque = background !== '' && !/rgba\(.*,\s*0\)$|transparent/.test(background);
     if (opaque) colour.setStyle(background);
     renderer.setClearColor(colour, opaque ? 1 : 0);
 
@@ -240,12 +242,12 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
         const out = new Vector3(Math.cos(angle), 0, Math.sin(angle));
         this.behind.position
           .copy(out)
-          .multiplyScalar(RoomPlan.ringRadius + 3.2)
-          .setY(1.7);
+          .multiplyScalar(RoomPlan.ringRadius + 4.6)
+          .setY(2.8);
         const target = out
           .clone()
-          .multiplyScalar(RoomPlan.ringRadius - 1.4)
-          .setY(0.4);
+          .multiplyScalar(RoomPlan.ringRadius - 2)
+          .setY(0.3);
         this.behind.lookAt(target);
       }
       this.behind.updateProjectionMatrix();

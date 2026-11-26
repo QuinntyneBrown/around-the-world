@@ -18,6 +18,14 @@ import {
 /** Whether the 3D classroom is drawn, or the still picture stands in for it (L2-036 3). */
 export type ClassroomStatus = 'loading' | 'drawn' | 'still';
 
+/**
+ * Whether two states show the same classroom, so a screen whose game changes many times a
+ * second (the timer bar) gives the renderer a new state only when the classroom changes.
+ */
+export function sameClassroom(one: ClassroomState | null, other: ClassroomState | null): boolean {
+  return one === other || JSON.stringify(one) === JSON.stringify(other);
+}
+
 /** From this width World Map shows the whole room; below it, the child's own kid close up. */
 const WHOLE_ROOM_FROM = '(min-width: 48rem)';
 

@@ -448,8 +448,8 @@ a:hover { color: var(--color-fg-link-hover); }
 .world-map__view--room { display: none; }
 .world-map__foot { position: relative; z-index: var(--z-raised); padding: var(--space-3); }
 .world-map__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* The 3D room under the drawn room's labels; transparent, so the canvas colour shows round it. */
-.world-map__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity var(--duration-slow) var(--ease-standard); }
+/* The 3D room under the drawn room's labels, drawn on the screen's own background. */
+.world-map__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: var(--color-bg-canvas); opacity: 0; transition: opacity var(--duration-slow) var(--ease-standard); }
 .world-map__canvas--drawn { opacity: 1; }
 @media (min-width: 36rem) { .world-map__head, .world-map__foot { padding: var(--space-5); } .world-map__title { font: var(--text-h2); } }
 @media (min-width: 48rem) { .world-map__view--room { display: block; } .world-map__view--zoom { display: none; } }

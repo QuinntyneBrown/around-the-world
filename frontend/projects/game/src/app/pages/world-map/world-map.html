@@ -16,13 +16,34 @@
     <atw-map-toast [message]="message()" />
     <main id="main" class="world-map__body">
       <section class="world-map__room">
-        <atw-world-map
-          [countries]="countries()"
-          [kids]="kids()"
-          [travellerDesk]="tour.travellerDesk"
-          [nextDesk]="nextDesk()"
-          [label]="label()"
-        />
+        @if (scene() === 'still') {
+          <img
+            class="world-map__fallback"
+            src="img/scene-classroom.jpg"
+            alt="A picture of the classroom"
+          />
+          <atw-map-toast [inside]="true">
+            <atw-alert heading="The map is having a rest">
+              <p>The standings below still show where everyone is, and the game carries on.</p>
+            </atw-alert>
+          </atw-map-toast>
+        } @else {
+          <canvas
+            class="world-map__canvas"
+            [class.world-map__canvas--drawn]="scene() === 'drawn'"
+            [atwClassroom]="classroom()"
+            view="fromAbove"
+            (status)="scene.set($event)"
+          ></canvas>
+          <atw-world-map
+            [countries]="countries()"
+            [kids]="kids()"
+            [travellerDesk]="tour.travellerDesk"
+            [nextDesk]="nextDesk()"
+            [label]="label()"
+            [labelsOnly]="scene() === 'drawn'"
+          />
+        }
       </section>
       <footer class="world-map__foot">
         <atw-standings [items]="standings()" [tourLength]="tour.tourLength" />

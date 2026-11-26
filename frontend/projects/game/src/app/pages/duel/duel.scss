@@ -6,6 +6,7 @@
 }
 
 .duel__scene,
+.duel__canvas,
 .duel__scrim {
   position: absolute;
   inset: 0;
@@ -15,6 +16,19 @@
 
 .duel__scene {
   object-fit: cover;
+}
+
+// The 3D classroom fades in over the still picture once it is drawn, under the scrim
+// (docs/adr/0028).
+.duel__canvas {
+  display: block;
+  background: var(--color-bg-subtle);
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+.duel__canvas--drawn {
+  opacity: 1;
 }
 
 .duel__scrim {

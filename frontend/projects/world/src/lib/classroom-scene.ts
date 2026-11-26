@@ -155,6 +155,9 @@ export class ClassroomScene {
 
   /** Applies a step of detail: blob shadows or a shadow map, and the small decorations. */
   applyStep(step: QualityStep): void {
+    // Shadows change how every material is drawn, so each is made again once (three.js needs
+    // `needsUpdate` when the shadow map is switched on or off after the first frame).
+    const shadowsChanged = this.step !== null && this.step.shadows !== step.shadows;
     this.step = step;
     this.root.traverse((node) => {
       if (node.name === 'shadow') {
@@ -166,6 +169,8 @@ export class ClassroomScene {
       if (!mesh.isMesh) return;
       mesh.castShadow = step.shadows === 'map';
       mesh.receiveShadow = step.shadows === 'map';
+      if (shadowsChanged)
+        for (const material of [mesh.material].flat()) material.needsUpdate = true;
     });
   }
 

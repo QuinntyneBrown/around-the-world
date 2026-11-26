@@ -43,6 +43,31 @@
   min-height: 0;
 }
 
+.world-map__canvas,
+.world-map__fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+// The 3D room fades in under the drawn room's labels once it is drawn (docs/adr/0028). Its
+// background is the screen's, so the room is drawn on an opaque canvas.
+.world-map__canvas {
+  display: block;
+  background: var(--color-bg-canvas);
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+.world-map__canvas--drawn {
+  opacity: 1;
+}
+
+.world-map__fallback {
+  object-fit: cover;
+}
+
 .world-map__placeholder {
   position: absolute;
   inset: var(--space-3);
