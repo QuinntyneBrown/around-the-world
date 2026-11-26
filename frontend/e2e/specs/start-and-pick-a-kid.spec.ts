@@ -1,4 +1,4 @@
-import { expect, test } from '../fixtures/test';
+import { expect, test, type FakeDevice } from '../fixtures/test';
 import { HomePage } from '../pages/home.page';
 import { PickYourKidPage } from '../pages/pick-your-kid.page';
 import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
@@ -200,10 +200,7 @@ test.describe('Coming back', () => {
   for (const [what, setUp] of [
     ['unreadable', (device) => device.keeps('{this is not a record')],
     ['unavailable', (device) => device.storageUnavailable()],
-  ] as const satisfies readonly (readonly [
-    string,
-    (device: import('../fixtures/test').FakeDevice) => Promise<void>,
-  ])[]) {
+  ] as const satisfies readonly (readonly [string, (device: FakeDevice) => Promise<void>])[]) {
     test(`a storage that is ${what} starts with the defaults and shows no error`, async ({
       page,
       device,
@@ -313,15 +310,18 @@ test.describe('While the pictures arrive, and when they cannot', () => {
     pictures,
     device,
   }) => {
+    // Given the kids' pictures cannot load, and drawn kids stand in
     pictures.refuse(KID_PICTURES);
     const pick = new PickYourKidPage(page);
     await pick.open();
     await expect(pick.drawnKids).toHaveCount(5);
 
+    // When the child chooses Milo and confirms, without trying the pictures again
     await pick.choose('Milo');
     await expect(pick.stageName).toHaveText('Milo');
     await pick.confirmKid();
 
+    // Then Solo Or Friends opens and Milo is kept
     await expect(new SoloOrFriendsPage(page).heading).toHaveText('Who’s playing?');
     expect((await device.kept())?.kid).toBe('milo');
   });
