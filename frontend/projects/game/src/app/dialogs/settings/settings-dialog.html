@@ -1,5 +1,11 @@
 <atw-dialog heading="Settings" [titleId]="titleId" (closed)="close()">
   <atw-switch
+    label="Sound"
+    help="Pops, chimes and jingles."
+    [checked]="soundOn()"
+    (toggled)="turnSound($event)"
+  />
+  <atw-switch
     label="Answer by shouting"
     [help]="shoutingHelp"
     [checked]="shouting()"

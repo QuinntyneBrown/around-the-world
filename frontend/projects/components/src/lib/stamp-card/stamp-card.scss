@@ -53,7 +53,8 @@
 @media (prefers-reduced-motion: reduce) {
   :host {
     rotate: none;
-    animation-name: fade-in;
+    // The durations drop under reduced motion; the quick fade keeps its 200 ms (ADR 0029).
+    animation: fade-in var(--duration-fade) var(--ease-standard);
   }
 
   @keyframes fade-in {

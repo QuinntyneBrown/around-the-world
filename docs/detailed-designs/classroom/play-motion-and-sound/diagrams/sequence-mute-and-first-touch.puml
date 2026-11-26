@@ -16,33 +16,30 @@ skinparam package {
 }
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
-  participant "HomePage" as home
-  participant "MomentPlayer" as player
+  participant "HomePage or SettingsDialog" as home
+  participant "DuelPage" as duel
 end box
 box "Frontend — domain" #E0F2FE
-  participant "BrowserSound" as sound
   participant "StoredPlayerChoices" as choices
+  participant "BrowserSound" as sound
 end box
 actor -> home : Open the game
-home -> sound : Read muted
-sound -> choices : Read soundMuted
-choices --> sound : Sound setting as the child left it (L2-015 criterion 3)
-sound -> sound : Start locked; listen for the first touch
-home --> actor : Home in silence (L2-039 criterion 3)
-actor -> home : First touch or key press
-sound -> sound : Unlock; remove the listener
+home -> choices : Read soundMuted
+choices --> home : Sound setting as the child left it (L2-015 criterion 3)
+home --> actor : "Mute sound", or "Turn sound on" while muted; no sound before a touch (L2-039 criterion 3)
 opt child presses the sound button, or changes "Sound" in Settings
-  actor -> home : Sound button, or the "Sound" switch (L2-032 criterion 4)
-  home -> sound : setMuted(not muted)
-  sound -> choices : setSoundMuted(muted)
-  choices --> sound : Kept on the device
-  sound --> home : muted changed
-  home --> actor : Label reads "Mute sound" or "Turn sound on" (L2-032 criterion 3)
+  actor -> home : Sound button, or the "Sound" switch (L2-032 criteria 3 and 4)
+  home -> choices : setSoundMuted(not muted)
+  choices --> home : Kept on the device
+  home --> actor : Label reads "Mute sound" or "Turn sound on"; the switch reads On or Off
 end
-player -> sound : play(pop) for a number-pad key
-alt muted
-  sound -> sound : Play nothing (L2-039 criterion 2)
-else sound is on and unlocked
+actor -> duel : A key of the number pad
+duel -> sound : play(pop)
+sound -> choices : Read soundMuted
+alt muted, or the browser records no touch yet
+  sound -> sound : Play nothing (L2-039 criteria 2 and 3)
+else sound is on
+  sound -> sound : Make the three audio elements on the first sound
   sound --> actor : Pop (L2-039 criterion 1)
 end
 @enduml

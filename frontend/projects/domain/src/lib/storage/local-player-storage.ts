@@ -38,9 +38,11 @@ export class LocalPlayerStorage implements PlayerStorage {
     // A setup Game Setup would not offer reads as the defaults (docs/adr/0017).
     const setup = readSetup(stored['setup']);
     const way = isAnswerWay(stored['wayOfAnswering']) ? stored['wayOfAnswering'] : null;
-    const withSetup: Pick<PlayerRecord, 'setup' | 'wayOfAnswering'> = {
+    const muted = typeof stored['soundMuted'] === 'boolean' ? stored['soundMuted'] : null;
+    const withSetup: Pick<PlayerRecord, 'setup' | 'wayOfAnswering' | 'soundMuted'> = {
       ...(setup ? { setup } : {}),
       ...(way ? { wayOfAnswering: way } : {}),
+      ...(muted !== null ? { soundMuted: muted } : {}),
     };
     const kept = stored['nickname'];
     if (this.nicknames.isValid(kept)) return { kid, nickname: { ...kept }, ...withSetup };
@@ -70,10 +72,12 @@ export class LocalPlayerStorage implements PlayerStorage {
       : {};
     // The way of answering is kept only once the child has chosen it (docs/adr/0025).
     const way = record.wayOfAnswering ? { wayOfAnswering: record.wayOfAnswering } : {};
+    // The mute is kept only once the child has changed it (docs/adr/0029).
+    const muted = record.soundMuted !== undefined ? { soundMuted: record.soundMuted } : {};
     try {
       this.storage?.setItem(
         PLAYER_KEY,
-        JSON.stringify({ version: VERSION, kid: record.kid, nickname, ...setup, ...way }),
+        JSON.stringify({ version: VERSION, kid: record.kid, nickname, ...setup, ...way, ...muted }),
       );
     } catch {
       // A full or blocked storage: the choice lasts for this visit only.

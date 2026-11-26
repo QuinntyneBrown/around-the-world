@@ -29,6 +29,8 @@ describe('GameSetupPage', () => {
       changeSetup: (changed) => setup.set(changed),
       wayOfAnswering: signal('numberPad'),
       changeWayOfAnswering: () => undefined,
+      soundMuted: signal(false),
+      setSoundMuted: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [

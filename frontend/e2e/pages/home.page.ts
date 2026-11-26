@@ -16,6 +16,8 @@ export class HomePage {
   readonly noNamesLine: Locator;
   readonly status: Locator;
   readonly settings: Locator;
+  /** The sound button: "Mute sound", or "Turn sound on" while muted (L2-032 criterion 3). */
+  readonly sound: Locator;
   readonly classroom: Locator;
   readonly classroomDrawn: Locator;
   readonly classroomResting: Locator;
@@ -32,6 +34,7 @@ export class HomePage {
     this.noNamesLine = page.getByText('No names, no sign-up. You pick a kid and get a game name.');
     this.status = page.getByRole('status');
     this.settings = page.locator('.home__corner').getByRole('button', { name: 'Settings' });
+    this.sound = page.locator('.home__corner').getByRole('button', { name: /sound/ });
     this.classroom = page.locator('canvas.home__canvas');
     this.classroomDrawn = page.locator('canvas.home__canvas--drawn');
     this.classroomResting = page

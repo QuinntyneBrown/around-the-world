@@ -154,8 +154,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  // The durations drop under reduced motion; the quick fade keeps its 200 ms (ADR 0029).
   .podium__place {
     animation-name: fade-in;
+    animation-duration: var(--duration-fade);
   }
 
   @keyframes fade-in {

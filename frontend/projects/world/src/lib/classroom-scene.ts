@@ -214,7 +214,7 @@ export class ClassroomScene {
     const blob = this.part(this.templates.room, 'shadow');
     if (blob) {
       blob.scale.setScalar(0.6);
-      kid.root.add(blob);
+      kid.carry(blob);
     }
     this.root.add(kid.root);
     if (this.step) this.applyStep(this.step);

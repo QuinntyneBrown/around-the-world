@@ -20,7 +20,6 @@ box "Frontend — game" #E0F2FE
   participant "SettingsDialog" as dialog
 end box
 box "Frontend — domain" #E0F2FE
-  participant "BrowserSound" as sound
   participant "StoredPlayerChoices" as choices
   participant "LocalPlayerStorage" as storage
 end box
@@ -35,8 +34,7 @@ else the browser has no speech recognition
 end
 opt child changes "Sound"
   actor -> dialog : Switch
-  dialog -> sound : setMuted(muted)
-  sound -> choices : setSoundMuted(muted)
+  dialog -> choices : setSoundMuted(muted)
   choices -> storage : write(PlayerRecord)
   storage --> choices : Kept the moment it is changed (L2-015 criterion 3)
 end

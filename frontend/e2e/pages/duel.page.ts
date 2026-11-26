@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { motionOf, type Motion } from '../support/motion';
 
 /** How each sign of a flash card works out its answer. */
 const OPERATIONS: Record<string, (left: number, right: number) => number> = {
@@ -152,8 +153,16 @@ export class DuelPage {
     );
   }
 
+  /** Waits for the flash card to finish flipping in, so its box is where it rests. */
+  async settled(): Promise<void> {
+    await this.flashCard.evaluate((card) =>
+      Promise.all(card.getAnimations().map((animation) => animation.finished)),
+    );
+  }
+
   /** Whether the number pad sits under the flash card or beside it. */
   async padPlacement(): Promise<'under' | 'beside'> {
+    await this.settled();
     const card = await this.flashCard.boundingBox();
     const pad = await this.numberPad.boundingBox();
     if (!card || !pad) throw new Error('The flash card or the pad is not shown');
@@ -165,6 +174,7 @@ export class DuelPage {
    * the largest type, and nothing on the stage is wider than the card.
    */
   async cardIsLargest(): Promise<boolean> {
+    await this.settled();
     const card = await this.flashCard.boundingBox();
     const pad = await this.numberPad.boundingBox();
     if (!card || !pad) throw new Error('The flash card or the pad is not shown');
@@ -187,6 +197,7 @@ export class DuelPage {
 
   /** Whether the element is wholly inside the window. */
   async inView(locator: Locator): Promise<boolean> {
+    if ((await this.flashCard.count()) === 1) await this.settled();
     const box = await locator.boundingBox();
     const size = this.page.viewportSize();
     if (!box || !size) return false;
@@ -196,6 +207,16 @@ export class DuelPage {
       box.y + box.height <= size.height &&
       box.x + box.width <= size.width
     );
+  }
+
+  /** How the flash card moves: its flip, its shake, or the fade of reduced motion (L2-038). */
+  cardMotion(): Promise<Motion> {
+    return motionOf(this.flashCard);
+  }
+
+  /** How the passport stamp lands: tilted and scaled, or upright and fading (L2-038). */
+  stampMotion(): Promise<Motion> {
+    return motionOf(this.stamp);
   }
 
   /** Whether the page scrolls either way. */

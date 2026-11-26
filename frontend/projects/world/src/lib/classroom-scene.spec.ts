@@ -177,12 +177,46 @@ describe('ClassroomScene', () => {
     expect(scene.figure('t')!.hopping).toBe(true);
   });
 
-  it('ends every move at once under reduced motion', () => {
+  it('fades a hop out where the kid stands and in at the next desk under reduced motion, 200 ms in all (L2-038 4)', () => {
     const scene = new ClassroomScene(templates(), palette);
     scene.show(stateOf([figure('t', { desk: 2, travelling: true })]));
     scene.show(stateOf([figure('t', { desk: 3, travelling: true })]));
-    scene.update(0.016, true, null);
-    expect(scene.figure('t')!.hopping).toBe(false);
+    const kid = scene.figure('t')!;
+    const from = scene.pointOf({ desk: 2, travelling: true });
+    const to = scene.pointOf({ desk: 3, travelling: true });
+
+    // Half way out: still where it stood, nothing moves across the screen
+    scene.update(0.05, true, null);
+    expect(kid.position.distanceTo(from)).toBeLessThan(0.001);
+    expect(kid.opacity).toBeCloseTo(0.5);
+
+    // Half way in: already at the next desk, on the floor
+    scene.update(0.1, true, null);
+    expect(kid.position.distanceTo(to)).toBeLessThan(0.001);
+    expect(kid.opacity).toBeCloseTo(0.5);
+
+    // After 200 ms: there, whole, and the hop is over
+    scene.update(0.05, true, null);
+    expect(kid.hopping).toBe(false);
+    expect(kid.opacity).toBe(1);
+    expect(kid.animation).toBe('idle');
+  });
+
+  it('fades one kid without fading another kid of the same cast (L2-038 4)', () => {
+    const scene = new ClassroomScene(templates(), palette);
+    scene.show(stateOf([figure('t', { travelling: true }), figure('h', { desk: 4 })]));
+    scene.show(stateOf([figure('t', { desk: 3, travelling: true }), figure('h', { desk: 4 })]));
+    scene.update(0.05, true, null);
+    const opacities = (id: string) => {
+      const found: number[] = [];
+      scene.figure(id)!.root.traverse((node) => {
+        const mesh = node as Mesh;
+        if (mesh.isMesh) found.push((mesh.material as Material).opacity);
+      });
+      return found;
+    };
+    expect(opacities('t').every((opacity) => opacity < 1)).toBe(true);
+    expect(opacities('h').every((opacity) => opacity === 1)).toBe(true);
   });
 
   it('leaves the small decorations out and swaps the shadows at the lower steps (L2-036 4)', () => {

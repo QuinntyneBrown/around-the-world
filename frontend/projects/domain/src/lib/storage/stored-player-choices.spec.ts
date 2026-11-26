@@ -63,4 +63,17 @@ describe('StoredPlayerChoices', () => {
     expect(choices.setup()).toEqual(setup);
     expect(storage.writes).toEqual([{ kid: 'pip', nickname: { adjective: 1, animal: 1 }, setup }]);
   });
+
+  it('has sound on until the child mutes it, and keeps the mute on the device (L2-015 3)', () => {
+    const storage = new RecordingStorage({ kid: 'pip', nickname: { adjective: 1, animal: 1 } });
+    const choices = choicesWith(storage);
+    expect(choices.soundMuted()).toBe(false);
+
+    choices.setSoundMuted(true);
+
+    expect(choices.soundMuted()).toBe(true);
+    expect(storage.writes).toEqual([
+      { kid: 'pip', nickname: { adjective: 1, animal: 1 }, soundMuted: true },
+    ]);
+  });
 });

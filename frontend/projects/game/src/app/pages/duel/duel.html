@@ -49,29 +49,43 @@
       @if (stamp(); as stamp) {
         <atw-stamp-card [country]="stamp.country" [landmark]="stamp.landmark" [hop]="stamp.hop" />
       } @else {
-        <atw-flash-card
-          [sum]="sum()"
-          [sumLabel]="sumLabel()"
-          [answer]="answerBox()"
-          [frozen]="duel.frozen"
-          [result]="line().result"
-          [emphasis]="line().emphasis"
-          [tone]="line().tone"
-        >
-          @if (listening()) {
-            <p atw-shout atwListening (heard)="shouted($event)" (failed)="voiceStopped($event)"></p>
-          }
-          @if (voiceFailed() && open()) {
-            <p class="text-sm text-muted" role="status">
-              Bolt stopped hearing, so tap your answer for this one.
-            </p>
-          }
-          @if (pill(); as words) {
-            <button atw-text-button type="button" [pill]="true" [sunken]="true" (click)="moveOn()">
-              {{ words }}
-            </button>
-          }
-        </atw-flash-card>
+        <!-- A new flash card for each card dealt, so each one flips in (docs/adr/0029). -->
+        @for (card of [duel.card]; track card) {
+          <atw-flash-card
+            [sum]="sum()"
+            [sumLabel]="sumLabel()"
+            [answer]="answerBox()"
+            [frozen]="duel.frozen"
+            [result]="line().result"
+            [emphasis]="line().emphasis"
+            [tone]="line().tone"
+          >
+            @if (listening()) {
+              <p
+                atw-shout
+                atwListening
+                (heard)="shouted($event)"
+                (failed)="voiceStopped($event)"
+              ></p>
+            }
+            @if (voiceFailed() && open()) {
+              <p class="text-sm text-muted" role="status">
+                Bolt stopped hearing, so tap your answer for this one.
+              </p>
+            }
+            @if (pill(); as words) {
+              <button
+                atw-text-button
+                type="button"
+                [pill]="true"
+                [sunken]="true"
+                (click)="moveOn()"
+              >
+                {{ words }}
+              </button>
+            }
+          </atw-flash-card>
+        }
       }
       @if (open() && !byVoice()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />

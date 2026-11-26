@@ -4,30 +4,25 @@ LAYOUT_WITH_LEGEND()
 title Components — Play motion and sound
 
 Container_Boundary(game, "game application") {
-  Component(session, "SoloGame or FriendsGame", "Service behind GAME_SESSION", "Reports each moment of the game")
-  Component(player, "MomentPlayer", "Service at the game route", "Carries out the plan for each moment")
+  Component(moments, "MomentSounds", "Service of the solo group", "Plays a sound for each moment")
+  Component(pages, "DuelPage, HomePage, SettingsDialog", "Pages and dialog", "Pop on a key; the sound button and the Sound switch")
 }
-Container_Boundary(domain, "domain library — sound/ and motion/") {
-  Component(plan, "MomentPlan", "Pure helper", "Sound, animations and effect for each moment, full and reduced")
-  Component(sound, "BrowserSound", "Implementation behind SOUND", "Pop, chime, jingle; mute; locked until first touch")
-  Component(pref, "BrowserMotionPreference", "Implementation behind MOTION_PREFERENCE", "Reads prefers-reduced-motion")
-  Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Keeps the sound setting on the device")
+Container_Boundary(domain, "domain library — tour/, sound/ and storage/") {
+  Component(session, "SoloGame", "Service behind GAME_SESSION", "Reports answerCorrect and countryReached")
+  Component(sound, "BrowserSound", "Implementation behind SOUND", "Pop, chime, jingle; silent while muted or before the first touch")
+  Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Keeps the mute on the device")
 }
 Container_Boundary(components, "components library") {
-  Component(card, "FlashCardView", "Presentation component", "Card flip within 300 ms and shake after a wrong answer, or a fade")
-  Component(stamp, "StampCard", "Presentation component", "Passport stamp in place of the flash card")
-  Component(ring, "WorldRing and PassportView", "Presentation components", "Kid's new place and the new stamp")
+  Component(card, "FlashCard, StampCard, Podium", "Presentation components", "Card flip, shake, stamp and rise, or a quick fade")
 }
 Container_Boundary(world, "world library") {
-  Component(renderer, "ThreeClassroomRenderer", "Implementation behind CLASSROOM_RENDERER", "Plays the hop along the path on World Map, win cheer, so close, sit and stand")
+  Component(renderer, "ThreeClassroomRenderer and KidCharacter", "Implementation behind CLASSROOM_RENDERER", "The hop along the path, or a fade, win cheer, so close")
 }
-Rel(player, session, "Watches the latest moment of")
-Rel(player, plan, "Looks the moment up in")
-Rel(player, pref, "Reads reduced")
-Rel(player, sound, "play(sound)")
-Rel(player, renderer, "play(kid, animation)")
-Rel(player, card, "Drives through page state")
-Rel(player, stamp, "Drives through page state")
-Rel(player, ring, "Drives through page state")
-Rel(sound, choices, "Reads and writes soundMuted")
+Rel(moments, session, "watchMoments")
+Rel(moments, sound, "play(chime | jingle)")
+Rel(pages, sound, "play(pop)")
+Rel(pages, choices, "soundMuted, setSoundMuted")
+Rel(sound, choices, "Reads soundMuted")
+Rel(pages, card, "Bind the state shown")
+Rel(pages, renderer, "show(state)")
 @enduml

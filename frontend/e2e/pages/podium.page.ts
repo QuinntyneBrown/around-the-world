@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { motionOf, type Motion } from '../support/motion';
 
 /** One place on the steps, as the Podium shows it. */
 export interface ShownPlace {
@@ -40,6 +41,12 @@ export class PodiumPage {
 
   async open(): Promise<void> {
     await this.page.goto('/podium');
+  }
+
+  /** How each place rises, or fades in under reduced motion, in place order (L2-038 6). */
+  async placeMotions(): Promise<Motion[]> {
+    const places = await this.steps.locator('.podium__place').all();
+    return Promise.all(places.map((place) => motionOf(place)));
   }
 
   /** The places on the steps in place order (1st, 2nd, 3rd), as a screen reader reads them. */

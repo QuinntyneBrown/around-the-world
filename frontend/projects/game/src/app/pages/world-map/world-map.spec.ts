@@ -23,6 +23,7 @@ describe('WorldMapPage', () => {
       continue: () => undefined,
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
+      watchMoments: () => () => undefined,
       kind: 'solo',
       paused: signal(false),
       pause: () => undefined,

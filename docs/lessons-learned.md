@@ -577,3 +577,80 @@ the lessons that fit.
   lives exactly as long as its canvas.
 - *Give a fake every answer the browser can give* (07, 3): WebGL is the browser's own, and the
   fixture takes it away or counts it.
+
+## Journey 10: Feel the hop with motion and sound
+
+**What slowed it.**
+
+- Most of the motion the design planned (the shake, the stamp, the Podium's rise, the 3D hop)
+  had already been built by journeys 04 to 09, each in its own stylesheet or renderer, so the
+  design's `MomentPlan`, `MomentPlayer` and `MotionPreference` would have duplicated it. Working
+  out what was left (the flip, the sounds, the mute, and two reduced forms that ended at once)
+  came before any code, and ADR 0029 trimmed the design to it.
+- Under reduced motion every duration token drops to 0.01 ms, so the stamp's and the Podium's
+  "fade" ended at once and a spec that only asked for "no more than 200 ms" passed it. A new
+  token, `--duration-fade`, keeps its 200 ms, and the specs ask for at least 100 ms.
+- A new card that flips in changes its bounding box for 200 ms, so an older layout spec that
+  measured the card at once failed under the full suite's load. Duel's page object now waits
+  for the card's animations to finish before it measures.
+- A flip and a shake on the same element replay each other when the class that adds the shake
+  comes and goes; giving each its own property (`transform`, `translate`) and listing both
+  while frozen keeps the flip from running again.
+- No sound files existed. A small script makes three licence-clean WAV files from sine tones,
+  as the classroom's stand-in did for the scenes (ADR 0028).
+
+**New lessons.**
+
+1. Before building a design written ahead of the code, list what earlier journeys already
+   built for it, and cut the design to the gap with an ADR rather than building its plan.
+2. Prove a reduced-motion fade with a lower bound as well as an upper one: a token that drops
+   to nothing passes "no more than".
+3. A layout check on an element that animates in waits for its animations to finish
+   (`getAnimations()` and `finished`), or it measures a moving box.
+4. Read a browser record the platform already keeps (`navigator.userActivation`) before adding
+   a listener of your own: it needs no release and holds on every screen.
+5. Keep a fake's record of what played by the file's name, and count the elements still holding
+   a source, so a spec proves both what was heard and that it was let go.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): `main` grew from 271.55 kB to
+  271.87 kB with the mute in the player's record; the sound code is in the solo group's chunk.
+- *Check a fake once by hand* (01, 2): a mute that was ignored failed "while muted"; the Podium
+  on the old token failed its reduced-motion spec.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): no new component; FlashCard
+  (flip and fades), StampCard and Podium (the fade token), Icon (sound, mute), IconButton
+  (Home's sound button) and Switch (Settings' "Sound") extended or reused, each marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0029
+  fills the design's gaps.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): `BrowserSound` and
+  `MomentSounds` are in `solo-game-routes`, and Home's button in `home`.
+- *Drive states through the fixture* (02, 3): extended with `sound` (what played, what is
+  still open), and reduced motion through Playwright's own `emulateMedia`.
+- *An unreachable state gets a unit test of the page* (02, 4): the first touch and the 3D
+  hop's fade are proved by unit tests of `BrowserSound` and `ClassroomScene`.
+- *Tag one spec per feature `@critical`* (02, 5): the flip, the shake and the stamp.
+- *Put the page in the group that provides its service* (03, 1): `SOUND` is bound in the solo
+  group, so leaving the game lets every sound go.
+- *Measure the initial bundle against the base commit* (03, 2): 271.55 kB before, 271.87 kB
+  after; the 272 kB warning was not moved.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s tests prove which moments are
+  reported, and that a stopped listener hears no more.
+- *Prefer signals and outputs to `effect()`* (04, 2): moments are a listener, as screens are
+  (ADR 0023); no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new and the Duel specs
+  ran with `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the sound button's "Mute
+  sound" and "Turn sound on", and the "Sound" switch first in Settings.
+- *Let the game service decide when the screen changes* (05, 2): the session decides the
+  moments; the pages only play them.
+- *Start and stop a browser resource with the element that shows it* (07, 2): the audio
+  elements live as long as the solo group.
+- *Give a fake every answer the browser can give* (07, 3): a refused `play()` is covered by a
+  unit test; the fake resolves it.
+- *Put a browser resource behind a count the fixture can read* (09, 1): `openSounds()` proves
+  the release when the child goes home.
+- *Split a loop from what it draws* (09, 4): the hop's fade is tested on `ClassroomScene` with
+  fake frames, without WebGL.
