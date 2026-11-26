@@ -49,6 +49,66 @@
   color: var(--color-success-fg);
 }
 
+.flash-card__emphasis {
+  color: var(--color-fg-default);
+  font-weight: inherit;
+}
+
+// A right answer rings the card in green; a wrong one in red, with one shake (L2-004 5).
+:host(.flash-card--right) {
+  box-shadow:
+    var(--shadow-ledge-2),
+    inset 0 0 0 var(--border-width-stamp) var(--color-success-icon);
+}
+
+:host(.flash-card--frozen) {
+  box-shadow:
+    var(--shadow-ledge-2),
+    inset 0 0 0 var(--border-width-stamp) var(--color-danger-solid);
+  animation: shake var(--duration-slow) var(--ease-standard) 1;
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    translate: -0.5rem 0;
+  }
+
+  40%,
+  80% {
+    translate: 0.5rem 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host(.flash-card--frozen) {
+    animation: none;
+  }
+}
+
+// The answer box: the digits entered, three at most (L2-010).
+.answer-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10rem;
+  height: 4rem;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  box-shadow: inset 0 0 0 var(--border-width-heavy) var(--color-accent);
+  font: var(--text-display);
+}
+
+.answer-box__empty {
+  color: var(--color-fg-subtle);
+}
+
+.answer-box--frozen {
+  box-shadow: inset 0 0 0 var(--border-width-heavy) var(--color-danger-solid);
+  color: var(--color-danger-fg);
+}
+
 .flash-card__result--wrong {
   color: var(--color-danger-fg);
   font: var(--text-h3);
@@ -71,6 +131,11 @@
 
   .flash-card__foot {
     min-height: 5rem;
+  }
+
+  .answer-box {
+    height: 5rem;
+    font: var(--text-hero);
   }
 }
 
@@ -96,5 +161,10 @@
 
   .flash-card__result {
     font: var(--text-h4);
+  }
+
+  .answer-box {
+    height: 3rem;
+    font: var(--text-h1);
   }
 }

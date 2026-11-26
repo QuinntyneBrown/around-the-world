@@ -1,0 +1,29 @@
+// The timer-bar block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: block;
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-border-default);
+  overflow: hidden;
+}
+
+.timer-bar__fill {
+  height: 100%;
+  width: var(--value, 100%);
+  border-radius: inherit;
+  background: var(--kid);
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--kid-deep);
+  // It drains in a straight line between two ticks of the game's clock.
+  transition: width 100ms linear;
+}
+
+:host(.timer-bar--paused) .timer-bar__fill {
+  opacity: 0.35;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-bar__fill {
+    transition: none;
+  }
+}

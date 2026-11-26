@@ -1,4 +1,4 @@
-@switch (state()) {
+@switch (shown()) {
   @case ('loading') {
     <atw-skeleton
       [shape]="size() === 'hero' ? 'panel' : 'block'"
@@ -8,6 +8,7 @@
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
       [class.portrait--round]="round()"
+      [class.portrait--ring]="ring()"
     />
   }
   @case ('failed') {
@@ -18,6 +19,7 @@
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
       [class.portrait--round]="round()"
+      [class.portrait--ring]="ring()"
       [attr.data-kid]="kid()"
       [attr.role]="alt() ? 'img' : null"
       [attr.aria-label]="alt() || null"
@@ -33,6 +35,7 @@
       [class.portrait--fill]="size() === 'fill'"
       [class.portrait--hero]="size() === 'hero'"
       [class.portrait--round]="round()"
+      [class.portrait--ring]="ring()"
       [attr.data-kid]="kid()"
       [src]="src()"
       [alt]="alt()"

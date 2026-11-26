@@ -1,0 +1,23 @@
+<svg class="world-ring__svg" viewBox="0 0 132 132" role="img" [attr.aria-label]="name()">
+  <circle class="world-ring__track" cx="66" cy="66" r="52" />
+  @for (desk of desks(); track $index) {
+    <circle
+      class="world-ring__desk"
+      [class.world-ring__desk--start]="desk.start"
+      [attr.cx]="desk.x"
+      [attr.cy]="desk.y"
+      [attr.r]="deskRadius()"
+    />
+  }
+  @for (racer of racers(); track racer.kid) {
+    <circle
+      class="world-ring__racer"
+      [class.world-ring__racer--me]="racer.you"
+      [attr.data-kid]="racer.kid"
+      [attr.cx]="racer.x"
+      [attr.cy]="racer.y"
+      [attr.r]="racer.you ? 9 : 6.5"
+    />
+  }
+</svg>
+<p class="world-ring__label numeric">Desk {{ desk() }} of {{ tourLength() }}</p>

@@ -23,6 +23,44 @@
   color: var(--color-fg-muted);
 }
 
+// A duellist: their portrait, name and role; the desk holder's is mirrored.
+.duelist {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.duelist--flip {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.duelist__text {
+  min-width: 0;
+}
+
+.duelist__name {
+  font: var(--text-name);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: break-word;
+}
+
+.duelist__role {
+  font: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg-muted);
+}
+
+.duel-hud__desk {
+  display: none;
+  flex: none;
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+}
+
 // While loading: a portrait's and a timer bar's shapes.
 .duel-hud__portrait {
   flex: none;
@@ -37,6 +75,25 @@
 @media (min-width: 36rem) {
   .duel-hud__portrait {
     width: 3.5rem;
+  }
+
+  .duelist {
+    gap: var(--space-3);
+  }
+
+  .duelist__name {
+    font: var(--text-h3);
+  }
+
+  .duelist__role {
+    font: var(--text-label);
+  }
+}
+
+// A phone turned on its side: the desk goes beside the names (L2-050 criterion 5).
+@media (max-height: 34rem) {
+  .duel-hud__desk {
+    display: block;
   }
 }
 

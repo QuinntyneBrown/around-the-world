@@ -10,7 +10,9 @@ import { installBrowserFakes, type MicrophoneSetting } from './fakes/browser-fak
  * - `model`: a fake on-device model that answers as the spec tells it to;
  * - `backend`: API and hub requests answered from fixtures (no real backend or database);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
- * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks.
+ * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
+ * - `clock`: the game's clock, held still and moved on by the spec (docs/adr/0020);
+ * - `random`: `Math.random`, fixed by the spec so a classmate answers as it needs (ADR 0020).
  *
  * It fails the spec on an unexpected microphone call, an unanswered API or hub request, a
  * request off localhost, or a page error.
@@ -50,6 +52,7 @@ export interface KeptRecord {
   version: number;
   kid?: string | null;
   nickname?: { adjective: number; animal: number } | null;
+  setup?: { kinds: string[]; tables: number[]; tourLength: number; cardSpeed: string } | null;
 }
 
 export interface FakeDevice {
@@ -70,8 +73,25 @@ export interface FakePictures {
   refuse(pattern: RegExp): () => void;
 }
 
+export interface FakeClock {
+  /** Holds the game's clock still (the page's `Date.now`); the browser's timers keep running. */
+  hold(): Promise<void>;
+  /** Moves the held clock on by that many milliseconds. */
+  pass(ms: number): Promise<void>;
+}
+
+export interface FakeRandom {
+  /**
+   * `Math.random` always returns this value: 0 makes a classmate answer right at its fastest,
+   * 0.999 wrong at its slowest (docs/adr/0019-classmate-profiles.md).
+   */
+  always(value: number): Promise<void>;
+}
+
 interface Fixtures {
   problems: string[];
+  clock: FakeClock;
+  random: FakeRandom;
   device: FakeDevice;
   pictures: FakePictures;
   voice: FakeVoice;
@@ -80,6 +100,8 @@ interface Fixtures {
   backend: FakeBackend;
 }
 
+/** Where a held clock starts: any fixed moment will do. */
+const HELD_AT = Date.parse('2026-01-05T09:00:00Z');
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const PLAYER_KEY = 'atw.player';
 const BACKEND_PATH = /^\/(api|hubs)\//;
@@ -255,6 +277,27 @@ export const test = base.extend<Fixtures>({
       },
       kept: readKept,
       keys: () => page.evaluate(() => Object.keys(localStorage)),
+    });
+  },
+
+  clock: async ({ page }, use) => {
+    let now = HELD_AT;
+    await use({
+      hold: () => page.clock.setFixedTime(now),
+      pass: async (ms) => {
+        now += ms;
+        await page.clock.setFixedTime(now);
+      },
+    });
+  },
+
+  random: async ({ page }, use) => {
+    await use({
+      always: async (value) => {
+        await page.addInitScript((fixed) => {
+          Math.random = () => fixed;
+        }, value);
+      },
     });
   },
 
