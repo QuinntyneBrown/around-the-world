@@ -1,0 +1,43 @@
+@if (loading()) {
+  <h1 class="podium__headline">Counting the desks…</h1>
+  <p class="visually-hidden" role="status">Working out the places…</p>
+  <div class="podium__steps" aria-hidden="true">
+    <div class="podium__place podium__place--first">
+      <atw-skeleton shape="block" class="podium__picture" />
+      <atw-skeleton shape="block" class="podium__step" />
+    </div>
+    <div class="podium__place">
+      <atw-skeleton shape="block" class="podium__picture" />
+      <atw-skeleton shape="block" class="podium__step" />
+    </div>
+    <div class="podium__place podium__place--third">
+      <atw-skeleton shape="block" class="podium__picture" />
+      <atw-skeleton shape="block" class="podium__step" />
+    </div>
+  </div>
+} @else {
+  <h1 class="podium__headline">{{ headline() }}</h1>
+  @if (cheer()) {
+    <p class="podium__cheer">{{ cheer() }}</p>
+  }
+  <ol
+    class="podium__steps"
+    [class.podium__steps--two]="shown().length === 2"
+    [attr.aria-label]="'The top ' + shown().length"
+  >
+    @for (place of shown(); track place.place) {
+      <li
+        class="podium__place"
+        [class.podium__place--first]="place.place === 1"
+        [class.podium__place--third]="place.place === 3"
+        [attr.data-kid]="place.kid"
+      >
+        <img class="podium__picture" [src]="place.picture" alt="" width="384" height="384" />
+        <div class="podium__step">
+          <span class="podium__rank numeric" [attr.aria-label]="place.rank">{{ place.place }}</span>
+          <span class="podium__name">{{ place.name }}</span>
+        </div>
+      </li>
+    }
+  </ol>
+}

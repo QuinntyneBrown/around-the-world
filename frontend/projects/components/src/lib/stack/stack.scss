@@ -22,3 +22,7 @@
 :host(.stack--middle) {
   justify-content: center;
 }
+
+:host(.stack--flush) {
+  gap: var(--space-0);
+}

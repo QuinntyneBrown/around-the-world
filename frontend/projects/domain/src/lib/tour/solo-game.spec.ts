@@ -166,7 +166,7 @@ describe('SoloGame', () => {
       phase: 'moving',
       traveller: 'you',
       travellerDesk: 3,
-      stamps: [3],
+      stamps: [1, 3],
       lastMove: { kind: 'hop', to: 3 },
     });
     expect(game.tour()?.standings[0]).toEqual({ place: 1, player: 'you', distance: 2 });
@@ -233,7 +233,7 @@ describe('SoloGame', () => {
     expect(game.tour()).toMatchObject({
       traveller: 'you',
       travellerDesk: 3,
-      stamps: [],
+      stamps: [1],
       lastMove: { kind: 'deskHolderTravels', traveller: 'you' },
     });
   });
@@ -245,5 +245,96 @@ describe('SoloGame', () => {
     vi.advanceTimersByTime(10_000);
     expect(game.duel()?.outcome).toBe('open');
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  /** The child wins the duel as the traveller; World Map then shows the hop. */
+  function winAndHop(game: SoloGame): void {
+    game.answer(answerOf(game));
+    vi.advanceTimersByTime(RIGHT_MS + STAMP_MS);
+  }
+
+  it('ends the tour when the child goes all the way round, then opens the Podium (L2-006 1)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const game = await started();
+    for (let hop = 1; hop < 5; hop++) {
+      winAndHop(game);
+      vi.advanceTimersByTime(MESSAGE_MS);
+    }
+    winAndHop(game);
+    expect(game.screen()).toBe('world-map');
+    expect(game.tour()).toMatchObject({ phase: 'over', lastMove: { kind: 'hop', to: 2 } });
+    expect(game.result()).toBeNull();
+    vi.advanceTimersByTime(MESSAGE_MS);
+    expect(game.screen()).toBe('podium');
+    expect(game.result()).toMatchObject({
+      ending: 'allTheWayRound',
+      tourLength: 6,
+      winner: 'you',
+      winnerDistance: 6,
+      yourPlace: 1,
+      countriesReached: 6,
+    });
+    expect(game.result()?.places.map(({ player }) => player)).toEqual([
+      'you',
+      'kenji',
+      'nia',
+      'milo',
+      'pip',
+    ]);
+    expect(game.result()?.players.find(({ id }) => id === 'kenji')?.name).toBe('Kenji');
+  });
+
+  it('ends the tour on its time limit when the current duel ends (L2-006 2)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    expect(game.duel()?.winner).toBe('deskHolder');
+    vi.advanceTimersByTime(180_000);
+    expect(game.screen()).toBe('duel');
+    game.continue();
+    expect(game.screen()).toBe('world-map');
+    expect(game.tour()?.phase).toBe('over');
+    game.continue();
+    expect(game.screen()).toBe('podium');
+    expect(game.result()).toMatchObject({
+      ending: 'timeLimit',
+      winner: 'you',
+      winnerDistance: 1,
+      yourPlace: 1,
+    });
+    expect(game.result()?.places[1]).toEqual({ place: 2, player: 'kenji', distance: 1 });
+  });
+
+  it('does not end the tour before its time limit (L2-006 2)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    game.continue();
+    expect(game.tour()?.phase).toBe('moving');
+  });
+
+  it('starts a new tour with the same kid and setup on "Play again" (L2-035 3)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(180_000);
+    game.continue();
+    game.continue();
+    expect(game.screen()).toBe('podium');
+    game.playAgain();
+    expect(game.screen()).toBe('duel');
+    expect(game.result()).toBeNull();
+    expect(game.setup()).toEqual(SETUP);
+    expect(game.duel()).toMatchObject({
+      desk: 2,
+      outcome: 'open',
+      traveller: { name: 'You', kid: 'zuri' },
+      deskHolder: { name: 'Kenji' },
+    });
+    expect(game.tour()).toMatchObject({ phase: 'duel', stamps: [1], lastMove: null });
+    vi.advanceTimersByTime(5000);
+    expect(game.duel()?.winner).toBe('deskHolder');
+    game.continue();
+    expect(game.tour()?.phase).toBe('moving');
   });
 });

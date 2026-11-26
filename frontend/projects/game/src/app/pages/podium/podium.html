@@ -1,0 +1,33 @@
+<atw-screen>
+  @if (result(); as result) {
+    <main atw-screen-body columns="wide-first">
+      <section atw-stack [flush]="true">
+        <atw-podium [headline]="headline()" [cheer]="cheer()" [places]="places()" />
+      </section>
+      <section atw-stack [flush]="true">
+        <atw-passport
+          [kid]="kid()"
+          [picture]="picture()"
+          [stamps]="stamps()"
+          [place]="result.yourPlace"
+        />
+        <div class="action-row">
+          <button atw-toy-button size="xl" [block]="true" type="button" (click)="playAgain()">
+            Play again
+          </button>
+          <a atw-toy-button variant="paper" icon="home" routerLink="/">Home</a>
+        </div>
+      </section>
+    </main>
+  } @else {
+    <main atw-screen-body columns="wide-first" aria-busy="true">
+      <section atw-stack>
+        <atw-podium [loading]="true" />
+      </section>
+      <section atw-stack>
+        <atw-passport [loading]="true" />
+        <atw-skeleton shape="block" class="podium-page__play" />
+      </section>
+    </main>
+  }
+</atw-screen>

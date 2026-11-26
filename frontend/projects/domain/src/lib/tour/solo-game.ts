@@ -9,8 +9,10 @@ import {
   type GameSetup,
   type RingPlace,
   type TourMove,
+  type TourEnding,
   type TourPhase,
   type TourPlayer,
+  type TourResult,
   type TourState,
 } from '@atw/api';
 import { kidById } from '../cast/kids';
@@ -25,7 +27,7 @@ import { countryOfDesk, landmarkOfDesk } from './countries';
 import { Duel, type DuelSide } from './duel';
 import { GameClock } from './game-clock';
 import { GameSetupRules } from './game-setup-rules';
-import { Tour } from './tour';
+import { timeLimitMs, Tour } from './tour';
 
 /** How often the game's clock ticks, and the timer bar moves (docs/adr/0020). */
 export const TICK_MS = 100;
@@ -68,6 +70,7 @@ export class SoloGame implements GameSession {
   private readonly started = signal<GameSetup | null>(null);
   private readonly state = signal<DuelState | null>(null);
   private readonly tourState = signal<TourState | null>(null);
+  private readonly ended = signal<TourResult | null>(null);
   private readonly current = signal<GameScreen | null>(null);
   private readonly listeners = new Set<(screen: GameScreen) => void>();
   private readonly clock = new GameClock(() => Date.now());
@@ -79,18 +82,23 @@ export class SoloGame implements GameSession {
   private players = new Map<string, TourPlayer>();
   private profiles = new Map<string, ClassmateProfile>();
   private agents: Map<string, ClassmateAgent> | null = null;
+  /** The agents' class, once its chunk has arrived, to make a new class's agents with. */
+  private agentType: typeof ClassmateAgent | null = null;
   private playing: Playing | null = null;
   /** The wait between duels: a message, or a classmates' duel being played. */
   private waiting: number | null = null;
   private phase: TourPhase = 'duel';
   private lastMove: TourMove | null = null;
   private lostInARow = 0;
+  /** How the tour ended, once a decided duel has ended it (L2-006). */
+  private ending: TourEnding | null = null;
 
   readonly setup = this.started.asReadonly();
   readonly hasGame = computed(() => this.started() !== null);
   readonly screen = this.current.asReadonly();
   readonly duel = this.state.asReadonly();
   readonly tour = this.tourState.asReadonly();
+  readonly result = this.ended.asReadonly();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stop());
@@ -98,9 +106,39 @@ export class SoloGame implements GameSession {
 
   start(setup: GameSetup): void {
     this.started.set(setup);
+    this.begin(setup);
+    this.ticking = setInterval(() => this.tick(), TICK_MS);
+    // The classmates' agents load on their own; the first card never waits for them (ADR 0019).
+    void import('../classmates/classmate-agent').then(({ ClassmateAgent }) => {
+      if (this.destroyed) return;
+      this.agentType = ClassmateAgent;
+      this.makeAgents();
+      if (this.playing) this.classmateDecides(this.playing, this.playing.startedAt);
+    });
+  }
+
+  /**
+   * From the Podium: drops the ended tour, its timers and its result, and starts a new tour
+   * with the same kid and setup, so with the same class (L2-035 criterion 3, ADR 0024).
+   */
+  playAgain(): void {
+    const setup = this.started();
+    if (!setup || this.phase !== 'over') return;
+    this.clock.clear();
+    this.waiting = null;
+    this.playing = null;
+    this.state.set(null);
+    this.ended.set(null);
+    this.begin(setup);
+    this.makeAgents();
+  }
+
+  /** Builds the class and the tour, and deals the first card (L2-007). */
+  private begin(setup: GameSetup): void {
     const picked = this.choices.kid() ?? 'zuri';
     const seated = ClassFactory.build(picked, setup.tourLength);
     this.players = new Map([[YOU, { id: YOU, name: 'You', kid: picked, you: true }]]);
+    this.profiles = new Map();
     for (const { profile } of seated) {
       this.profiles.set(profile.id, profile);
       this.players.set(profile.id, {
@@ -114,21 +152,22 @@ export class SoloGame implements GameSession {
       setup.tourLength,
       YOU,
       seated.map(({ desk, profile }) => ({ desk, player: profile.id })),
+      this.clock.now() + timeLimitMs(setup.tourLength),
     );
     this.maker = new FlashCardMaker(setup, mathRandom);
-    this.ticking = setInterval(() => this.tick(), TICK_MS);
-    // The classmates' agents load on their own; the first card never waits for them (ADR 0019).
-    void import('../classmates/classmate-agent').then(({ ClassmateAgent }) => {
-      if (this.destroyed) return;
-      this.agents = new Map(
-        [...this.profiles.values()].map((profile) => [
-          profile.id,
-          new ClassmateAgent(profile, mathRandom),
-        ]),
-      );
-      if (this.playing) this.classmateDecides(this.playing, this.playing.startedAt);
-    });
+    this.lastMove = null;
+    this.lostInARow = 0;
+    this.ending = null;
     this.next();
+  }
+
+  /** One agent for each classmate of the class, once the agents' chunk has arrived. */
+  private makeAgents(): void {
+    const Agent = this.agentType;
+    if (!Agent) return;
+    this.agents = new Map(
+      [...this.profiles.values()].map((profile) => [profile.id, new Agent(profile, mathRandom)]),
+    );
   }
 
   answer(value: number): void {
@@ -154,7 +193,8 @@ export class SoloGame implements GameSession {
       // The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8).
       return this.showMove(this.apply(playing));
     }
-    // "Back to the card" (L2-034 criterion 12).
+    // "Back to the card" (L2-034 criterion 12), or on to the Podium after the last duel.
+    if (this.phase === 'over' && this.ended() === null) return this.finish();
     if (this.phase === 'moving' || this.phase === 'watching') this.backToTheCard();
   }
 
@@ -285,17 +325,35 @@ export class SoloGame implements GameSession {
     return (this.rules as Tour).applyDuel(winner, this.clock.now());
   }
 
-  /** World Map shows the move with its message, then the game moves on (L2-034 9). */
+  /**
+   * World Map shows the move with its message, then the game moves on (L2-034 9): to the next
+   * duel, or to the Podium when the duel ended the tour (L2-006, ADR 0024).
+   */
   private showMove(move: TourMove): void {
     const rules = this.rules;
     if (!rules) return;
     this.playing = null;
     this.lastMove = move;
-    this.phase = rules.over ? 'over' : 'moving';
+    this.ending = rules.ending(this.clock.now());
+    this.phase = this.ending ? 'over' : 'moving';
     this.publishTour();
     this.show('world-map');
-    // The end of the tour opens the Podium with journey 06 (docs/adr/0022).
-    if (!rules.over) this.waiting = this.clock.after(MESSAGE_MS, () => this.next());
+    this.waiting = this.clock.after(MESSAGE_MS, () => (this.ending ? this.finish() : this.next()));
+  }
+
+  /** Publishes how the tour ended and opens the Podium (L2-030 criterion 5, L2-035). */
+  private finish(): void {
+    const rules = this.rules;
+    const ending = this.ending;
+    if (!rules || !ending) return;
+    this.clock.cancel(this.waiting);
+    this.waiting = null;
+    const shown = (id: string) => this.players.get(id)?.kid !== 'classmate';
+    this.ended.set({
+      ...rules.result(ending, YOU, shown),
+      players: [...this.players.values()],
+    });
+    this.show('podium');
   }
 
   /** The child is seated: two classmates duel while World Map stays (L2-034 7). */
@@ -326,7 +384,7 @@ export class SoloGame implements GameSession {
     this.waiting = null;
     let last: TourMove | null = null;
     for (let duels = 0; duels <= 2 * rules.tourLength; duels++) {
-      if (rules.over) return last ? this.showMove(last) : undefined;
+      if (last && rules.ending(this.clock.now())) return this.showMove(last);
       if (this.youAreInNextDuel(rules)) return this.next();
       const result = this.agents ? this.workOutClassmates(rules) : null;
       if (!result) return this.watch(rules);

@@ -17,9 +17,11 @@ describe('WorldMapPage', () => {
       screen: computed(() => 'world-map'),
       duel: signal(null),
       tour,
+      result: signal(null),
       start: () => undefined,
       answer: () => undefined,
       continue: () => undefined,
+      playAgain: () => undefined,
       watchScreen: () => () => undefined,
     };
     TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });

@@ -1,0 +1,38 @@
+// The Podium's own layout, from docs/mocks/pages/podium/: the row of "Play again" and "Home"
+// (the action-row of docs/design-system/assets/components.css), one column on a phone, side by
+// side on a tablet and at the foot of the passport's column from 992px; and the placeholder
+// that stands in for "Play again" while the places are worked out.
+.action-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.podium-page__play {
+  min-height: var(--control-height-xl);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 36rem) and (max-width: 61.99rem) {
+  .action-row {
+    flex-direction: row;
+  }
+
+  .action-row > :first-child {
+    flex: 1;
+  }
+}
+
+@media (min-width: 36rem) {
+  .podium-page__play {
+    min-height: var(--control-height-2xl);
+  }
+}
+
+@media (min-width: 62rem) {
+  .action-row {
+    margin-top: auto;
+    padding-top: var(--space-8);
+  }
+}

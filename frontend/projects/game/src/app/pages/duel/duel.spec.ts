@@ -19,7 +19,9 @@ describe('DuelPage', () => {
       start: () => undefined,
       answer: () => undefined,
       tour: signal(null),
+      result: signal(null),
       continue: () => undefined,
+      playAgain: () => undefined,
       watchScreen: () => () => undefined,
     };
     TestBed.configureTestingModule({ providers: [{ provide: GAME_SESSION, useValue: session }] });
