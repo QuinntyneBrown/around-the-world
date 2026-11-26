@@ -133,6 +133,17 @@ public class ApiFixture : WebApplicationFactory<Program>
         }));
 
     /// <summary>
+    /// The same backend, store and clock, whose room store cannot be reached: a fault injected
+    /// through <see cref="IAppDbContext"/>, as a store that is down answers.
+    /// </summary>
+    public WebApplicationFactory<Program> WithRoomStoreDown() =>
+        WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IAppDbContext>();
+            services.AddScoped<IAppDbContext>(provider => new StoreDown(provider.GetRequiredService<AppDbContext>()));
+        }));
+
+    /// <summary>
     /// A real SignalR client connected to a hub of the test server over WebSockets, the hub's
     /// one transport. The caller starts it and disposes it.
     /// </summary>
@@ -148,6 +159,8 @@ internal sealed class FirstSaveRaced(AppDbContext inner, IServiceScopeFactory sc
 
     public void Forget() => inner.Forget();
 
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => inner.CanConnectAsync(cancellationToken);
+
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {
         if (!_raced)
@@ -160,6 +173,19 @@ internal sealed class FirstSaveRaced(AppDbContext inner, IServiceScopeFactory sc
 
         return await inner.SaveChangesAsync(cancellationToken);
     }
+}
+
+/// <summary>A room store that cannot be reached: every call fails as a store that is down does.</summary>
+internal sealed class StoreDown(AppDbContext inner) : IAppDbContext
+{
+    public DbSet<Room> Rooms => inner.Rooms;
+
+    public void Forget() => inner.Forget();
+
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("The room store cannot be reached.");
 }
 
 /// <summary>The backend with the rate limits of production: their defaults, from no setting (L2-045).</summary>

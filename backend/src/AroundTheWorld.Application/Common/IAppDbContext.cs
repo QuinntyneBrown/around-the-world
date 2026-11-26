@@ -20,4 +20,7 @@ public interface IAppDbContext
     /// store as it now stands; a handler tries again after another change reached a room first.
     /// </summary>
     void Forget();
+
+    /// <summary>Whether the room store can be reached now, for the ready endpoint (L2-053 criterion 3).</summary>
+    Task<bool> CanConnectAsync(CancellationToken cancellationToken);
 }
