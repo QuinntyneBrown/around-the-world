@@ -1,0 +1,36 @@
+# 0023. The game screens follow the session through a listener, and World Map's room is deferred
+
+- **Status:** Accepted
+- **Date:** 2026-11-26
+
+## Context
+
+`docs/detailed-designs/player/find-way-through-screens/` gives each game group a
+`GameScreenNavigator` that watches `GameSession.screen` with an effect and navigates to the
+matching route. ADR 0021 measured that `effect()` brings 3.4 kB of framework code into `main`,
+which is already within 1 kB of its warning budget, and asks for signals, `computed()` and
+outputs instead. Journey 05 is the first to change the screen from within the game: after the
+passport stamp, after World Map's message, and when Duel returns. World Map also has a loading
+state ("Drawing the classroom…") and an error state ("The map is having a rest") that follow the
+room as it arrives (`L2-031` criterion 4, `L2-036` criterion 3), and until journey 09 the room is
+the drawn stand-in of the mocks.
+
+## Decision
+
+- **A listener, not an effect.** `GameSession` gains `watchScreen(listener)`, which calls the
+  listener each time the game moves to another screen and returns a function that stops it.
+  `GameScreenNavigator`, provided in the solo group and created with it by an environment
+  initializer, listens from its constructor, navigates to `/duel` or `/map` with `replaceUrl`
+  (so the browser's history does not grow with every duel), and stops listening when the group
+  is destroyed. The `screen` signal stays for the guard and the pages.
+- **World Map's room is deferred.** The page draws the room (`atw-world-map`) inside
+  `@defer (on immediate)`. Its placeholder is World Map's loading state, and its `@error` block
+  is the error state: the classroom's still picture with the alert, while the standings carry on.
+  Both are proved by unit tests of the page that render the defer block's states, since a
+  behaviour spec cannot hold back one hashed chunk without a test of the build's file names.
+
+## Consequences
+
+The game screens change without framework code in `main`. A room group (journey 14) provides
+the same navigator. Journey 09 replaces the drawn room with the 3D classroom behind the same
+deferred block, and its loading and error states then follow the renderer too.
