@@ -16,25 +16,13 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
+import { AnimationLoop } from './animation-loop';
 import { ClassroomScene, type SceneTemplates } from './classroom-scene';
 import { Palette } from './palette';
 import { QualityScaler } from './quality-scaler';
 import { releaseTree } from './release';
 import { deskAngle, frustumOf, RoomPlan, spotPoint, WHOLE_ROOM, zoomFrame } from './room-plan';
 import { loadScenes } from './scene-assets';
-
-/** How the renderer reaches the browser, so a unit test can give it a fake frame. */
-export interface FrameSource {
-  request(callback: (now: number) => void): number;
-  cancel(handle: number): void;
-  now(): number;
-}
-
-const browserFrames: FrameSource = {
-  request: (callback) => requestAnimationFrame(callback),
-  cancel: (handle) => cancelAnimationFrame(handle),
-  now: () => performance.now(),
-};
 
 /** The step of detail a device reached, so the next screen with the classroom starts there. */
 let reachedStep = 0;
@@ -47,8 +35,8 @@ const SHADOW_MAP_SIZE = 512;
 
 /**
  * The classroom drawn with Three.js (docs/detailed-designs/classroom/draw-classroom/,
- * docs/adr/0028): one WebGL renderer on the canvas it is given, one `requestAnimationFrame`
- * loop, paused while the page is hidden, a `ClassroomScene` for the content and a
+ * docs/adr/0028): one WebGL renderer on the canvas it is given, one `AnimationLoop`, paused
+ * while the page is hidden, a `ClassroomScene` for the content and a
  * `QualityScaler` for its detail. `dispose()` stops the loop and releases every geometry,
  * material, texture, render target and the renderer itself, and loses the WebGL context so
  * the device gets its memory back at once (L2-048 criterion 3).
@@ -69,11 +57,10 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
   private stillMotion: MediaQueryList | null = null;
   private state: ClassroomState | null = null;
   private view: ClassroomView = 'behind';
-  private frame = 0;
-  private last = 0;
+  private loop: AnimationLoop | null = null;
   private disposed = false;
 
-  constructor(private readonly frames: FrameSource = browserFrames) {
+  constructor() {
     this.scene.add(new HemisphereLight(0xffffff, 0xbfd8ff, 2.4));
     this.sun.position.set(3, 8, 5);
     this.sun.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
@@ -126,8 +113,8 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     this.resizing.observe(canvas);
     this.resize();
     this.stillMotion = matchMedia('(prefers-reduced-motion: reduce)');
-    document.addEventListener('visibilitychange', this.visibilityChanged);
-    this.start();
+    this.loop = new AnimationLoop((ms) => this.drawFrame(ms));
+    this.loop.start();
   }
 
   show(state: ClassroomState, view: ClassroomView): void {
@@ -141,12 +128,12 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     if (this.disposed) return;
     this.disposed = true;
     this.aborting.abort();
-    this.stop();
     this.release();
   }
 
   private release(): void {
-    document.removeEventListener('visibilitychange', this.visibilityChanged);
+    this.loop?.dispose();
+    this.loop = null;
     this.resizing?.disconnect();
     this.resizing = null;
     this.classroom?.dispose();
@@ -169,26 +156,8 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     this.canvas = null;
   }
 
-  private readonly visibilityChanged = () => {
-    if (document.hidden) this.stop();
-    else this.start();
-  };
-
-  private start(): void {
-    if (this.frame || this.disposed || !this.renderer) return;
-    this.last = this.frames.now();
-    this.frame = this.frames.request(this.tick);
-  }
-
-  private stop(): void {
-    if (this.frame) this.frames.cancel(this.frame);
-    this.frame = 0;
-  }
-
-  private readonly tick = (now: number) => {
-    this.frame = this.frames.request(this.tick);
-    const ms = Math.max(0, now - this.last);
-    this.last = now;
+  /** Draws one frame, `ms` after the last. */
+  private drawFrame(ms: number): void {
     if (!this.renderer || !this.classroom) return;
     const still = this.stillMotion?.matches ?? false;
     const facing = this.view === 'behind' ? this.behind.position : null;
@@ -198,7 +167,7 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
       this.applyStep();
     }
     this.renderer.render(this.scene, this.view === 'behind' ? this.behind : this.above);
-  };
+  }
 
   /** Scales the detail to the scaler's step (L2-036 criterion 4). */
   private applyStep(): void {
