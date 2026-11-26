@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using AroundTheWorld.Api.Errors;
+using AroundTheWorld.Api.Hosting;
 using AroundTheWorld.Api.Hubs;
 using AroundTheWorld.Api.Rooms;
 using AroundTheWorld.Application;
@@ -23,6 +24,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorCodeWriter>();
 builder.Services.AddRoomRateLimits(builder.Configuration);
+builder.Services.AddKnownProxies(builder.Configuration);
 builder.Services.AddHostedService<IdleRoomSweeper>();
 builder.Services.AddHostedService<RoomTimers>();
 
@@ -51,6 +53,9 @@ if (args.Contains("migrate", StringComparer.Ordinal))
     return;
 }
 
+// TLS ends at the hosting platform's ingress; the device's address and scheme are read from
+// the known proxies' forwarded headers before anything counts them (docs/adr/0037).
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseWebSockets();

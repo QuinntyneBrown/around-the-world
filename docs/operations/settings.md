@@ -10,6 +10,8 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | Setting | Environment variable | Purpose | Added by |
 |---|---|---|---|
 | `ConnectionStrings:RoomStore` | `ConnectionStrings__RoomStore` | Connection to the room store, an Azure SQL Database ([ADR 0009](../adr/0009-health-and-migrations.md)). Absent in a local or test run, where no room store is used. | Journey 01 |
+| `ForwardedHeaders:KnownProxies` | `ForwardedHeaders__KnownProxies` | The addresses of the hosting platform's ingress, comma-separated, whose `X-Forwarded-For` and `X-Forwarded-Proto` are read, one proxy deep; loopback is always known. Absent: no other proxy is believed ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
+| `ForwardedHeaders:KnownNetworks` | `ForwardedHeaders__KnownNetworks` | The same as CIDR ranges (for example the Container Apps environment's subnet, `10.0.0.0/23`), comma-separated. | Journey 17 |
 | `RateLimits:MakeRoom:PermitLimit` | `RateLimits__MakeRoom__PermitLimit` | How many rooms one address may make in a window; 10 when absent **(to confirm)** ([ADR 0031](../adr/0031-making-a-room.md)). | Journey 12 |
 | `RateLimits:MakeRoom:WindowSeconds` | `RateLimits__MakeRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 12 |
 | `RateLimits:JoinRoom:PermitLimit` | `RateLimits__JoinRoom__PermitLimit` | How many codes one address may try in a window; 10 when absent **(to confirm)** ([ADR 0032](../adr/0032-joining-a-room-and-the-lobby.md)). | Journey 13 |
@@ -34,6 +36,14 @@ The settings that `docs/detailed-designs/platform/operate-backend/` names for la
    room store (and Azure SignalR Service, where it is set) can be reached and 503 when not.
    Both share the `health` rate limit; a probe every 10 seconds of each kind stays well within
    it.
+
+## TLS and the proxy
+
+TLS ends at the hosting platform's ingress (Azure Container Apps), which serves HTTPS and WSS
+only, with insecure connections off (`L2-045` criterion 4). `AroundTheWorld.Api` listens on
+plain HTTP inside the environment and reads the device's address and scheme from the forwarded
+headers of the proxies that `ForwardedHeaders:KnownProxies` and `ForwardedHeaders:KnownNetworks`
+name, so the rate limits count each device and not the ingress.
 
 ## Routing
 

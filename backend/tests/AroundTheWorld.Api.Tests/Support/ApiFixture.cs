@@ -1,3 +1,4 @@
+using System.Net;
 using AroundTheWorld.Application.Common;
 using AroundTheWorld.Application.Rooms;
 using AroundTheWorld.Application.Rooms.AdvanceGames;
@@ -5,6 +6,7 @@ using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
 using AroundTheWorld.Domain.Rooms;
 using AroundTheWorld.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -197,6 +199,50 @@ public sealed class ThrottledApiFixture : ApiFixture
 {
     protected override bool ThrottledAsInProduction => true;
 }
+
+/// <summary>
+/// The backend with the rate limits of production, every request reaching it from the hosting
+/// platform's ingress at 10.0.0.1, as behind a deployed system's proxy (docs/adr/0037). With
+/// <paramref name="knownProxies"/> set, the ingress is a known proxy whose forwarded headers are read.
+/// </summary>
+public abstract class BehindIngressApiFixture(string? knownProxies) : ApiFixture
+{
+    /// <summary>The ingress's own address.</summary>
+    public static readonly IPAddress Ingress = IPAddress.Parse("10.0.0.1");
+
+    protected override bool ThrottledAsInProduction => true;
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        if (knownProxies is not null)
+        {
+            builder.UseSetting("ForwardedHeaders:KnownProxies", knownProxies);
+        }
+
+        builder.ConfigureServices(services => services.AddTransient<IStartupFilter, FromIngress>());
+    }
+
+    /// <summary>Every request arrives from the ingress, before the backend's own middleware.</summary>
+    private sealed class FromIngress : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use((context, nextMiddleware) =>
+            {
+                context.Connection.RemoteIpAddress = Ingress;
+                return nextMiddleware(context);
+            });
+            next(app);
+        };
+    }
+}
+
+/// <summary>Behind the ingress, which the settings name as a known proxy.</summary>
+public sealed class KnownIngressApiFixture() : BehindIngressApiFixture("10.0.0.1");
+
+/// <summary>Behind an ingress that no setting names, whose forwarded headers are not to be believed.</summary>
+public sealed class UnknownIngressApiFixture() : BehindIngressApiFixture(null);
 
 /// <summary>A code generator that draws the codes it was given, in order, then the last again.</summary>
 internal sealed class ScriptedCodes(IReadOnlyList<string> codes) : IRoomCodeGenerator
