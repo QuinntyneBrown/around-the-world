@@ -1,5 +1,9 @@
 import { expect, test as base, type Page, type Route, type WebSocketRoute } from '@playwright/test';
-import { installBrowserFakes, type MicrophoneSetting } from './fakes/browser-fakes';
+import {
+  installBrowserFakes,
+  type MicrophoneSetting,
+  type ModelAvailability,
+} from './fakes/browser-fakes';
 
 /**
  * The shared fixture (docs/adr/0006-playwright-fixture.md). Every spec imports `test` and
@@ -48,10 +52,27 @@ export interface FakeMicrophone {
 export interface FakeModel {
   /** The model is available and gives these replies, in order, one per prompt. */
   answers(...replies: string[]): Promise<void>;
+  /** The model is available, and each prompt waits until the spec calls `reply` (a slow model). */
+  holds(): Promise<void>;
+  /** Answers the oldest waiting prompt with the text; resolves to how many it answered. */
+  reply(text: string): Promise<number>;
+  /** How many prompts are waiting for a reply. */
+  waiting(): Promise<number>;
+  /** How many prompts the game aborted while they waited. */
+  aborted(): Promise<number>;
+  /** The model is available, and every prompt fails. */
+  fails(): Promise<void>;
   /** The model can be downloaded but is not there yet. */
   downloadable(): Promise<void>;
-  /** How many sessions were created and destroyed. */
-  sessions(): Promise<{ created: number; destroyed: number }>;
+  /** The browser has no on-device model at all: `LanguageModel` is missing. */
+  missing(): Promise<void>;
+  /**
+   * How many primed sessions were created and destroyed, and how many sessions and clones are
+   * still open.
+   */
+  sessions(): Promise<{ created: number; destroyed: number; open: number }>;
+  /** Every text the game gave the model: each session's system prompt and each prompt. */
+  asked(): Promise<string[]>;
 }
 
 export interface FakeBackend {
@@ -155,7 +176,8 @@ const CLASSROOM_SCENES = /^\/classroom\//;
 interface FakesPatch {
   microphone?: MicrophoneSetting;
   speechSupported?: boolean;
-  modelAvailability?: 'downloadable' | 'available';
+  modelAvailability?: ModelAvailability;
+  modelWhenNoReply?: 'problem' | 'hold' | 'fail';
   modelReplies?: string[];
   webglSupported?: boolean;
 }
@@ -165,6 +187,7 @@ function applyPatch(patch: FakesPatch): void {
   if (patch.microphone !== undefined) fakes.microphone = patch.microphone;
   if (patch.speechSupported !== undefined) fakes.speechSupported = patch.speechSupported;
   if (patch.modelAvailability !== undefined) fakes.modelAvailability = patch.modelAvailability;
+  if (patch.modelWhenNoReply !== undefined) fakes.modelWhenNoReply = patch.modelWhenNoReply;
   if (patch.modelReplies !== undefined) fakes.modelReplies.push(...patch.modelReplies);
   if (patch.webglSupported !== undefined) fakes.webglSupported = patch.webglSupported;
 }
@@ -401,8 +424,19 @@ export const test = base.extend<Fixtures>({
     await use({
       answers: (...replies) =>
         setFake(page, { modelAvailability: 'available', modelReplies: replies }),
+      holds: () => setFake(page, { modelAvailability: 'available', modelWhenNoReply: 'hold' }),
+      reply: (text) => page.evaluate((reply) => window.__atwFakes.modelReply(reply), text),
+      waiting: () => page.evaluate(() => window.__atwFakes.modelWaiting()),
+      aborted: () => page.evaluate(() => window.__atwFakes.modelAborted),
+      fails: () => setFake(page, { modelAvailability: 'available', modelWhenNoReply: 'fail' }),
       downloadable: () => setFake(page, { modelAvailability: 'downloadable' }),
-      sessions: () => page.evaluate(() => ({ ...window.__atwFakes.modelSessions })),
+      missing: () => setFake(page, { modelAvailability: 'missing' }),
+      sessions: () =>
+        page.evaluate(() => ({
+          ...window.__atwFakes.modelSessions,
+          open: window.__atwFakes.modelOpen(),
+        })),
+      asked: () => page.evaluate(() => [...window.__atwFakes.modelAsked]),
     });
   },
 });
