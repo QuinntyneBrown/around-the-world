@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { type Visit } from '@atw/api';
+import { type RoomEntry, type Visit } from '@atw/api';
 
 /** `Visit` held in memory for this visit only; it is never written to the device. */
 @Injectable()
@@ -23,5 +23,16 @@ export class VisitState implements Visit {
 
   loseVoice(): void {
     this.lost.set(true);
+  }
+
+  private readonly entry = signal<RoomEntry | null>(null);
+  readonly room = this.entry.asReadonly();
+
+  enterRoom(entry: RoomEntry): void {
+    this.entry.set(entry);
+  }
+
+  leaveRoom(): void {
+    this.entry.set(null);
   }
 }

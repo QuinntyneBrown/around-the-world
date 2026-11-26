@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Stack (docs/design-system/components/screen.html): spaces things down a column. It sits on
- * the native `<section>`, `<div>` or `<span>` (docs/adr/0012).
+ * the native `<section>`, `<aside>`, `<div>` or `<span>` (docs/adr/0012).
  */
 @Component({
-  selector: 'section[atw-stack], div[atw-stack], span[atw-stack]',
+  selector: 'section[atw-stack], div[atw-stack], span[atw-stack], aside[atw-stack]',
   templateUrl: './stack.html',
   styleUrl: './stack.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

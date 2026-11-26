@@ -13,6 +13,13 @@ export class SoloOrFriendsPage {
   readonly classmates: Locator;
   readonly classmatesSkeleton: Locator;
   readonly codeLetters: Locator;
+  /** The alert under the actions of "With friends": a room that could not be made, or a rate limit. */
+  readonly roomAlert: Locator;
+  readonly roomAlertTitle: Locator;
+  readonly tryAgain: Locator;
+  /** The banner across the top of the screen while the device has no network. */
+  readonly offlineBanner: Locator;
+  readonly friendsHint: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.locator('.topbar__title');
@@ -26,6 +33,11 @@ export class SoloOrFriendsPage {
     this.classmates = page.locator('.portrait-stack .portrait');
     this.classmatesSkeleton = page.locator('.mode-card .skeleton');
     this.codeLetters = page.getByRole('img', { name: 'A room code looks like B O L T' });
+    this.roomAlert = page.locator('.mode-card__note').getByRole('alert');
+    this.roomAlertTitle = this.roomAlert.locator('.alert__title');
+    this.tryAgain = this.roomAlert.getByRole('button', { name: 'Try again' });
+    this.offlineBanner = page.locator('.banner');
+    this.friendsHint = page.locator('.mode-card__note .hint');
   }
 
   async open(): Promise<void> {
@@ -34,6 +46,14 @@ export class SoloOrFriendsPage {
 
   async choosePlaySolo(): Promise<void> {
     await this.playSolo.click();
+  }
+
+  async chooseMakeRoom(): Promise<void> {
+    await this.makeRoom.click();
+  }
+
+  async chooseTryAgain(): Promise<void> {
+    await this.tryAgain.click();
   }
 
   async goBack(): Promise<void> {

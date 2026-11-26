@@ -7,6 +7,7 @@ export type IconName =
   | 'check'
   | 'clock'
   | 'close'
+  | 'crown'
   | 'delete'
   | 'dice'
   | 'friends'
@@ -24,7 +25,8 @@ export type IconName =
   | 'retry'
   | 'settings'
   | 'solo'
-  | 'sound';
+  | 'sound'
+  | 'wifi-off';
 
 /**
  * Icon (docs/design-system/foundations/iconography.html): a round line icon on a 24-unit grid

@@ -1,4 +1,5 @@
 import { InjectionToken, type Signal } from '@angular/core';
+import { type RoomEntry } from './rooms';
 
 /**
  * What the game remembers for this visit only, from opening it to closing or reloading it. It
@@ -15,6 +16,13 @@ export interface Visit {
   /** Whether the microphone was refused, or recognition failed at Mic Check, in this visit. */
   readonly voiceLost: Signal<boolean>;
   loseVoice(): void;
+  /**
+   * The room the device's player is in, with its connection token, or null. It lives in memory
+   * for this visit only, so a reload forgets it (docs/adr/0031-making-a-room.md).
+   */
+  readonly room: Signal<RoomEntry | null>;
+  enterRoom(entry: RoomEntry): void;
+  leaveRoom(): void;
 }
 
 export const VISIT = new InjectionToken<Visit>('VISIT');

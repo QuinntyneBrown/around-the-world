@@ -69,3 +69,21 @@
     display: none;
   }
 }
+
+// The banner: across the top of the screen, square, with a line under it.
+:host(.banner) {
+  position: relative;
+  z-index: var(--z-sticky);
+  border-radius: 0;
+  border-width: 0 0 var(--border-width-thick);
+  justify-content: center;
+  align-items: center;
+
+  .alert__icon {
+    margin-top: 0;
+  }
+
+  .alert__body {
+    flex: 0 1 auto;
+  }
+}

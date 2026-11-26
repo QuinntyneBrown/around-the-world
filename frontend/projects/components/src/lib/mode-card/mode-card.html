@@ -26,5 +26,6 @@
     <div class="mode-card__actions" [class.mode-card__actions--two]="mode() === 'friends'">
       <ng-content select="[slot=actions]" />
     </div>
+    <div class="mode-card__note"><ng-content select="[slot=note]" /></div>
   </section>
 }

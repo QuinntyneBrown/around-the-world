@@ -3,6 +3,7 @@
  * docs/design-system/components/. It depends on @atw/api for types only.
  */
 export * from './lib/alert/alert';
+export * from './lib/badge/badge';
 export * from './lib/bean/bean';
 export * from './lib/bean-parts/bean-parts';
 export * from './lib/choices/choices';
@@ -30,9 +31,12 @@ export * from './lib/panel/panel';
 export * from './lib/panel/panel-head';
 export * from './lib/passport/passport';
 export * from './lib/pill/pill';
+export * from './lib/player-card/player-card';
+export * from './lib/player-list/player-list';
 export * from './lib/podium/podium';
 export * from './lib/portrait/portrait';
 export * from './lib/portrait-stack/portrait-stack';
+export * from './lib/room-code/room-code';
 export * from './lib/screen/screen';
 export * from './lib/screen/screen-body';
 export * from './lib/segmented/segmented';
@@ -42,6 +46,7 @@ export * from './lib/spinner/spinner';
 export * from './lib/stamp-card/stamp-card';
 export * from './lib/stack/stack';
 export * from './lib/standings/standings';
+export * from './lib/summary/summary';
 export * from './lib/switch/switch';
 export * from './lib/table-keys/table-keys';
 export * from './lib/text-button/text-button';

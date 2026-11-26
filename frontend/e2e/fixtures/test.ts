@@ -12,7 +12,9 @@ import {
  * - `voice`: a fake speech recognizer that says what the spec tells it to;
  * - `microphone`: a fake microphone permission (no real microphone is ever opened);
  * - `model`: a fake on-device model that answers as the spec tells it to;
- * - `backend`: API and hub requests answered from fixtures (no real backend or database);
+ * - `backend`: API and hub requests answered from fixtures (no real backend or database), held
+ *   back or left unanswered as an unreachable backend, and the record of what the game sent;
+ * - `network`: the device's network, taken away and given back (`navigator.onLine`);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
  * - `classroom`: the 3D classroom's scenes on localhost, held back or refused when a spec asks,
@@ -78,6 +80,12 @@ export interface FakeModel {
 export interface FakeBackend {
   /** Answers `method path` (e.g. `POST /api/rooms`) with a JSON body and a status. */
   answer(method: string, path: string, body?: Json, status?: number): void;
+  /** Holds the answers to `method path` until the returned function is called. */
+  holdBack(method: string, path: string): () => void;
+  /** `method path` gets no response at all, as when the backend cannot be reached. */
+  unreachable(method: string, path: string): void;
+  /** Every API request the game sent, in order, with its JSON body. */
+  requests(): { method: string; path: string; body: Json }[];
   /** Takes over the hub's WebSocket at a path (e.g. `/hubs/room`). */
   hub(path: string, handler: (socket: WebSocketRoute) => void): void;
 }
@@ -121,6 +129,13 @@ export interface FakeClassroom {
   openContexts(): Promise<number>;
 }
 
+export interface FakeNetwork {
+  /** The device loses its network: `navigator.onLine` is false and every request fails. */
+  offline(): Promise<void>;
+  /** The device has its network back. */
+  online(): Promise<void>;
+}
+
 export interface FakeSound {
   /** The sounds the game played, in order, by name: `pop`, `chime`, `jingle` (L2-039). */
   played(): Promise<string[]>;
@@ -162,6 +177,7 @@ interface Fixtures {
   microphone: FakeMicrophone;
   model: FakeModel;
   backend: FakeBackend;
+  network: FakeNetwork;
 }
 
 /** Where a held clock starts: any fixed moment will do. */
@@ -231,10 +247,43 @@ class PictureFixtures implements FakePictures {
 
 class BackendFixtures implements FakeBackend {
   readonly answers = new Map<string, { body: Json; status: number }>();
+  readonly held = new Map<string, Route[]>();
+  readonly unreachables = new Set<string>();
+  readonly sent: { method: string; path: string; body: Json }[] = [];
   readonly hubs = new Map<string, (socket: WebSocketRoute) => void>();
 
   answer(method: string, path: string, body: Json = null, status = 200): void {
     this.answers.set(`${method.toUpperCase()} ${path}`, { body, status });
+  }
+
+  holdBack(method: string, path: string): () => void {
+    const key = `${method.toUpperCase()} ${path}`;
+    const waiting: Route[] = [];
+    this.held.set(key, waiting);
+    return () => {
+      this.held.delete(key);
+      for (const route of waiting.splice(0)) void this.fulfil(route, key);
+    };
+  }
+
+  unreachable(method: string, path: string): void {
+    this.unreachables.add(`${method.toUpperCase()} ${path}`);
+  }
+
+  requests(): { method: string; path: string; body: Json }[] {
+    return [...this.sent];
+  }
+
+  /** Answers a request from the fixtures; false when the spec set up no answer for it. */
+  async fulfil(route: Route, key: string): Promise<boolean> {
+    if (this.unreachables.has(key)) {
+      await route.abort('failed').catch(() => undefined);
+      return true;
+    }
+    const answer = this.answers.get(key);
+    if (!answer) return false;
+    await route.fulfill({ status: answer.status, json: answer.body }).catch(() => undefined);
+    return true;
   }
 
   hub(path: string, handler: (socket: WebSocketRoute) => void): void {
@@ -258,12 +307,20 @@ async function guardRequests(
     if (pictures.handle(route, url.pathname)) return;
     if (!BACKEND_PATH.test(url.pathname)) return route.continue();
     const key = `${route.request().method()} ${url.pathname}`;
-    const answer = backend.answers.get(key);
-    if (!answer) {
-      problems.push(`Unanswered request: ${key}`);
-      return route.abort('failed');
+    const text = route.request().postData();
+    backend.sent.push({
+      method: route.request().method(),
+      path: url.pathname,
+      body: text ? (JSON.parse(text) as Json) : null,
+    });
+    const waiting = backend.held.get(key);
+    if (waiting) {
+      waiting.push(route);
+      return;
     }
-    return route.fulfill({ status: answer.status, json: answer.body });
+    if (await backend.fulfil(route, key)) return;
+    problems.push(`Unanswered request: ${key}`);
+    return route.abort('failed');
   });
 
   await page.routeWebSocket(/.*/, (socket) => {
@@ -391,6 +448,13 @@ export const test = base.extend<Fixtures>({
       holdBack: () => pictures.holdBack(CLASSROOM_SCENES),
       refuse: () => pictures.refuse(CLASSROOM_SCENES),
       openContexts: () => page.evaluate(() => window.__atwFakes.openContexts()),
+    });
+  },
+
+  network: async ({ page }, use) => {
+    await use({
+      offline: () => page.context().setOffline(true),
+      online: () => page.context().setOffline(false),
     });
   },
 

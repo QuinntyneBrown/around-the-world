@@ -1,0 +1,20 @@
+@if (player(); as player) {
+  <div class="player-card__picture">
+    <img [src]="player.picture" alt="" />
+    @if (player.host) {
+      <span atw-badge class="player-card__badge" icon="crown">Host</span>
+    }
+  </div>
+  <div class="player-card__text">
+    <p class="player-card__name">
+      {{ player.nickname }}
+      @if (player.you) {
+        <span class="player-card__you">(you)</span>
+      }
+    </p>
+    <p class="player-card__kid">as {{ player.kidName }}</p>
+  </div>
+} @else {
+  <div class="player-card__picture">Empty desk</div>
+  <div class="player-card__text"></div>
+}

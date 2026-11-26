@@ -57,9 +57,9 @@ Frontend:
     and `offline` events, and stops listening when the page goes (ADR 0031).
 - **`RoomsApi`** — HTTP client contract in `api`, bound to `ROOMS_API`. `makeRoom(kid, nickname)`
   sends `POST /api/rooms`, on the game's own origin, with the kid id and the nickname's two list
-  indexes, and nothing else (`L2-040` criterion 1). `HttpRoomsApi` implements it over Angular's
-  `HttpClient`; the route of Solo Or Friends provides both, so neither is in an initial chunk
-  (ADR 0031). A request that gets no response becomes an `ApiError` with the code
+  indexes, and nothing else (`L2-040` criterion 1). `FetchRoomsApi` implements it over the
+  browser's `fetch`, which keeps `HttpClient` out of the initial bundle; the route of Solo Or
+  Friends provides it (ADR 0031). A request that gets no response becomes an `ApiError` with the code
   `backend_unreachable`. A ProblemDetails response becomes an `ApiError` with that response's
   `code`; any other answer an `ApiError` with the code `unknown`.
 - **`RoomEntry`** — type in `api` returned by `makeRoom`: the room's code, the player's
