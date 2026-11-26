@@ -16,24 +16,40 @@ public static class RateLimitPolicies
     /// <summary>The policy of making a room.</summary>
     public const string MakeRoom = "make-room";
 
+    /// <summary>The policy of joining a room with a code.</summary>
+    public const string JoinRoom = "join-room";
+
     /// <summary>The largest body a request open to anyone may carry (L2-044 criterion 2).</summary>
     public const int MaxBodyBytes = 1024;
 
     public static IServiceCollection AddRoomRateLimits(this IServiceCollection services, IConfiguration configuration)
     {
-        var makeRoom = configuration.GetSection("RateLimits:MakeRoom");
-        var permitLimit = makeRoom.GetValue("PermitLimit", 10);
-        var window = TimeSpan.FromSeconds(makeRoom.GetValue("WindowSeconds", 60));
+        var makeRoom = Limit(configuration, "MakeRoom");
+        var joinRoom = Limit(configuration, "JoinRoom");
 
         services.AddRateLimiter(options =>
         {
-            options.AddPolicy(MakeRoom, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = window, QueueLimit = 0 }));
-            options.OnRejected = (context, cancellationToken) => RefuseAsync(context, window, cancellationToken);
+            options.AddPolicy(MakeRoom, context => PerAddress(context, makeRoom));
+            options.AddPolicy(JoinRoom, context => PerAddress(context, joinRoom));
+            options.OnRejected = (context, cancellationToken) => RefuseAsync(context, cancellationToken);
         });
         return services;
     }
+
+    /// <summary>A policy's numbers from its settings: 10 in a window of 60 seconds when absent (to confirm).</summary>
+    private static FixedWindowRateLimiterOptions Limit(IConfiguration configuration, string policy)
+    {
+        var settings = configuration.GetSection($"RateLimits:{policy}");
+        return new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = settings.GetValue("PermitLimit", 10),
+            Window = TimeSpan.FromSeconds(settings.GetValue("WindowSeconds", 60)),
+            QueueLimit = 0,
+        };
+    }
+
+    private static RateLimitPartition<string> PerAddress(HttpContext context, FixedWindowRateLimiterOptions limit) =>
+        RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => limit);
 
     /// <summary>
     /// Requires the rate limit each endpoint marked <see cref="OpenToAnyoneAttribute"/> names, so
@@ -53,9 +69,9 @@ public static class RateLimitPolicies
         return endpoints;
     }
 
-    private static async ValueTask RefuseAsync(OnRejectedContext context, TimeSpan window, CancellationToken cancellationToken)
+    private static async ValueTask RefuseAsync(OnRejectedContext context, CancellationToken cancellationToken)
     {
-        var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait) ? wait : window;
+        var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait) ? wait : TimeSpan.FromMinutes(1);
         var response = context.HttpContext.Response;
         response.StatusCode = StatusCodes.Status429TooManyRequests;
         response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);

@@ -40,7 +40,8 @@ import { roomRefusal, type RoomRefusal } from './room-refusal';
  * criterion 2), in every state (L2-054 criterion 3). "Make a room" asks the backend for a room
  * and opens its Lobby (L2-022 criterion 1); while it is made the button is busy, and a refusal,
  * a rate limit or no network is explained on the card (L2-022 criteria 3 to 6,
- * docs/adr/0031-making-a-room.md). "Join a room" stays disabled until journey 13 opens Room.
+ * docs/adr/0031-making-a-room.md). "Join a room" opens Room, except with no network or while a
+ * room is being made (docs/adr/0032).
  * The screen waits for the classmates' portraits (docs/adr/0017).
  */
 @Component({

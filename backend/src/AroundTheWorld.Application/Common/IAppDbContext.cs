@@ -14,4 +14,10 @@ public interface IAppDbContext
     DbSet<Room> Rooms { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Forgets every room read so far and every change not saved, so the next read sees the
+    /// store as it now stands; a handler tries again after another change reached a room first.
+    /// </summary>
+    void Forget();
 }

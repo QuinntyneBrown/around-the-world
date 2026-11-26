@@ -12,6 +12,8 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | `ConnectionStrings:RoomStore` | `ConnectionStrings__RoomStore` | Connection to the room store, an Azure SQL Database ([ADR 0009](../adr/0009-health-and-migrations.md)). Absent in a local or test run, where no room store is used. | Journey 01 |
 | `RateLimits:MakeRoom:PermitLimit` | `RateLimits__MakeRoom__PermitLimit` | How many rooms one address may make in a window; 10 when absent **(to confirm)** ([ADR 0031](../adr/0031-making-a-room.md)). | Journey 12 |
 | `RateLimits:MakeRoom:WindowSeconds` | `RateLimits__MakeRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 12 |
+| `RateLimits:JoinRoom:PermitLimit` | `RateLimits__JoinRoom__PermitLimit` | How many codes one address may try in a window; 10 when absent **(to confirm)** ([ADR 0032](../adr/0032-joining-a-room-and-the-lobby.md)). | Journey 13 |
+| `RateLimits:JoinRoom:WindowSeconds` | `RateLimits__JoinRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 13 |
 
 The settings that `docs/detailed-designs/platform/operate-backend/` names for later journeys
 (`Azure:SignalR:ConnectionString`, `Frontend:Origin`, the other rate limits and
@@ -30,4 +32,7 @@ The settings that `docs/detailed-designs/platform/operate-backend/` names for la
 
 The game calls the backend on its own origin, under `/api/` and `/hubs/` ([ADR 0031](../adr/0031-making-a-room.md)).
 A deployed system routes those two paths to `AroundTheWorld.Api` and every other path to the
-`game` build, so the game needs no setting of its own.
+`game` build, so the game needs no setting of its own. `/hubs/room` is a WebSocket
+([ADR 0032](../adr/0032-joining-a-room-and-the-lobby.md)): whatever routes it must pass the
+WebSocket upgrade through and must not log the query string, which carries the connection
+token as `access_token`.

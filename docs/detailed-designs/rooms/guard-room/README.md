@@ -33,8 +33,12 @@ not the code, is what lets a player act. The features this guard surrounds are
 ## Description
 
 Journey 12 built the parts that making a room needs (the token, `ValidationBehaviour`,
-`RefusedException`, the error writer, `OpenToAnyoneAttribute` and the `make-room` limit); the
-rest arrive with journeys 13 to 17. Its decisions are in
+`RefusedException`, the error writer, `OpenToAnyoneAttribute` and the `make-room` limit).
+Journey 13 built the `join-room` limit, `invalid_code`, the room hub with `ICurrentPlayer`
+(read by `CurrentPlayerFilter`, a hub filter), `RoomPlayerBehaviour` for every request marked
+`IRoomPlayerRequest`, the hub's 1 KB limit and its refusals as hub errors
+([`docs/adr/0032-joining-a-room-and-the-lobby.md`](../../../adr/0032-joining-a-room-and-the-lobby.md)).
+The rest arrive with journeys 14 to 17. Its decisions are in
 [`docs/adr/0031-making-a-room.md`](../../../adr/0031-making-a-room.md). Most of the slice
 lives in the backend. The frontend's part is to present the token, to send nothing but ids,
 indexes and numbers, and to show each refusal in words.
@@ -97,7 +101,8 @@ What is open to anyone is rate limited (`L2-045`):
   names its rate limit policy in one declaration. `RoomsController.Make` and
   `RoomsController.Join` carry it; no other endpoint does (`L2-045` criterion 1).
 - **Rate limiter** — ASP.NET Core rate limiting middleware with two policies counted for each
-  address. `join-room` allows 10 attempts in a minute **(to confirm)**; a further attempt is
+  address. `join-room` allows 10 attempts in a minute **(to confirm)**, from the settings
+  `RateLimits:JoinRoom:PermitLimit` and `RateLimits:JoinRoom:WindowSeconds` (ADR 0032); a further attempt is
   refused with status 429 and the code `rate_limited`, and Room tells the child to wait a
   moment and disables "Join" (`L2-045` criterion 2). A 429 carries a `Retry-After` header and the code `rate_limited`. `make-room` allows 10 rooms
   in a minute **(to confirm)**, from the settings `RateLimits:MakeRoom:PermitLimit` and
@@ -147,8 +152,8 @@ The screens word each refusal as an alert, and the words are those of the mocks:
 [`rooms/join-room`](../join-room/README.md) and [`rooms/make-room`](../make-room/README.md)
 describe the states that show them. No mock words a generic message for any other `code`. On Solo Or Friends the generic message
 is the error state's, "We couldn't make your room" with "Something went wrong on our side. Try
-again, or play solo while you wait." (ADR 0031); on Room it is decided with journey 13
-(`L2-054` criterion 2). The messages follow the
+again, or play solo while you wait." (ADR 0031); on Room it is "Something went wrong on our
+side. Try again in a moment." (ADR 0032, `L2-054` criterion 2). The messages follow the
 mocks `docs/mocks/pages/room/` (states `invalid`, `full`, `started`, `rate-limited`, `error`) and
 `docs/mocks/pages/solo-or-friends/` (states `error`, `rate-limited`).
 
