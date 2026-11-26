@@ -18,6 +18,8 @@ describe('HomePage', () => {
       setup: signal(GameSetupRules.defaults()),
       confirmKid: () => undefined,
       changeSetup: () => undefined,
+      wayOfAnswering: signal('voice'),
+      changeWayOfAnswering: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [

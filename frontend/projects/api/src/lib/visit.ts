@@ -9,6 +9,12 @@ export interface Visit {
   readonly tourFinished: Signal<boolean>;
   /** Called when a Podium is shown (journey 06). */
   finishTour(): void;
+  /** Whether Mic Check has finished in this visit (L2-012 criterion 6). */
+  readonly micCheckDone: Signal<boolean>;
+  finishMicCheck(): void;
+  /** Whether the microphone was refused, or recognition failed at Mic Check, in this visit. */
+  readonly voiceLost: Signal<boolean>;
+  loseVoice(): void;
 }
 
 export const VISIT = new InjectionToken<Visit>('VISIT');

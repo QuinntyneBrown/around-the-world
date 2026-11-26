@@ -9,7 +9,13 @@ import { GameSetupPage } from '../pages/game-setup.page';
  * (docs/adr/0020-solo-duel-clock-and-states.md).
  */
 
-const ZURI = { version: 1, kid: 'zuri', nickname: { adjective: 0, animal: 0 } };
+// A child who answers with the number pad, so Mic Check is skipped (L2-012 criterion 13).
+const ZURI = {
+  version: 1,
+  kid: 'zuri',
+  nickname: { adjective: 0, animal: 0 },
+  wayOfAnswering: 'numberPad' as const,
+};
 
 test.describe('A solo duel', () => {
   test('shows a flash card from the chosen maths, the duel strip, the timer bar and the pad', async ({

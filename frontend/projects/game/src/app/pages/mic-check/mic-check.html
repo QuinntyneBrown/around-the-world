@@ -1,0 +1,88 @@
+<atw-screen>
+  <header atw-top-bar heading="Mic check">
+    <a atw-icon-button slot="back" icon="back" routerLink="/setup" aria-label="Back"></a>
+  </header>
+  <main id="main" class="mic-check">
+    <atw-listener [state]="listener()" [picture]="milo.picture" alt="Milo and his robot Bolt" />
+    <div class="mic-check__text">
+      <div [attr.role]="alert() ? 'alert' : 'status'">
+        <h2 class="mic-check__title">{{ words().title }}</h2>
+        <p class="mic-check__body">{{ words().body }}</p>
+      </div>
+      @switch (step()) {
+        @case ('listening') {
+          <div class="mic-check__meter"><atw-level-meter /></div>
+        }
+        @case ('heard') {
+          <p class="mic-check__heard">“Ready!”</p>
+        }
+      }
+      <div class="mic-check__actions">
+        @switch (step()) {
+          @case ('asking') {
+            <button
+              atw-toy-button
+              type="button"
+              variant="go"
+              size="xl"
+              [block]="true"
+              icon="mic"
+              (click)="turnOnMic()"
+            >
+              Turn on mic
+            </button>
+          }
+          @case ('waiting') {
+            <button
+              atw-toy-button
+              type="button"
+              variant="go"
+              size="xl"
+              [block]="true"
+              aria-busy="true"
+            >
+              <atw-spinner /> Waiting for the mic…
+            </button>
+          }
+          @case ('notHeard') {
+            <button
+              atw-toy-button
+              type="button"
+              variant="go"
+              size="xl"
+              [block]="true"
+              icon="mic"
+              (click)="listen()"
+            >
+              Try again
+            </button>
+          }
+          @case ('heard') {
+            <button atw-toy-button type="button" size="xl" [block]="true" (click)="letsGo()">
+              Let’s go!
+            </button>
+          }
+          @default {
+            @if (alert()) {
+              <button
+                atw-toy-button
+                type="button"
+                variant="friends"
+                size="xl"
+                [block]="true"
+                (click)="useNumberPad()"
+              >
+                Use number pad
+              </button>
+            }
+          }
+        }
+        @if (!alert() && step() !== 'heard') {
+          <button atw-text-button type="button" (click)="tapInstead()">
+            Too noisy? Tap answers instead
+          </button>
+        }
+      </div>
+    </div>
+  </main>
+</atw-screen>

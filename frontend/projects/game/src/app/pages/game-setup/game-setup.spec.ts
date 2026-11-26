@@ -1,7 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { GAME_SESSION, PLAYER_CHOICES, type GameSetup, type PlayerChoices } from '@atw/api';
+import {
+  GAME_SESSION,
+  PLAYER_CHOICES,
+  WAY_OF_ANSWERING,
+  type GameSetup,
+  type PlayerChoices,
+} from '@atw/api';
 import { GameSetupRules, SoloGame } from '@atw/domain';
 import { GameSetupPage } from './game-setup';
 
@@ -21,12 +27,16 @@ describe('GameSetupPage', () => {
       setup,
       confirmKid: () => undefined,
       changeSetup: (changed) => setup.set(changed),
+      wayOfAnswering: signal('numberPad'),
+      changeWayOfAnswering: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'duel', component: DuelStandIn }]),
         { provide: PLAYER_CHOICES, useValue: choices },
         { provide: GAME_SESSION, useClass: SoloGame },
+        // Mic Check is not needed, so "Go!" opens Duel (its behaviour specs cover Mic Check).
+        { provide: WAY_OF_ANSWERING, useValue: { micCheckNeeded: signal(false) } },
       ],
     });
     const fixture = TestBed.createComponent(GameSetupPage);

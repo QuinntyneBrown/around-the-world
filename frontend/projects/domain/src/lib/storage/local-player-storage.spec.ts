@@ -87,6 +87,16 @@ describe('LocalPlayerStorage', () => {
       '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"setup":{"kinds":[]}}',
       { kid: 'milo', nickname: { adjective: 2, animal: 3 } },
     ],
+    [
+      'a kept way of answering',
+      '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"wayOfAnswering":"numberPad"}',
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 }, wayOfAnswering: 'numberPad' },
+    ],
+    [
+      'a way of answering the game does not offer',
+      '{"version":1,"kid":"milo","nickname":{"adjective":2,"animal":3},"wayOfAnswering":"typing"}',
+      { kid: 'milo', nickname: { adjective: 2, animal: 3 } },
+    ],
   ])('reads %s', (_case, text, expected) => {
     const memory = new MemoryStorage();
     if (text !== null) memory.setItem(PLAYER_KEY, text);
@@ -123,6 +133,17 @@ describe('LocalPlayerStorage', () => {
       kid: 'zuri',
       nickname: TURBO_YAK,
       setup: A_SETUP,
+    });
+  });
+
+  it('writes the way of answering once the child has chosen it', () => {
+    const memory = new MemoryStorage();
+    storageWith(memory).write({ kid: 'zuri', nickname: TURBO_YAK, wayOfAnswering: 'voice' });
+    expect(JSON.parse(memory.getItem(PLAYER_KEY) ?? '')).toEqual({
+      version: 1,
+      kid: 'zuri',
+      nickname: TURBO_YAK,
+      wayOfAnswering: 'voice',
     });
   });
 

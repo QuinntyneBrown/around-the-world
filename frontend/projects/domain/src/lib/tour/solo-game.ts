@@ -104,10 +104,27 @@ export class SoloGame implements GameSession {
     inject(DestroyRef).onDestroy(() => this.stop());
   }
 
-  start(setup: GameSetup): void {
+  start(setup: GameSetup, options: { readonly micCheck?: boolean } = {}): void {
+    if (this.ticking !== null) return;
+    const loadAgents = this.started() === null;
     this.started.set(setup);
+    // With Mic Check the first card waits until the child leaves it (L2-012 criterion 8).
+    if (options.micCheck) this.show('mic-check');
+    else this.dealFirst(setup);
+    if (loadAgents) this.loadAgents();
+  }
+
+  /** Builds the tour, deals the first card and starts the clock ticking. */
+  private dealFirst(setup: GameSetup): void {
+    // Agents made while Mic Check showed had no class yet: they are made for this one.
+    this.agents = null;
     this.begin(setup);
+    this.makeAgents();
+    if (this.agents && this.playing) this.classmateDecides(this.playing, this.playing.startedAt);
     this.ticking = setInterval(() => this.tick(), TICK_MS);
+  }
+
+  private loadAgents(): void {
     // The classmates' agents load on their own; the first card never waits for them (ADR 0019).
     void import('../classmates/classmate-agent').then(({ ClassmateAgent }) => {
       if (this.destroyed) return;
@@ -188,6 +205,9 @@ export class SoloGame implements GameSession {
   }
 
   continue(): void {
+    const setup = this.started();
+    // Leaving Mic Check deals the first card and starts its time (L2-012 criterion 8).
+    if (this.current() === 'mic-check' && setup) return this.dealFirst(setup);
     const playing = this.playing;
     if (this.phase === 'duel' && playing && !playing.applied && this.youLost(playing)) {
       // The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8).

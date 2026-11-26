@@ -4,6 +4,7 @@ import { GAME_SESSION, type GameScreen } from '@atw/api';
 
 /** The route of each game screen built so far (docs/mocks/manifest.json). */
 const PATHS: Partial<Record<GameScreen, string>> = {
+  'mic-check': '/mic',
   duel: '/duel',
   'world-map': '/map',
   podium: '/podium',

@@ -9,7 +9,13 @@ import { WorldMapPage } from '../pages/world-map.page';
  * until the spec moves the clock on (docs/adr/0022-moving-round-the-ring.md).
  */
 
-const ZURI = { version: 1, kid: 'zuri', nickname: { adjective: 0, animal: 0 } };
+// A child who answers with the number pad, so Mic Check is skipped (L2-012 criterion 13).
+const ZURI = {
+  version: 1,
+  kid: 'zuri',
+  nickname: { adjective: 0, animal: 0 },
+  wayOfAnswering: 'numberPad' as const,
+};
 
 /** How a World Map message names a player at the start of a sentence (L2-034 criterion 14). */
 const first = (name: string) => (name === 'Classmate' ? 'A classmate' : name);
