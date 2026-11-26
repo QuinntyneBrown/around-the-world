@@ -1,0 +1,39 @@
+@startuml
+title UML sequence behaviour — Start a tour with its class
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "GameSetupPage" as setup
+  participant "SoloGame\n(GameSession)" as solo
+  participant "DuelPage" as page
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "ClassFactory" as classf
+  participant "Tour" as tour
+  participant "Standings" as standings
+end box
+child -> setup : Choose "Go!"
+setup -> solo : Start a solo game (GameSetup, kid)
+solo -> classf : Make the class for the tour length
+classf --> solo : Classmates, one for each desk from 2 to the tour length
+solo -> tour : start(setup, players, traveller = the device's player)
+tour -> tour : Make a ring of 6, 12 or 24 desks, numbered from 1,\neach a different country (L2-007 criteria 1 and 4)
+tour -> tour : Leave desk 1, the traveller's own, empty;\nseat every other player (L2-007 criteria 2 and 6)
+tour -> standings : Record the traveller at distance 1\nand every desk holder at 0 (L2-007 criterion 4)
+tour --> solo : Tour, the device's player is the traveller (L2-007 criterion 3)
+solo --> page : TourState and the first DuelState, at desk 2
+page --> child : The first duel, "Desk 2 of {tour length}"
+@enduml

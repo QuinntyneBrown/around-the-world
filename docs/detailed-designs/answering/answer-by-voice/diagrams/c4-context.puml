@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Answer by voice
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(sr, "Speech recognition", "The browser's own, optional")
+Rel(child, atw, "Shouts the answer to a flash card into")
+Rel(atw, sr, "Listens for a spoken number through", "Web Speech API")
+@enduml

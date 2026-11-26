@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Join a room
+
+Person(child, "Child", "Joins a friend's room")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Room and the Lobby")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core", "Finds the room and adds the player")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "Rooms, their players and setup")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(child, game, "Types the code and chooses Join", "HTTPS")
+Rel(game, api, "Asks to join", "JSON/HTTPS")
+Rel(api, store, "Reads and saves the room", "EF Core")
+Rel(api, signalr, "Tells the room's Lobbies of the new player", "SignalR")
+Rel(signalr, game, "Delivers the change", "WebSockets")
+@enduml

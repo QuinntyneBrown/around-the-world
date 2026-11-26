@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Watch a duel and send a sticker
+
+Person(watcher, "Watching player", "In the room but not in the duel; sends one of six stickers")
+Person(player, "Player", "Every player in the room, who sees the sticker")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(watcher, atw, "Watches the duel and sends a sticker in")
+Rel(player, atw, "Sees the sticker in")
+Rel(atw, signalr, "Sends sticker ids through", "WebSockets")
+@enduml

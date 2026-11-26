@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Change the settings
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "HomePage" as home
+  participant "SettingsDialog" as dialog
+end box
+box "Frontend — domain" #E0F2FE
+  participant "BrowserSound" as sound
+  participant "StoredPlayerChoices" as choices
+  participant "LocalPlayerStorage" as storage
+end box
+actor -> home : Choose the settings button
+home -> dialog : Open with CDK Dialog (L2-032 criterion 4)
+dialog -> choices : Read soundMuted and wayOfAnswering
+choices --> dialog : Values kept on the device
+alt the browser has speech recognition
+  dialog --> actor : "Sound" and "Answer by shouting", each "On" or "Off"
+else the browser has no speech recognition
+  dialog --> actor : "Answer by shouting" off and disabled: "This browser can't listen, so you tap answers."
+end
+opt child changes "Sound"
+  actor -> dialog : Switch
+  dialog -> sound : setMuted(muted)
+  sound -> choices : setSoundMuted(muted)
+  choices -> storage : write(PlayerRecord)
+  storage --> choices : Kept the moment it is changed (L2-015 criterion 3)
+end
+opt child changes "Answer by shouting"
+  actor -> dialog : Switch
+  dialog -> choices : setWayOfAnswering(voice or numberPad)
+  choices -> storage : write(PlayerRecord)
+  storage --> choices : Kept the moment it is changed (L2-015 criterion 4)
+end
+actor -> dialog : "Done", "Close" or Escape
+dialog --> home : Closed; focus returns to the settings button
+home --> actor : Home, the sound button showing the new state
+@enduml

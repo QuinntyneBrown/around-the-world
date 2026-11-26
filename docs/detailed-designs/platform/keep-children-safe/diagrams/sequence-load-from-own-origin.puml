@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — Load everything from the game's own origin
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+participant "Browser" as browser
+box "Frontend — game application" #E0F2FE
+  participant "Host of game\n<TO SUPPLY>" as host
+  participant "index.html and initial chunks" as shell
+  participant "Global styles (@font-face)" as styles
+  participant "app.routes.ts" as routes
+end box
+box "Frontend — world library" #E0F2FE
+  participant "ThreeClassroomRenderer" as renderer
+end box
+actor -> browser : Open the game
+browser -> host : GET /
+host --> browser : index.html with Content-Security-Policy
+browser -> host : GET initial scripts (own origin)
+host --> browser : Initial chunks
+browser -> shell : Run
+shell -> styles : Apply foundations
+styles -> host : GET bundled Fredoka and Nunito files (L2-041 criterion 4)
+host --> styles : Fonts
+shell -> routes : Resolve the first screen
+routes --> shell : One of the ten screens, Not Found or Something Went Wrong;\nno sign-in, account or shop route (L2-041 criteria 1 and 3)
+shell -> renderer : Dynamic import when the classroom is first drawn
+renderer -> host : GET 3D assets (L2-036 criterion 5, L2-041 criterion 4)
+host --> renderer : Scenes built in Blender
+shell --> actor : Home
+opt a script, font, image or request names another origin
+  browser -> browser : Content-Security-Policy blocks it (L2-041 criterion 2)
+  browser --> shell : Blocked; nothing leaves for a third party
+end
+@enduml

@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Find the way through the screens
+
+Person(child, "Child", "Player aged 10 to 12, on their own device")
+System(atw, "Around the World", "Classroom flash-card game of ten screens, with Not Found and Something Went Wrong beside them")
+
+Rel(child, atw, "Opens and moves through the screens of")
+@enduml

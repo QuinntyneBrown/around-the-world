@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Report health and export telemetry
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Hosting platform" as probe
+participant "Telemetry backend" as otel
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "ASP.NET Core pipeline" as pipeline
+  participant "HealthController" as health
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "TelemetryBehavior" as tel
+  participant "CheckReadinessQueryHandler" as handler
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  participant "RoomStoreProbe" as storeProbe
+  participant "SignalRServiceProbe" as svcProbe
+  participant "TelemetryScrubber" as scrub
+end box
+probe -> pipeline : GET the live endpoint
+pipeline -> health : Live()
+health --> probe : 200; the process answers (L2-053 criterion 3)
+probe -> pipeline : GET the ready endpoint
+pipeline -> pipeline : Start the request span; record the route as its template (L2-053 criterion 1)
+pipeline -> health : Ready()
+health -> tel : Send CheckReadinessQuery
+tel -> handler : Handle
+handler -> storeProbe : IsReady()
+storeProbe --> handler : Room store reachable or not
+opt Azure SignalR Service is set
+  handler -> svcProbe : IsReady()
+  svcProbe --> handler : Service connected or not
+end
+handler --> tel : Readiness
+tel -> tel : Record duration and outcome
+tel --> health : Readiness
+alt every probe is ready
+  health --> probe : 200 ready
+else a probe is not ready
+  health --> probe : 503 not ready; no detail of the server
+end
+pipeline -> scrub : End of span
+scrub -> scrub : Drop path values, query string and client address (L2-053 criterion 2)
+scrub -> otel : Export trace, metrics and logs (OTLP)
+@enduml

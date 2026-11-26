@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Make a flash card
+
+Container_Boundary(game, "game (Angular application and its libraries)") {
+  Component(solo, "SoloGame", "Game service, game application", "Asks for one flash card for each duel")
+  Component(maker, "FlashCardMaker", "Rule type, domain questions/", "Makes a flash card of a chosen kind and gives its answer")
+  Component(random, "RandomSource", "Port, domain questions/", "Gives the random numbers a card is drawn with")
+  Component(setup, "GameSetup", "Type, api library", "The kinds of maths and the times tables chosen")
+  Component(card, "FlashCard", "Type, api library", "A kind of maths and two whole numbers, without the answer")
+  Component(view, "FlashCardView", "Presentation, components library", "Draws the card as the largest thing on Duel")
+}
+Rel(solo, maker, "Asks for the next card from")
+Rel(maker, setup, "Reads the chosen maths from")
+Rel(maker, random, "Draws numbers from")
+Rel(maker, card, "Makes")
+Rel(view, card, "Draws")
+@enduml

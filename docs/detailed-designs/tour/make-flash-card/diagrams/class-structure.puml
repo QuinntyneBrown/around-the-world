@@ -1,0 +1,56 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Make a flash card
+
+class FlashCardMaker {
+  -setup: GameSetup
+  -random: RandomSource
+  -last: FlashCard | null
+  +next(): FlashCard
+  +{static} answerOf(card: FlashCard): number
+  -make(kind: MathsKind): FlashCard
+}
+interface RandomSource {
+  +below(limit: number): number
+}
+class GameSetup {
+  +kinds: MathsKind[]
+  +tables: number[]
+  +tourLength: number
+  +cardSpeed: CardSpeed
+}
+enum MathsKind {
+  Times
+  Plus
+  Minus
+  Divide
+}
+class FlashCard {
+  +kind: MathsKind
+  +left: number
+  +right: number
+}
+class SoloGame {
+  -maker: FlashCardMaker
+  -startDuel(): void
+}
+
+SoloGame *-- FlashCardMaker
+FlashCardMaker --> GameSetup : reads kinds and tables
+FlashCardMaker ..> RandomSource : draws from
+FlashCardMaker ..> FlashCard : makes
+FlashCardMaker --> FlashCard : remembers the last
+GameSetup --> MathsKind
+FlashCard --> MathsKind
+@enduml

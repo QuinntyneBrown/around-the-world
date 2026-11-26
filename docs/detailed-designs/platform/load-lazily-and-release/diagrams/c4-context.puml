@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Load lazily and release
+
+Person(child, "Child", "Plays on a school laptop, an old tablet or a parent's phone")
+System(atw, "Around the World", "Opens with a small initial bundle, loads heavy parts when first needed and releases what it acquires")
+System_Ext(speech, "Speech recognition", "The browser's own, optional")
+System_Ext(model, "On-device model", "Chrome's built-in Prompt API, optional")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections")
+
+Rel(child, atw, "Opens and plays")
+Rel(atw, speech, "Starts a session; stops it when Duel or Mic Check is left")
+Rel(atw, model, "Opens sessions when a solo tour starts; destroys them when the tour ends or is left")
+Rel(atw, signalr, "Connects in a game with friends only; closes on leaving", "WSS")
+@enduml

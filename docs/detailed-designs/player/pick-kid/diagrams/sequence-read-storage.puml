@@ -1,0 +1,54 @@
+@startuml
+title UML sequence behaviour — Open the game with unavailable or unreadable storage
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "HomePage" as home
+end box
+box "Frontend — domain" #E0F2FE
+  participant "StoredPlayerChoices" as choices
+  participant "LocalPlayerStorage" as storage
+  participant "NicknameGenerator" as gen
+  database "Device storage" as db
+end box
+actor -> home : Open the game
+home -> choices : Read kid and nickname
+choices -> storage : read()
+storage -> db : Read the stored record
+alt record is readable
+  db --> storage : Stored text
+  storage -> storage : Check each field on its own
+  storage -> gen : isValid(nickname)
+  alt nickname is from the lists
+    gen --> storage : Valid
+  else nickname is not one adjective and one animal from the lists
+    gen --> storage : Not valid
+    storage -> gen : generate() (L2-014 criterion 4)
+    gen --> storage : New nickname
+  end
+  storage --> choices : PlayerRecord as it was left (L2-015 criteria 1 and 3)
+else storage is unavailable or the content is unreadable
+  db --> storage : Failure or unreadable text
+  storage -> storage : Catch the failure (L2-015 criterion 2)
+  storage --> choices : PlayerRecord of defaults
+end
+choices --> home : Kid and nickname, or none
+alt a kid is kept
+  home --> actor : Home with "{nickname} as {kid}" and "Change kid" (L2-013 criterion 4)
+else no kid is kept
+  home --> actor : Home with "Play", no chip, "No names, no sign-up. You pick a kid and get a game name." and no error (L2-013 criterion 5)
+end
+@enduml

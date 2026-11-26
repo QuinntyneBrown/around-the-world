@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Play a duel
+
+Person(child, "Child", "The device's player")
+Container_Boundary(game, "game (Angular application and its libraries)") {
+  Component(page, "DuelPage", "Page, game application", "Shows the duel and passes answers to the game session")
+  Component(pause, "PauseDialog", "CDK Dialog, game application", "Offers Keep playing and Go home while the clock is stopped")
+  Component(leave, "LeaveGameDialog", "CDK Dialog, game application", "Asks before a player leaves a game with friends")
+  Component(views, "FlashCardView, StampCard, TimerBar, WorldRing, KidTag", "Presentation, components library", "Draw the flash card in each of its states, the passport stamp, the time left, the ring and the two players")
+  Component(session, "GameSession (GAME_SESSION)", "Contract and token, api library", "Publishes DuelState and TourState, accepts answers and moves on from a decided duel")
+  Component(solo, "SoloGame", "Game service, game application", "Runs a solo game: starts duels, sets timers, publishes state")
+  Component(duel, "Duel", "Rule type, domain tour/", "Decides the first correct answer, the freeze and the time out")
+  Component(clock, "GameClock", "Clock, domain tour/", "Gives the time and timers, and stops while paused")
+  Component(maker, "FlashCardMaker", "Rule type, domain questions/", "Makes the flash card of each duel")
+  Component(agents, "ClassmateAgent", "Agent, domain classmates/", "Answers for a classmate in the duel")
+}
+Rel(child, page, "Answers, pauses and leaves on")
+Rel(page, views, "Binds duel state to")
+Rel(page, session, "Reads state from and sends answers to")
+Rel(page, pause, "Opens in a solo game")
+Rel(page, leave, "Opens in a game with friends")
+Rel(leave, session, "Leaves through")
+Rel(pause, session, "Pauses and resumes through")
+Rel(solo, session, "Implements")
+Rel(solo, duel, "Gives every answer to")
+Rel(solo, clock, "Reads the time and sets timers on")
+Rel(solo, maker, "Asks for a flash card from")
+Rel(agents, solo, "Sends a classmate's answer to")
+@enduml

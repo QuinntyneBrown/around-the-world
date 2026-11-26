@@ -1,0 +1,86 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Draw the classroom
+
+interface ClassroomRenderer {
+  +mount(canvas: HTMLCanvasElement, view: ClassroomView): Promise<void>
+  +show(state: ClassroomState): void
+  +play(kid: KidId, animation: KidAnimation): Promise<void>
+  +dispose(): void
+}
+enum KidAnimation {
+  idle
+  thinking
+  hop
+  winCheer
+  soClose
+}
+enum ClassroomView {
+  behind
+  fromAbove
+  fromAboveZoomed
+}
+class ClassroomState {
+  +desks: DeskState[]
+  +traveller: KidId
+  +travellerBesideDesk: number
+  +player: KidId
+}
+class DeskState {
+  +country: string
+  +holder: KidId | "classmate" | null
+}
+class ThreeClassroomRenderer {
+  -renderer: WebGLRenderer
+  -frame: number
+  +mount(canvas, view): Promise<void>
+  +show(state: ClassroomState): void
+  +play(kid: KidId, animation: KidAnimation): Promise<void>
+  +dispose(): void
+}
+class ClassroomScene {
+  +load(): Promise<void>
+  +layOut(state: ClassroomState): void
+  +setDetail(level: number): void
+  +dispose(): void
+}
+class KidCharacter {
+  +kid: KidId | null
+  +colour: Color
+  +withBolt: boolean
+  +play(animation: KidAnimation): Promise<void>
+  +dispose(): void
+}
+class QualityScaler {
+  -belowSince: number | null
+  -level: number
+  +frame(now: number): void
+  +onStepDown: (level: number) => void
+}
+class ClassroomBackdrop {
+  +state: ClassroomState
+  +view: ClassroomView
+  +status: Signal<"loading" | "drawn" | "still">
+}
+
+ClassroomRenderer <|.. ThreeClassroomRenderer
+ClassroomBackdrop --> ClassroomRenderer : loads, mounts, disposes
+ThreeClassroomRenderer *-- ClassroomScene
+ThreeClassroomRenderer *-- QualityScaler
+ClassroomScene *-- "1..*" KidCharacter
+ClassroomState *-- "6, 12 or 24" DeskState
+ClassroomRenderer ..> ClassroomState
+KidCharacter ..> KidAnimation : plays
+ClassroomBackdrop --> ClassroomView
+@enduml

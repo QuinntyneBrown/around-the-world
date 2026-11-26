@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Watch a duel and send a sticker
+
+Container_Boundary(game, "game and its libraries") {
+  Component(page, "DuelPage", "Angular page, game", "Shows the watching state: no number pad, no microphone")
+  Component(tray, "StickerTray", "Presentation component, components", "The sticker-bar block: offers the six stickers and emits a StickerId")
+  Component(card, "FlashCardView, KidTag, TimerBar", "Presentation components, components", "The flash card, who is duelling and the time left")
+  Component(session, "FriendsGame", "GameSession, game", "Sends a sticker, keeps the stickers shown in a bounded buffer")
+  Component(conn, "RoomConnection", "SignalR client, api", "One connection per player")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(hub, "RoomHub", "SignalR hub", "SendSticker sends one MediatR request")
+  Component(limit, "HubRateLimitFilter", "SignalR hub filter", "Drops more than 1 sticker a second from a connection")
+  Component(handler, "SendStickerCommandHandler", "MediatR handler", "Ignores an unknown sticker and a sender in the duel")
+  Component(room, "Room and Duel", "Domain", "Say who is in the current duel")
+  Component(notifier, "HubRoomNotifier", "IRoomNotifier, over RoomHub", "Pushes StickerShown to the whole room")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Holds the room; no sticker is stored")
+}
+Rel(page, card, "Shows")
+Rel(page, tray, "Shows while watching")
+Rel(page, session, "Reads the duel and the stickers, sends a sticker")
+Rel(session, conn, "sendSticker, listens to StickerShown")
+Rel(conn, hub, "SendSticker(id)", "SignalR over WebSockets")
+Rel(limit, hub, "Runs before each method of")
+Rel(hub, handler, "Sends SendStickerCommand")
+Rel(handler, store, "Loads the room", "IAppDbContext")
+Rel(handler, room, "Asks whether the sender is in the duel")
+Rel(handler, notifier, "Announces StickerShown")
+Rel(notifier, conn, "StickerShown(sticker id, player id)", "SignalR over WebSockets")
+@enduml

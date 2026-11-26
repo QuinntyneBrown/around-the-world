@@ -1,0 +1,101 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Guard the room
+
+class ConnectionToken <<value object>> {
+  +string Value
+  +{static} New(): ConnectionToken
+  +Matches(presented: string): bool
+}
+interface ICurrentPlayer {
+  +string? PresentedToken
+  +string ConnectionId
+}
+class HubCurrentPlayer
+class RoomPlayerBehaviour<TRequest, TResponse> {
+  +Handle(request, next): Task<TResponse>
+}
+class ValidationBehaviour<TRequest, TResponse> {
+  +Handle(request, next): Task<TResponse>
+}
+interface IRoomPlayerRequest {
+  +RoomPlayerContext Player
+}
+class RoomPlayerContext {
+  +Room Room
+  +RoomPlayer Player
+}
+class RefusedException {
+  +string Code
+  +int Status
+}
+class ErrorCodeWriter {
+  +TryHandleAsync(context, exception): ValueTask<bool>
+}
+class OpenToAnyoneAttribute {
+  +string RateLimitPolicy
+}
+class RoomsController {
+  +Make(body): Task<ActionResult<RoomEntryDto>>
+  +Join(body): Task<ActionResult<RoomEntryDto>>
+}
+class HubRateLimitFilter {
+  -time: TimeProvider
+  +InvokeMethodAsync(context, next): ValueTask<object?>
+  +OnDisconnectedAsync(context, error, next): Task
+}
+class RoomHub
+class Room {
+  +RoomCode Code
+  +GameSetup Setup
+  +RoomStatus Status
+}
+class RoomPlayer {
+  +NicknameIndexes Nickname
+  +KidId Kid
+  +int Position
+  +ConnectionToken Token
+}
+class NicknameIndexes <<value object>> {
+  +int Adjective (0 to 9)
+  +int Animal (0 to 9)
+}
+enum KidId {
+  Zuri
+  Kenji
+  Nia
+  Milo
+  Pip
+}
+class ApiError <<frontend, api>> {
+  +code: string
+}
+
+HubCurrentPlayer ..|> ICurrentPlayer
+RoomPlayerBehaviour ..> ICurrentPlayer : reads the token
+RoomPlayerBehaviour ..> IRoomPlayerRequest : fills
+IRoomPlayerRequest --> RoomPlayerContext
+RoomPlayerContext --> Room
+RoomPlayerContext --> RoomPlayer
+RoomPlayerBehaviour ..> RefusedException : throws not_in_room
+ValidationBehaviour ..> RefusedException : throws invalid_*
+ErrorCodeWriter ..> RefusedException : writes the code of
+ErrorCodeWriter ..> ApiError : read on the device as
+OpenToAnyoneAttribute ..> RoomsController : marks Make and Join
+HubRateLimitFilter ..> RoomHub : filters
+Room *-- "0..8" RoomPlayer
+RoomPlayer --> ConnectionToken
+RoomPlayer --> NicknameIndexes
+RoomPlayer --> KidId
+@enduml

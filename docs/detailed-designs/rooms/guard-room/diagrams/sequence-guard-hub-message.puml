@@ -1,0 +1,63 @@
+@startuml
+title UML sequence behaviour — Guard a hub message
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Sender" as actor
+box "Frontend — api" #E0F2FE
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "SignalR transport" as transport
+  participant "HubRateLimitFilter" as limit
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "RoomPlayerBehaviour" as gate
+  participant "ValidationBehaviour" as validation
+  participant "Request handler" as handler
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+actor -> conn : Answer, sticker, setup, start, play again or leave
+conn -> transport : Hub message over WSS (L2-045 criterion 4)
+alt the message is larger than 1 KB (L2-044 criterion 2)
+  transport --> conn : Refused, connection closed
+else more than 5 answers or 1 sticker in a second (L2-045 criterion 3, L2-028 criterion 5)
+  transport -> limit : Invoke
+  limit --> limit : Drop the message
+else the message passes
+  transport -> limit : Invoke
+  limit -> hub : Hub method
+  hub -> gate : Send one MediatR request
+  gate -> db : Find the player holding the token this connection presented
+  db --> gate : Room and RoomPlayer, or nothing
+  alt no room holds the token (L2-043 criterion 2)
+    gate --> hub : not_in_room
+    hub --> conn : Hub error with code not_in_room, room unchanged
+  else the token names a player (L2-043 criterion 1)
+    gate -> validation : Request with its own room and player (L2-043 criterion 3)
+    alt a value is outside what is allowed (L2-044 criterion 1)
+      validation --> hub : invalid_answer or another code
+      hub --> conn : Hub error with the code, no stack trace (L2-044 criterion 3)
+    else the request is valid
+      validation -> handler : Handle
+      handler --> hub : Result
+      hub --> conn : Events to the room
+    end
+  end
+end
+conn --> actor : ApiError with a code, or the game's next state
+@enduml

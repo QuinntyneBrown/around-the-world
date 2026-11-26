@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Find the way through the screens
+
+Person(child, "Child", "Player on their own device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Routes, guards, Home and its Settings dialog; every screen a lazy chunk")
+  ContainerDb(store, "Device storage", "Browser storage", "Kid, nickname, setup, sound setting and way of answering")
+}
+Rel(child, game, "Chooses Play, Back and Home in", "HTTPS, browser")
+Rel(game, store, "Reads the choices kept, writes the two settings", "PlayerStorage")
+@enduml

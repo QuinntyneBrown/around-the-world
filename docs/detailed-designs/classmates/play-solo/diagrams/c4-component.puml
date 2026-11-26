@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Play solo
+
+Person(child, "Child", "Player on their own device")
+Container_Boundary(game, "game application") {
+  Component(duelPage, "DuelPage", "Angular page", "Shows the duel, passes the player's answer on")
+  Component(mapPage, "WorldMapPage", "Angular page", "Shows the duels between classmates while the player is seated")
+  Component(solo, "SoloGame", "Service behind GAME_SESSION", "Owns the tour, the class and the agents; schedules classmates' answers")
+}
+Container_Boundary(classmates, "domain library — classmates/") {
+  Component(factory, "ClassFactory", "Pure helper", "Builds the class: four kids not picked plus further classmates, one for each desk but desk 1")
+  Component(agent, "ClassmateAgent", "One for each classmate", "Decides an answer and a time from the profile")
+  Component(profile, "ClassmateProfile", "Value", "Skill level, characteristics, preferred kinds of maths")
+}
+Container_Boundary(tour, "domain library — tour/ and questions/") {
+  Component(tourC, "Tour and Duel", "Rules of the game", "First correct answer, freeze, hop, end of tour")
+  Component(maker, "FlashCardMaker", "Pure helper", "Makes a flash card from the setup")
+}
+Rel(child, duelPage, "Answers on")
+Rel(duelPage, solo, "Reads state from, sends the answer to")
+Rel(mapPage, solo, "Reads the tour and its messages from")
+Rel(solo, factory, "Builds the class with")
+Rel(factory, profile, "Creates")
+Rel(solo, agent, "Asks for a decision")
+Rel(agent, profile, "Reads")
+Rel(solo, tourC, "Passes every answer to")
+Rel(tourC, maker, "Takes each flash card from")
+@enduml

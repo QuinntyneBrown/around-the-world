@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Pick a kid
+
+Person(child, "Child", "Player on their own device")
+Container_Boundary(game, "game application") {
+  Component(pick, "PickYourKidPage", "Angular page", "Selects a kid, shows the nickname, confirms")
+  Component(home, "HomePage", "Angular page", "Shows the kept kid and nickname with Change kid, or a line of words when no kid is kept")
+}
+Container_Boundary(components, "components library") {
+  Component(picker, "KidPicker", "Presentation component", "Offers the five kids in one row, one selected")
+  Component(chip, "KidChip", "Presentation component", "A kid's picture, a nickname, as {kid} and Change kid, as one link")
+}
+Container_Boundary(domain, "domain library — storage/") {
+  Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Holds the player's choices as signals")
+  Component(gen, "NicknameGenerator", "Pure helper", "Makes and checks nicknames from two fixed lists of ten")
+  Component(storage, "LocalPlayerStorage", "Implementation of PLAYER_STORAGE", "Reads and writes PlayerRecord, never throws")
+}
+ContainerDb(store, "Device storage", "Browser storage", "PlayerRecord")
+
+Rel(child, pick, "Picks a kid in")
+Rel(child, home, "Sees kid and nickname on")
+Rel(pick, picker, "Renders")
+Rel(home, chip, "Renders when a kid is kept")
+Rel(pick, gen, "Generates a nickname with")
+Rel(pick, choices, "Reads and confirms through")
+Rel(home, choices, "Reads")
+Rel(choices, storage, "Reads once, writes on change")
+Rel(storage, gen, "Checks a stored nickname with")
+Rel(storage, store, "Reads and writes")
+@enduml

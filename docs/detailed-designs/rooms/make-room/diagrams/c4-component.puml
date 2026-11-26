@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Make a room
+
+Container_Boundary(game, "game and its libraries") {
+  Component(page, "SoloOrFriendsPage", "Angular page, game", "Offers Make a room; shows the busy, refused, rate-limited and offline states in words")
+  Component(storage, "PlayerStorage", "Contract, api", "Gives the kid and the nickname kept on the device")
+  Component(client, "RoomsApi", "HTTP client, api", "Sends the request and returns a RoomEntry or an ApiError")
+  Component(session, "FriendsGame", "Game service, game", "Keeps the code, the connection token and the RoomState in memory")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its projects") {
+  Component(ctrl, "RoomsController", "ASP.NET Core controller", "Open to anyone, rate limited, sends one request")
+  Component(validator, "MakeRoomCommandValidator", "FluentValidation", "Checks the kid id and the nickname indexes")
+  Component(handler, "MakeRoomCommandHandler", "MediatR handler", "Makes the room with an unused code")
+  Component(codes, "RoomCodeGenerator", "IRoomCodeGenerator, Infrastructure", "Draws 4 capital letters that are not a blocked word")
+  Component(room, "Room", "Domain entity", "Holds the code, the setup and the host")
+  ComponentDb(store, "Room store", "EF Core, engine to supply", "Persists the room")
+}
+Rel(page, storage, "Reads kid and nickname")
+Rel(page, client, "Calls makeRoom")
+Rel(page, session, "Hands the RoomEntry to")
+Rel(client, ctrl, "POST /rooms", "JSON/HTTPS")
+Rel(ctrl, handler, "Sends MakeRoomCommand")
+Rel(validator, handler, "Runs before")
+Rel(handler, codes, "Asks for a code")
+Rel(handler, room, "Makes")
+Rel(handler, store, "Checks the code is unused and saves", "IAppDbContext")
+@enduml

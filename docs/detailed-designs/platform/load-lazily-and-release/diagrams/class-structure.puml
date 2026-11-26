@@ -1,0 +1,90 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+title Class structure — Load lazily and release
+
+interface GameSession {
+  +tour: signal of TourState
+  +duel: signal of DuelState
+  +answer(value: number)
+  +end()
+}
+class SoloGame {
+  -agents: ClassmateAgent[]
+  -duelsPlayed: BoundedBuffer<DuelState>
+  +end()
+}
+class FriendsGame {
+  -connection: RoomConnection
+  -duelsPlayed: BoundedBuffer<DuelState>
+  -stickers: BoundedBuffer<StickerId>
+  -positions: Map<player, position>
+  +end()
+}
+class "BoundedBuffer<T>" as BoundedBuffer {
+  +capacity: number
+  +push(item: T)
+  +items(): readonly T[]
+  +clear()
+}
+interface RoomConnection {
+  +connect()
+  +close()
+}
+class SignalRRoomConnection {
+  -hub: HubConnection
+  +close()
+}
+interface VoiceAnswer {
+  +start()
+  +stop()
+}
+class SpeechVoiceAnswer {
+  -recognition
+  -stream: MediaStream
+  +stop()
+}
+interface ClassroomRenderer {
+  +attach(canvas)
+  +dispose()
+}
+class ThreeClassroomRenderer {
+  -frame: requestAnimationFrame id
+  +dispose()
+}
+class OnDeviceModelSession {
+  +destroy()
+}
+class DuelPage {
+  -destroyRef: DestroyRef
+}
+class HomePage {
+  -destroyRef: DestroyRef
+}
+class WorldMapPage {
+  -destroyRef: DestroyRef
+}
+GameSession <|.. SoloGame
+GameSession <|.. FriendsGame
+RoomConnection <|.. SignalRRoomConnection
+VoiceAnswer <|.. SpeechVoiceAnswer
+ClassroomRenderer <|.. ThreeClassroomRenderer
+SoloGame *-- BoundedBuffer
+FriendsGame *-- BoundedBuffer
+SoloGame *-- "0..*" OnDeviceModelSession : destroys when the tour ends or is left
+FriendsGame --> RoomConnection : closes
+DuelPage ..> GameSession : reads
+DuelPage ..> VoiceAnswer : stops on destroy
+DuelPage ..> ClassroomRenderer : disposes on destroy
+HomePage ..> ClassroomRenderer : disposes on destroy
+WorldMapPage ..> ClassroomRenderer : disposes on destroy
+WorldMapPage ..> GameSession : reads
+@enduml

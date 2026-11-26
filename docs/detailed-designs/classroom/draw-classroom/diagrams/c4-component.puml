@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Draw the classroom
+
+Container_Boundary(game, "game application") {
+  Component(screen, "A screen that shows the classroom", "Angular page", "HomePage and DuelPage behind the interface; WorldMapPage from above")
+  Component(backdrop, "ClassroomBackdrop", "Angular component", "Still picture or skeleton first, then the canvas; reports when the still picture stands in; disposes on destroy")
+}
+Container_Boundary(world, "world library") {
+  Component(renderer, "ThreeClassroomRenderer", "Implementation behind CLASSROOM_RENDERER", "WebGL renderer and one animation loop")
+  Component(scene, "ClassroomScene", "Three.js scene", "Ring of desks, each a country with its landmark; path and rug from above")
+  Component(kid, "KidCharacter", "Three.js object", "A kid's model, colour and five animations; Bolt with Milo; a bean-bodied character with one accessory on World Map; plain further classmates")
+  Component(scaler, "QualityScaler", "Helper", "Steps detail down below 30 frames a second")
+}
+Container(assets, "Classroom assets", "Static files on the game's own origin", "Scenes, the cast, the two still pictures")
+
+Rel(screen, backdrop, "Places behind its interface, passes ClassroomState")
+Rel(backdrop, renderer, "Loads lazily, mount, show, play, dispose")
+Rel(backdrop, assets, "Shows the still picture from", "same origin")
+Rel(renderer, scene, "Draws")
+Rel(scene, kid, "Holds one for each kid or further classmate shown")
+Rel(renderer, scaler, "Reports each frame to")
+Rel(scaler, renderer, "Sets resolution, shadows, level of detail")
+Rel(scene, assets, "Loads scenes from", "same origin")
+Rel(kid, assets, "Loads the cast from", "same origin")
+@enduml

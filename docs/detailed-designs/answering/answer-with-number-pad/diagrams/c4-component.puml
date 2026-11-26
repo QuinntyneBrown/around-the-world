@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Answer with the number pad
+
+Person(child, "Child", "The device's player")
+Container_Boundary(game, "game (Angular application and its libraries)") {
+  Component(page, "DuelPage", "Page, game application", "Shows the pad, disables it while frozen and passes the answer on")
+  Component(pad, "NumberPad", "Presentation, components library", "Digits 1 to 9, Delete, 0 and Go, by touch and by keyboard")
+  Component(entry, "NumberEntry", "Pure helper, components library", "Holds at most three digits, gives their value and is emptied when a freeze ends")
+  Component(card, "FlashCardView", "Presentation, components library", "Shows the digits entered on the flash card")
+  Component(session, "GameSession (GAME_SESSION)", "Contract and token, api library", "Takes the answer as a number")
+  Component(sound, "Sound (SOUND)", "Contract and token, api library", "Plays the pop of a key")
+}
+Rel(child, pad, "Presses keys on")
+Rel(pad, entry, "Adds and removes digits in")
+Rel(pad, page, "Emits the digits entered and the answer to")
+Rel(page, card, "Binds the digits entered to")
+Rel(page, session, "Sends the answer to")
+Rel(page, sound, "Asks for a pop from")
+@enduml

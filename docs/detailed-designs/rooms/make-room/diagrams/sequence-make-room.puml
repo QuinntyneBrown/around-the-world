@@ -1,0 +1,65 @@
+@startuml
+title UML sequence behaviour — Make a room
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "SoloOrFriendsPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomsApi" as client
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomsController" as controller
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "MakeRoomCommandHandler" as handler
+  participant "Room" as room
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  participant "RoomCodeGenerator" as codes
+  database "Room store" as db
+end box
+actor -> page : Choose "Make a room"
+page --> actor : "Make a room" busy, reads "Making…"; "Join a room" disabled (L2-022 criterion 5)
+page -> client : makeRoom(kid, nickname indexes)
+client -> controller : POST /rooms
+alt the backend cannot be reached (L2-022 criterion 3)
+  client --> page : ApiError backend_unreachable
+  page --> actor : Alert "We couldn't make your room", "Try again"; stay on Solo Or Friends
+else the address is over the rate limit (L2-022 criterion 4)
+  controller --> client : 429 ProblemDetails rate_limited
+  client --> page : ApiError rate_limited
+  page --> actor : Alert "Whoa, slow down a moment"; "Make a room" disabled
+else the room is made
+  controller -> handler : Send MakeRoomCommand (validated, L2-044)
+  loop until the code is held by no room
+    handler -> codes : Next()
+    codes --> handler : 4 capital letters, not a blocked word (L2-022 criterion 2)
+    handler -> db : Look for a room with this code
+    db --> handler : Found or not found
+  end
+  handler -> room : Make(code, kid, nickname, now)
+  room --> handler : Room with its first player as host and a ConnectionToken
+  handler -> db : Save changes in one unit of work
+  db --> handler : Commit result
+  handler --> controller : RoomEntryDto
+  controller --> client : 201 with code, token and RoomState
+  client --> page : RoomEntry
+  page -> session : Keep the code, the token and the RoomState
+  page --> actor : Open the Lobby showing the code (L2-022 criterion 1)
+end
+@enduml

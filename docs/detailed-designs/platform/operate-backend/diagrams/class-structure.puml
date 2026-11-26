@@ -1,0 +1,105 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+title Class structure — Operate the backend
+
+package "Backend — AroundTheWorld.Application" {
+  class ErrorCode <<static>> {
+    +RoomNotFound = "room_not_found"
+    +RoomFull = "room_full"
+    +GameStarted = "game_started"
+    +NotHost = "not_host"
+  }
+  class "Result<T>" as Result {
+    +T Value
+    +string Code
+    +bool Refused
+  }
+  class "TelemetryBehavior<TRequest, TResponse>" as TelemetryBehavior {
+    +Handle(request, next): Task<TResponse>
+  }
+  interface IRoomNotifier {
+    +NotifyRoom(roomId, roomEvent): Task
+  }
+  interface IReadinessProbe {
+    +string Name
+    +IsReady(): Task<bool>
+  }
+  class CheckReadinessQuery
+  class CheckReadinessQueryHandler {
+    +Handle(query): Task<Result<Readiness>>
+  }
+}
+package "Backend — AroundTheWorld.Infrastructure" {
+  class HubRoomNotifier {
+    -IHubContext<RoomHub> hub
+    +NotifyRoom(roomId, roomEvent): Task
+  }
+  class RoomStoreProbe
+  class SignalRServiceProbe
+  class TelemetryScrubber {
+    +OnEnd(activity): void
+  }
+}
+package "Backend — AroundTheWorld.Api" {
+  class HealthController {
+    +Live(): IActionResult
+    +Ready(): Task<IActionResult>
+  }
+  class ProblemDetailsWriter {
+    +Write(result): ProblemDetails
+  }
+  class HubErrorFilter {
+    +InvokeMethodAsync(context, next)
+  }
+  class RealTimeOptions {
+    +string AzureSignalRConnectionString
+    +bool UsesAzureSignalR
+  }
+}
+package "Frontend — api library and game" {
+  class ApiError <<type>> {
+    +code: string
+    +status: number
+  }
+  enum RefusedRequest {
+    makeRoom
+    joinRoom
+    saveSetup
+  }
+  class ErrorWords <<type>> {
+    +title: string
+    +text: string
+  }
+  class "messageForCode" as messageForCode <<function>> {
+    +(request: RefusedRequest, error: ApiError): ErrorWords
+  }
+  class GameErrorHandler {
+    +handleError(error): void
+  }
+  class SomethingWentWrongPage
+}
+TelemetryBehavior ..> Result : reads outcome code
+CheckReadinessQueryHandler ..> CheckReadinessQuery : handles
+CheckReadinessQueryHandler --> "1..*" IReadinessProbe : asks
+IReadinessProbe <|.. RoomStoreProbe
+IReadinessProbe <|.. SignalRServiceProbe
+IRoomNotifier <|.. HubRoomNotifier
+HealthController ..> CheckReadinessQuery : sends
+ProblemDetailsWriter ..> Result : writes code of
+HubErrorFilter ..> Result : writes code of
+Result ..> ErrorCode : holds one
+ProblemDetailsWriter ..> ApiError : becomes on the device
+messageForCode ..> ApiError : reads code and status of
+messageForCode ..> RefusedRequest : reads
+messageForCode ..> ErrorWords : returns
+GameErrorHandler ..> SomethingWentWrongPage : opens
+@enduml

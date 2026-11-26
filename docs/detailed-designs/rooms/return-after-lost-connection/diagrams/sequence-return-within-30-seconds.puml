@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Lose the connection and return within 30 seconds
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Player" as actor
+box "Frontend — game" #E0F2FE
+  participant "DuelPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "MarkPlayerAwayCommandHandler" as away
+  participant "ReconnectCommandHandler" as handler
+  participant "Room" as room
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+conn -> conn : The connection is lost
+conn --> session : state reconnecting
+session --> page : connection signal
+page --> actor : Overlay over all of Duel: "Reconnecting…", "Hang tight! Your spot at {country} is saved for 30 seconds." (L2-029 criterion 1)
+hub -> away : Send MarkPlayerAwayCommand on disconnect
+away -> db : Load the player of this connection
+db --> away : RoomPlayer
+away -> db : Save AwaySince = now; the duel carries on (L2-029 criterion 3)
+conn -> hub : Connect again, presenting the connection token
+hub -> handler : Send ReconnectCommand(token, connection id)
+handler -> db : Load the room and player the token names
+db --> handler : Room and RoomPlayer, or nothing
+alt the token names a player still in the room (L2-029 criterion 2, L2-043 criterion 4)
+  handler -> room : Return(token, connection id, now)
+  room --> handler : Same RoomPlayer, same desk, AwaySince cleared
+  handler -> db : Save changes in one unit of work
+  db --> handler : Commit result
+  handler --> hub : GameSnapshotDto, connection added to the room's group
+  hub --> conn : Snapshot: RoomState, TourState, DuelState as they now stand
+  conn --> session : state connected, snapshot
+  session -> session : Replace the game state with the snapshot
+  session --> page : duel, tour and connection signals
+  page --> actor : The game as it now stands; banner "You're back!", "Same desk, same game."
+else any other token, or the player was removed (L2-043 criterion 4)
+  handler --> hub : not_in_room
+  hub --> conn : Hub error with code not_in_room, connection closed
+  conn --> session : state closed
+  session --> page : connection signal
+  page --> actor : Overlay "We lost the game"; "Home" (L2-029 criterion 4)
+end
+@enduml

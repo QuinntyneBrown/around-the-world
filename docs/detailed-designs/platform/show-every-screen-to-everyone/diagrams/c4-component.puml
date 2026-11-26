@@ -1,0 +1,46 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Show every screen to everyone
+
+Container_Boundary(styles, "Global styles") {
+  Component(bp, "breakpoints", "SCSS partial", "576, 768, 992 and 1200 px as named min-width queries")
+  Component(tokens, "tokens", "CSS custom properties", "Focus ring, minimum target 44 px, colour pairs by role with measured contrast")
+}
+Container_Boundary(apilib, "api library") {
+  Component(viewport, "Viewport", "Contract, VIEWPORT token", "The current width band, and whether the height is under 544 px, as signals")
+}
+Container_Boundary(game, "game application") {
+  Component(mq, "MediaQueryViewport", "Service", "Implements Viewport with matchMedia; removes its listeners on destroy")
+  Component(duel, "DuelPage", "Page", "Fills the screen and never scrolls; pad under the card below 768 px and beside it from 768 px; ring, pill of text or desk in the HUD")
+  Component(pages, "HomePage, PickYourKidPage, LobbyPage, GameSetupPage, PodiumPage", "Pages", "One column below 992 px, two from 992 px")
+  Component(pages768, "SoloOrFriendsPage, MicCheckPage", "Pages", "One column below 768 px, two from 768 px")
+  Component(room, "RoomPage", "Page", "One centred column at every width, at most 576 px")
+  Component(errors, "messageForCode", "Pure helper", "Words for an error code")
+  Component(dialogs, "Pause, Leave Game and Settings", "CDK Dialogs", "Hold the focus and return it; a sheet below 576 px, a centred card from 576 px")
+}
+Container_Boundary(components, "components library") {
+  Component(choice, "ChoiceButton", "Presentation", "Native button with aria-pressed and a tick or a dot")
+  Component(pad, "NumberPad", "Presentation", "Native buttons, 44 x 44 px or larger")
+  Component(ring, "WorldRing", "Presentation", "Shown from 768 px, unless the height is under 544 px")
+  Component(live, "LiveRegion", "Presentation", "Visually hidden status; assertive on Duel")
+  Component(alert, "AlertMessage", "Presentation", "role=alert, in words")
+}
+Rel(mq, viewport, "Implements")
+Rel(duel, viewport, "Reads the band and the height from")
+Rel(duel, dialogs, "Opens Pause or Leave Game")
+Rel(pages, dialogs, "HomePage opens Settings")
+Rel(dialogs, tokens, "Read focus ring and target size from")
+Rel(duel, bp, "Places the pad by")
+Rel(pages, bp, "Switch columns by")
+Rel(pages768, bp, "Switch columns by")
+Rel(room, alert, "Shows a refused code through")
+Rel(duel, pad, "Composes")
+Rel(duel, ring, "Renders from 768 px when not short")
+Rel(duel, live, "Sends a flash card, a result and a freeze to")
+Rel(pages, choice, "Compose")
+Rel(pages, alert, "Show an error through")
+Rel(errors, alert, "Supplies the words for")
+Rel(choice, tokens, "Reads focus ring and target size from")
+Rel(pad, tokens, "Reads focus ring and target size from")
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — End a tour
+
+Person(child, "Child", "A player aged 10 to 12 playing a solo game on the device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Ends a solo tour on the device and holds the Podium")
+}
+Rel(child, game, "Sees the Podium on", "Browser")
+@enduml

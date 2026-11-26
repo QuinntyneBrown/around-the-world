@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Wait in the Lobby
+
+Person(host, "Host", "Made the room, shares its code and starts the game")
+Person(player, "Player", "Joined the room and waits for the host")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(host, atw, "Waits for friends and starts the race in")
+Rel(player, atw, "Waits for the host in")
+Rel(atw, signalr, "Sends live Lobby changes through", "WebSockets")
+@enduml

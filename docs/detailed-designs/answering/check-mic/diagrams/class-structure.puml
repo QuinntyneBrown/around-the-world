@@ -1,0 +1,78 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Check the microphone
+
+interface VoiceAnswer {
+  +available: boolean
+  +listening: Signal<boolean>
+  +heard: Observable<number>
+  +heardSpeech: Observable<void>
+  +failed: Observable<VoiceError>
+  +requestMicrophone(): Promise<MicrophoneAnswer>
+  +start(): void
+  +stop(): void
+}
+enum MicrophoneAnswer {
+  allowed
+  refused
+  failed
+}
+class WayOfAnswering {
+  +way: Signal<AnswerWay>
+  +voiceOffered: Signal<boolean>
+  +micCheckNeeded: Signal<boolean>
+  +use(way: AnswerWay): void
+  +finishMicCheck(way: AnswerWay): void
+}
+enum AnswerWay {
+  voice
+  numberPad
+}
+enum MicCheckStep {
+  asking
+  waiting
+  listening
+  notHeard
+  heard
+  refused
+  failed
+}
+class MicCheckPage {
+  -voice: VoiceAnswer
+  -way: WayOfAnswering
+  +step: Signal<MicCheckStep>
+  +onTurnOnMic(): void
+  +onTryAgain(): void
+  +onLetsGo(): void
+  +onUseNumberPad(): void
+  +onBack(): void
+}
+class micCheckGuard <<function>> {
+  +micCheckGuard(): boolean | UrlTree
+}
+class SpeechVoiceAnswer {
+  +requestMicrophone(): Promise<MicrophoneAnswer>
+  +start(): void
+  +stop(): void
+}
+
+SpeechVoiceAnswer ..|> VoiceAnswer
+VoiceAnswer ..> MicrophoneAnswer : answers
+MicCheckPage ..> VoiceAnswer : injects VOICE_ANSWER
+MicCheckPage --> WayOfAnswering
+MicCheckPage --> MicCheckStep
+micCheckGuard ..> WayOfAnswering : reads micCheckNeeded
+WayOfAnswering --> AnswerWay
+WayOfAnswering ..> VoiceAnswer : reads available
+@enduml

@@ -1,0 +1,96 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Wait in the Lobby
+
+class LobbyPage <<frontend, game>> {
+  +room: Signal<RoomState>
+  +canStart: Signal<boolean>
+  +messages: Signal<LobbyMessage[]> (three at most)
+  +copyLink(): void
+  +startTheRace(): void
+  +leave(): void
+}
+class PlayerList <<frontend, components>> {
+  +players: InputSignal<RoomPlayerState[]>
+  +ownPlayerId: InputSignal<string>
+  +capacity: InputSignal<number>
+}
+class FriendsGame <<frontend, game>> {
+  +room: Signal<RoomState>
+  +ownPlayerId: string
+  +startGame(): Promise<void>
+  +leave(): Promise<void>
+}
+interface RoomConnection <<frontend, api>> {
+  +open(token: string): Promise<void>
+  +startGame(): Promise<void>
+  +leaveRoom(): Promise<void>
+  +onRoomChanged(handler): void
+  +onGameStarted(handler): void
+  +close(): Promise<void>
+}
+class RoomState <<frontend, api>> {
+  +code: string
+  +status: RoomStatus
+  +setup: GameSetup
+  +players: RoomPlayerState[]
+}
+class RoomPlayerState <<frontend, api>> {
+  +id: string
+  +kid: KidId
+  +nickname: Nickname
+  +isHost: boolean
+}
+class RoomHub {
+  +OnConnectedAsync(): Task
+  +StartGame(): Task
+  +LeaveRoom(): Task
+}
+class StartGameCommandHandler {
+  +Handle(command: StartGameCommand): Task
+}
+class LeaveRoomCommandHandler {
+  +Handle(command: LeaveRoomCommand): Task
+}
+class Room {
+  +RoomStatus Status
+  +GameSetup Setup
+  +Start(by: RoomPlayer, now: DateTimeOffset): void
+  +Leave(player: RoomPlayer): void
+  +bool IsEmpty
+}
+class RoomPlayer {
+  +Guid Id
+  +bool IsHost
+  +DateTimeOffset JoinedAt
+}
+interface IRoomNotifier {
+  +RoomChanged(room: Room): Task
+  +GameStarted(room: Room): Task
+}
+
+LobbyPage --> PlayerList : shows
+LobbyPage ..> FriendsGame : reads through GAME_SESSION
+FriendsGame ..> RoomConnection : uses through ROOM_CONNECTION
+FriendsGame --> RoomState : holds
+RoomState *-- "1..8" RoomPlayerState
+RoomConnection ..> RoomHub : hub methods and events
+RoomHub ..> StartGameCommandHandler : sends StartGameCommand
+RoomHub ..> LeaveRoomCommandHandler : sends LeaveRoomCommand
+StartGameCommandHandler --> Room : loads / mutates
+LeaveRoomCommandHandler --> Room : loads / mutates / deletes
+StartGameCommandHandler ..> IRoomNotifier : announces
+LeaveRoomCommandHandler ..> IRoomNotifier : announces
+Room *-- "0..8" RoomPlayer
+@enduml

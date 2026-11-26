@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Open and destroy the model sessions
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "DuelPage" as page
+  participant "SoloGame" as solo
+end box
+box "Frontend — domain" #E0F2FE
+  participant "ClassmateAgent" as agent
+  participant "OnDeviceModelSession" as session
+  participant "ClassmatePrompt" as prompt
+end box
+participant "On-device model\n(browser)" as model
+actor -> solo : "Go!" starts the solo tour
+solo --> page : First flash card, agents playing from their profiles
+page --> actor : Flash card shown, with no wait for the model
+solo -> session : Import the model code dynamically, isReady()
+session -> model : Ask whether the model is available
+alt the model is downloaded and ready
+  model --> session : Available
+  session --> solo : true
+  loop each classmate
+    solo -> session : openSession(profile)
+    session -> prompt : priming(profile)
+    prompt --> session : Profile only
+    session -> model : Create a session with the priming prompt (L2-021 criterion 1)
+    model --> session : Session
+    session --> solo : ClassmateModelSession
+    solo -> agent : useSession(session)
+  end
+else no model, or the model is not downloaded
+  model --> session : Absent, downloadable or downloading
+  session --> solo : false
+  solo -> solo : Open no session, start no download (L2-021 criteria 4 and 5)
+end
+loop each duel of the tour
+  solo --> page : World Map after the decided duel, then Duel again
+  solo -> solo : Keep every session (L2-021 criterion 6)
+end
+actor -> page : The tour ends, or the child leaves it (Home from the Podium or from Pause)
+page -> solo : Tour over or left
+loop each session
+  solo -> session : destroy()
+  session -> model : Abort pending prompts, destroy the session (L2-021 criterion 6)
+end
+@enduml

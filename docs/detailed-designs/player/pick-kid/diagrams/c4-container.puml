@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Pick a kid
+
+Person(child, "Child", "Player on their own device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Pick Your Kid and Home; generates the nickname")
+  ContainerDb(store, "Device storage", "Browser storage", "Kid, nickname, setup, sound setting and way of answering")
+}
+Rel(child, game, "Uses", "HTTPS, browser")
+Rel(game, store, "Reads and writes", "PlayerStorage")
+@enduml

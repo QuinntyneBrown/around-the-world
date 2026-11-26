@@ -1,0 +1,70 @@
+@startuml
+title UML sequence behaviour — Reach the first solo duel
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "HomePage" as home
+  participant "Router" as router
+  participant "PickYourKidPage" as pick
+  participant "SoloOrFriendsPage" as sof
+  participant "GameSetupPage" as setup
+  participant "SoloGame" as game
+  participant "GameScreenNavigator" as nav
+  participant "MicCheckPage" as mic
+  participant "DuelPage" as duel
+end box
+actor -> home : Open the game
+home --> actor : Home with "Play", or "Play again" after a tour in this visit (L2-032 criteria 1 and 2)
+router -> router : SoloPathPreloading fetches the next chunks while idle
+actor -> home : Choice 1: Play
+alt new child, no kid kept on the device
+  home -> router : Navigate to pick your kid (L2-030 criterion 1)
+  router -> pick : Load lazy chunk
+  pick --> actor : Zuri offered and a generated nickname
+  actor -> pick : Choice 2: "I'm {kid}!"
+  pick -> router : Navigate to solo or friends
+else child who has picked a kid before
+  home -> router : Navigate to solo or friends; Pick Your Kid is skipped (L2-031 criterion 3)
+end
+router -> sof : Load lazy chunk
+sof --> actor : Solo Or Friends, kid and nickname already chosen
+actor -> sof : Choice 3: Play solo
+sof -> router : Navigate to game setup (L2-030 criterion 2)
+router -> setup : Load lazy chunk
+setup --> actor : Defaults, nothing to change
+opt child chooses Back
+  actor -> setup : Back
+  setup -> router : Navigate to solo or friends
+  router --> actor : Solo Or Friends, choices still chosen (L2-030 criteria 6 and 8)
+end
+actor -> setup : Choice 4: Go!
+setup -> router : Navigate into the solo group
+router -> game : Provide SoloGame behind GAME_SESSION
+setup -> game : start(setup)
+game --> nav : screen = micCheck
+alt Mic Check is needed (L2-012)
+  nav -> router : Navigate to mic check
+  router -> mic : Load lazy chunk (L2-030 criterion 3)
+  actor -> mic : Choice 5: the number pad
+  mic --> game : Way of answering chosen
+else Mic Check is not needed
+  game -> game : Skip Mic Check
+end
+game --> nav : screen = duel
+nav -> router : Navigate to duel
+router -> duel : Load lazy chunk
+duel --> actor : First flash card, its time starting now (L2-012 criterion 8), within 20 seconds of opening (L2-031 criterion 1)
+@enduml

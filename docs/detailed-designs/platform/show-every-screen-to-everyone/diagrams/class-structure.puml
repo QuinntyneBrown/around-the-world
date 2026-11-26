@@ -1,0 +1,73 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+title Class structure — Show every screen to everyone
+
+enum WidthBand {
+  xs (below 576 px)
+  sm (from 576 px)
+  md (from 768 px)
+  lg (from 992 px)
+  xl (from 1200 px)
+}
+interface Viewport {
+  +band: signal of WidthBand
+  +short: signal of boolean
+  +atLeast(band: WidthBand): boolean
+}
+class MediaQueryViewport {
+  -queries: MediaQueryList[]
+  +band: signal of WidthBand
+  +short: signal of boolean
+  +atLeast(band: WidthBand): boolean
+  -release()
+}
+class DuelPage {
+  +showsWorldRing: computed boolean
+  +showsDeskInHud: computed boolean
+  +announcement: computed string
+}
+class ChoiceButton {
+  +pressed: input boolean
+  +disabled: input boolean
+  +chosen: output
+}
+class LiveRegion {
+  +message: input string
+  +politeness: input polite | assertive
+}
+class AlertMessage {
+  +message: input string
+}
+class NumberPad {
+  +disabled: input boolean
+  +digit: output number
+  +delete: output
+  +go: output
+}
+class WorldRing {
+  +tour: input TourState
+}
+class "messageForCode" as messageForCode <<function>> {
+  +(request: RefusedRequest, error: ApiError): ErrorWords
+}
+class "duelAnnouncement" as duelAnnouncement <<function>> {
+  +(duel: DuelState): string
+}
+Viewport <|.. MediaQueryViewport
+Viewport --> WidthBand
+DuelPage ..> Viewport : reads band and short
+DuelPage ..> duelAnnouncement : computes with
+DuelPage --> LiveRegion : binds announcement
+DuelPage --> NumberPad
+DuelPage --> WorldRing : from md, when not short
+AlertMessage <.. messageForCode : words for
+@enduml

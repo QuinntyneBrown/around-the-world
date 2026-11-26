@@ -1,0 +1,72 @@
+@startuml
+title UML sequence behaviour — Send only closed values to a room
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game application" #E0F2FE
+  participant "RoomPage / DuelPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — components library" #E0F2FE
+  participant "CodeBoxes / PlayerList" as view
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "NicknameGenerator" as nick
+  participant "SpeechVoiceAnswer" as voice
+end box
+box "Frontend — api library" #E0F2FE
+  participant "RoomsApi" as rooms
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomsController" as controller
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "Validator and handler" as handler
+  participant "RoomPlayer" as player
+end box
+actor -> view : Type four letters (the only typed field, L2-040 criterion 4)
+view --> page : Room code
+page -> rooms : joinRoom(code, KidId, Nickname indexes)
+rooms -> controller : HTTPS body: code, kid id, two indexes (L2-040 criterion 1)
+controller -> handler : Send JoinRoomCommand
+alt a value outside its closed set
+  handler --> controller : Refusal with a code (L2-044)
+  controller --> rooms : ProblemDetails with code
+  rooms --> page : ApiError
+else every value valid
+  handler -> player : Store indexes, kid, position, token
+  handler --> controller : RoomState with each player's indexes, and the connection token (L2-043 criterion 1)
+  controller --> rooms : RoomState
+  rooms --> page : RoomState
+  page -> nick : textOf(indexes) for each player
+  nick --> page : Text from the fixed lists
+  page -> view : Bind text by interpolation (L2-040 criterion 3)
+end
+== A duel ==
+actor -> voice : Shout "twenty-four"
+voice -> voice : Parse transcript to 24; discard transcript; record no audio (L2-040 criterion 2)
+voice --> session : 24
+session -> conn : submitAnswer(24)
+conn -> hub : Hub message holding one number, sent with the connection token (L2-040 criterion 1)
+hub -> handler : Send SubmitAnswerCommand
+handler --> hub : Decided
+opt the player is watching
+  actor -> page : Press one of six stickers
+  page -> conn : sendSticker(StickerId)
+  conn -> hub : Hub message holding one id
+end
+@enduml

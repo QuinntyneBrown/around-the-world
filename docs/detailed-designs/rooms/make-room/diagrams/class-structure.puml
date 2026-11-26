@@ -1,0 +1,88 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Make a room
+
+class RoomsController {
+  +Make(body: MakeRoomRequest): Task<ActionResult<RoomEntryDto>>
+}
+class MakeRoomCommand {
+  +KidId Kid
+  +NicknameIndexes Nickname
+}
+class MakeRoomCommandValidator
+class MakeRoomCommandHandler {
+  +Handle(command: MakeRoomCommand): Task<RoomEntryDto>
+}
+interface IRoomCodeGenerator {
+  +Next(): RoomCode
+}
+class RoomCodeGenerator {
+  -blockedWords: IReadOnlySet<string>
+  +Next(): RoomCode
+}
+class RoomCode <<value object>> {
+  +string Letters
+  +{static} Parse(text: string): RoomCode
+}
+class Room {
+  +Guid Id
+  +RoomCode Code
+  +RoomStatus Status
+  +GameSetup Setup
+  +{static} Make(code: RoomCode, kid: KidId, nickname: NicknameIndexes, now: DateTimeOffset): Room
+}
+class RoomPlayer {
+  +Guid Id
+  +KidId Kid
+  +NicknameIndexes Nickname
+  +bool IsHost
+  +DateTimeOffset JoinedAt
+  +ConnectionToken Token
+}
+class ConnectionToken <<value object>> {
+  +{static} New(): ConnectionToken
+}
+enum RoomStatus {
+  Waiting
+  Playing
+  Over
+}
+class RoomEntryDto {
+  +string Code
+  +string ConnectionToken
+  +Guid PlayerId
+  +RoomStateDto Room
+}
+interface RoomsApi <<frontend, api>> {
+  +makeRoom(kid: KidId, nickname: Nickname): Promise<RoomEntry>
+}
+class SoloOrFriendsPage <<frontend, game>> {
+  +makeRoom(): void
+}
+
+SoloOrFriendsPage ..> RoomsApi : calls through ROOMS_API
+RoomsApi ..> RoomsController : POST /rooms
+RoomsController ..> MakeRoomCommand : sends
+MakeRoomCommandValidator ..> MakeRoomCommand : validates
+MakeRoomCommandHandler ..> MakeRoomCommand : handles
+MakeRoomCommandHandler ..> IRoomCodeGenerator : asks for a code
+RoomCodeGenerator ..|> IRoomCodeGenerator
+IRoomCodeGenerator ..> RoomCode : returns
+MakeRoomCommandHandler --> Room : makes
+MakeRoomCommandHandler ..> RoomEntryDto : returns
+Room *-- "1..8" RoomPlayer
+Room --> RoomCode : has
+Room --> RoomStatus : has
+RoomPlayer --> ConnectionToken : has
+@enduml

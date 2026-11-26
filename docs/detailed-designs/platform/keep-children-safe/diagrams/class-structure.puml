@@ -1,0 +1,99 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+title Class structure — Keep children safe
+
+package "Frontend — api library" {
+  enum KidId {
+    zuri
+    kenji
+    nia
+    milo
+    pip
+  }
+  class Nickname <<type>> {
+    +adjective: number
+    +animal: number
+  }
+  class StickerId <<type>> {
+    one of six ids
+  }
+  class GameSetup <<type>> {
+    +kinds: MathsKind[]
+    +tables: number[]
+    +tourLength: 6 | 12 | 24
+    +cardSpeed: CardSpeed
+  }
+  interface RoomsApi {
+    +makeRoom(kid: KidId, nickname: Nickname)
+    +joinRoom(code: string, kid: KidId, nickname: Nickname)
+  }
+  interface RoomConnection {
+    +saveSetup(setup: GameSetup)
+    +startGame()
+    +submitAnswer(answer: number)
+    +sendSticker(sticker: StickerId)
+    +leave()
+    +close()
+  }
+  interface VoiceAnswer {
+    +start()
+    +stop()
+    +answers: stream of number
+  }
+}
+package "Frontend — domain library" {
+  class NicknameGenerator {
+    -adjectives: readonly string[]
+    -animals: readonly string[]
+    +generate(): Nickname
+    +isValid(nickname: Nickname): boolean
+    +textOf(nickname: Nickname): string
+  }
+  class SpeechVoiceAnswer {
+    +start()
+    +stop()
+  }
+}
+package "Backend — AroundTheWorld.Application and Domain" {
+  class JoinRoomCommand {
+    +string Code
+    +int Kid
+    +int NicknameAdjective
+    +int NicknameAnimal
+  }
+  class SubmitAnswerCommand {
+    +int Answer
+  }
+  class SendStickerCommand {
+    +int Sticker
+  }
+  class JoinRoomCommandValidator
+  class RoomPlayer {
+    +int NicknameAdjective
+    +int NicknameAnimal
+    +int Kid
+    +int Position
+    +ConnectionToken Token
+  }
+}
+RoomsApi ..> Nickname : sends
+RoomsApi ..> KidId : sends
+RoomConnection ..> GameSetup : sends
+RoomConnection ..> StickerId : sends
+NicknameGenerator ..> Nickname : makes / reads
+SpeechVoiceAnswer ..|> VoiceAnswer
+RoomsApi ..> JoinRoomCommand : becomes
+RoomConnection ..> SubmitAnswerCommand : becomes
+RoomConnection ..> SendStickerCommand : becomes
+JoinRoomCommandValidator ..> JoinRoomCommand : validates
+JoinRoomCommand ..> RoomPlayer : creates
+@enduml

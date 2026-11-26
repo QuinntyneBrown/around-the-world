@@ -1,0 +1,39 @@
+@startuml
+title UML sequence behaviour — Scale the detail back
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Frontend — world" #E0F2FE
+  participant "ThreeClassroomRenderer" as renderer
+  participant "QualityScaler" as scaler
+  participant "ClassroomScene" as scene
+end box
+loop each animation frame
+  renderer -> scaler : frame(now)
+  scaler -> scaler : Measure frames a second
+  alt 30 or more frames a second
+    scaler -> scaler : Clear the time spent below 30
+  else below 30 for less than 2 seconds
+    scaler -> scaler : Keep measuring
+  else below 30 for 2 seconds (L2-036 criterion 4)
+    scaler --> renderer : Step detail down one level
+    renderer -> renderer : Lower the resolution
+    renderer -> scene : setDetail(level): shadows, level of detail
+    scene --> renderer : Detail scaled back
+    scaler -> scaler : Start measuring again
+  end
+  renderer -> scene : Draw the frame
+  scene --> renderer : Frame drawn
+end
+@enduml

@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Play motion and sound
+
+Person(child, "Child", "Player aged 10 to 12, on their own device")
+System(atw, "Around the World", "Classroom flash-card game; rewards a hop with motion and sound")
+
+Rel(child, atw, "Sees and hears the game's moments in")
+@enduml

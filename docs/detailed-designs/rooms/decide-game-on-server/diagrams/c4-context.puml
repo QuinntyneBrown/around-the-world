@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Decide the game on the server
+
+Person(duellist, "Traveller and desk holder", "The two players in the duel, who answer the flash card")
+Person(player, "Player", "Every other player in the room, who sees the same game")
+System(atw, "Around the World", "The classroom flash-card game as a web game")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(duellist, atw, "Answer flash cards in")
+Rel(player, atw, "Sees each result in")
+Rel(atw, signalr, "Sends flash cards and results through", "WebSockets")
+@enduml

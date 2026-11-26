@@ -1,0 +1,90 @@
+@startuml
+title UML sequence behaviour — Join a room
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "RoomPage" as page
+end box
+box "Frontend — components" #E0F2FE
+  participant "CodeBoxes" as boxes
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomsApi" as client
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomsController" as controller
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "JoinRoomCommandHandler" as handler
+  participant "Room" as room
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+actor -> boxes : Type the code
+boxes -> boxes : Keep letters only, show capitals, take four (L2-023 criterion 1)
+boxes --> page : Code so far
+page --> actor : "Join" enabled once four letters are held (L2-023 criterion 2)
+actor -> page : Choose "Join"
+page --> actor : Field disabled; "Join" disabled, reads "Joining…"; "Finding your friends…" (L2-023 criterion 7)
+page -> client : joinRoom(code, kid, nickname indexes)
+client -> controller : POST /rooms/join
+alt the backend cannot be reached (L2-023 criterion 9)
+  client --> page : ApiError backend_unreachable
+  page --> actor : Alert "We can't reach the game right now. Check the internet and try again."; "Join" usable, "Play solo instead"
+else the address is over the join-room rate limit (L2-045 criterion 2)
+  controller --> client : 429 ProblemDetails rate_limited
+  client --> page : ApiError rate_limited
+  page --> actor : Alert "That's a lot of tries! Wait a moment, then try again."; "Join" disabled
+else the request passes the join-room rate limit
+  controller -> handler : Send JoinRoomCommand (validated, L2-044)
+  handler -> handler : RoomCode.Parse turns the letters to capitals (L2-023 criterion 8)
+  handler -> db : Load the room with this code
+  db --> handler : Room or nothing
+  alt no room holds the code (L2-023 criterion 4)
+    handler --> controller : room_not_found
+    controller --> client : 404 ProblemDetails
+    client --> page : ApiError room_not_found
+    page --> actor : Alert "Hmm, no room with that code. Check the letters?"; boxes invalid, one shake
+  else the room is waiting and has fewer than 8 players (L2-023 criterion 3)
+    handler -> room : Join(kid, nickname, now)
+    room --> handler : RoomPlayer with a ConnectionToken
+    handler -> db : Save changes in one unit of work
+    db --> handler : Commit result
+    handler -> hub : IRoomNotifier.RoomChanged
+    hub --> hub : Push RoomChanged to the room's players (L2-024 criterion 2)
+    handler --> controller : RoomEntryDto
+    controller --> client : 200 with code, token and RoomState
+    client --> page : RoomEntry
+    page --> actor : Open the Lobby
+  else the room has 8 players (L2-023 criterion 5)
+    handler -> room : Join(kid, nickname, now)
+    room --> handler : room_full
+    handler --> controller : room_full
+    controller --> client : 409 ProblemDetails
+    client --> page : ApiError room_full
+    page --> actor : Alert "That room is full (8 kids max)."; boxes invalid, one shake
+  else the room's game has started (L2-023 criterion 6)
+    handler -> room : Join(kid, nickname, now)
+    room --> handler : game_started
+    handler --> controller : game_started
+    controller --> client : 409 ProblemDetails
+    client --> page : ApiError game_started
+    page --> actor : Alert "That game already started. Ask for the next one!"; boxes invalid, one shake
+  end
+end
+@enduml

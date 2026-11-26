@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Keep children safe
+
+Person(child, "Child", "Plays a duel")
+System_Ext(speech, "Speech recognition", "The browser's own, optional")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Every screen. Serves its own fonts, scripts, pictures and 3D assets. Builds every client message from closed values")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core, SignalR", "Rooms and games with friends. Accepts typed values only")
+  ContainerDb(store, "Room store", "EF Core, engine <TO SUPPLY>", "A code, the setup, and per player two nickname indexes, a kid, a position and a connection token")
+}
+Rel(child, game, "Uses", "HTTPS, own origin only")
+Rel(game, speech, "Starts and stops a session; reads a transcript on the device")
+Rel(game, api, "Makes and joins a room: code, kid id, two nickname indexes", "JSON/HTTPS")
+Rel(game, signalr, "Answer as a number, sticker id, setup values, connection token", "SignalR/WSS")
+Rel(signalr, api, "Delivers hub messages to RoomHub", "SignalR")
+Rel(api, store, "Reads and writes", "EF Core")
+@enduml

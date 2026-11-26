@@ -1,0 +1,81 @@
+@startuml
+title UML sequence behaviour — Decide a duel
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Traveller" as a
+actor "Desk holder" as b
+box "Frontend — game" #E0F2FE
+  participant "DuelPage" as page
+  participant "FriendsGame" as session
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomConnection" as conn
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "RoomHub" as hub
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "SubmitAnswerCommandHandler" as handler
+  participant "Tour" as tour
+  participant "FlashCardMaker" as maker
+end box
+box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
+  database "Room store" as db
+end box
+hub --> conn : FlashCardShown to the whole room in one step, without the answer (L2-026 criterion 5)
+conn --> session : FlashCard and DuelState
+session --> page : duel signal
+page --> a : Flash card
+page --> b : Flash card
+a -> page : Answer
+page -> session : answer(value)
+session -> conn : submitAnswer(number)
+conn -> hub : SubmitAnswer(number), no time and no claim (L2-026 criteria 1, 2)
+hub -> handler : Send SubmitAnswerCommand (validated 0 to 999, L2-044)
+handler -> handler : Read the arrival time from TimeProvider
+handler -> db : Load the room the token names
+db --> handler : Room with its Tour
+handler -> tour : Answer(player, answer, receivedAt)
+tour -> tour : Check against the flash card the server made (L2-026 criterion 3)
+alt the sender is not in the duel, is frozen, or the duel is already won
+  tour --> handler : Ignored (L2-001 criteria 3, 4; L2-026 criterion 4)
+else the answer is wrong
+  tour --> handler : Frozen for 1 second from receivedAt (L2-004)
+  handler -> db : Save changes
+  handler -> hub : IRoomNotifier.PlayerFrozen
+  hub --> conn : PlayerFrozen to the room
+else the answer is correct and the first to arrive
+  tour -> tour : Apply the hop, passing the empty desk, or the change of traveller (L2-002, L2-003)
+  alt the tour has not ended
+    tour -> maker : Make(setup, last card)
+    maker --> tour : Next flash card with its answer
+    tour --> handler : Won
+    handler -> db : Save changes in one unit of work
+    db --> handler : Commit result
+    handler -> hub : IRoomNotifier.DuelDecided, then FlashCardShown
+    hub --> conn : Result, new traveller, every position, to the whole room (L2-027 criterion 1)
+    hub --> conn : FlashCardShown for the next duel
+  else the tour has ended (L2-006)
+    tour --> handler : Won, tour over
+    handler -> db : Save changes in one unit of work, room kept with status Over
+    handler -> hub : IRoomNotifier.DuelDecided, then TourEnded
+    hub --> conn : Result and final places to the whole room
+  end
+  conn --> session : DuelState and TourState
+  session --> page : duel and tour signals
+  page --> a : Result within 1 second
+  page --> b : Result within 1 second
+end
+@enduml

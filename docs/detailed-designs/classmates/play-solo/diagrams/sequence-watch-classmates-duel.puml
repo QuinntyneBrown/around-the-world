@@ -1,0 +1,53 @@
+@startuml
+title UML sequence behaviour — Watch classmates duel after sitting down
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "WorldMapPage" as map
+  participant "DuelPage" as page
+  participant "SoloGame" as solo
+end box
+box "Frontend — domain" #E0F2FE
+  participant "ClassmateAgent (traveller)" as agentA
+  participant "ClassmateAgent (desk holder)" as agentB
+  participant "Tour" as tour
+  participant "Duel" as duel
+end box
+actor -> page : Choose "You sit at {country} · {rival} travels on" (L2-033 criterion 8)
+page -> solo : Continue
+solo --> map : screen = worldMap, TourState
+map --> actor : "So close! You sit down at {country}"; the classmate stands up and travels on (L2-034 criterion 4)
+loop until a traveller reaches the player's desk or the tour ends
+  solo -> tour : Next duel, between two classmates
+  tour --> solo : Duel and its flash card
+  solo -> agentA : decide(card)
+  agentA --> solo : ClassmateDecision
+  solo -> agentB : decide(card)
+  agentB --> solo : ClassmateDecision
+  solo -> duel : answer(classmate, value, at) for each, in order of time
+  duel --> solo : Winner; a wrong answer freezes its classmate for 1 second (L2-020 criterion 4)
+  solo -> tour : Read the tour after the duel
+  tour --> solo : TourState: the traveller hops on, or sits down and the desk holder travels on
+  solo --> map : TourState and its message; no flash card (L2-034 criterion 7)
+  map --> actor : "{name} walks on to {country}!", or the message for a classmate who sits down (words to confirm)
+end
+alt a traveller reaches the player's desk
+  solo --> page : screen = duel, DuelState with the player as desk holder
+  page --> actor : Flash card
+else the tour ends
+  solo --> map : screen = podium (L2-030 criterion 5)
+end
+@enduml

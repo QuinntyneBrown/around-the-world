@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Pause a solo duel
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as page
+  participant "PauseDialog" as dialog
+  participant "SoloGame\n(GameSession)" as solo
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "GameClock" as clock
+end box
+child -> page : Choose "Pause"
+page -> solo : pause()
+solo -> clock : pause(), timers stop (L2-033 criterion 4)
+solo --> page : DuelState, paused true
+page -> dialog : Open (CDK Dialog)
+dialog --> child : "Paused", "The clock is stopped. Your desk at {country} is waiting.";\nthe focus is on "Keep playing"
+alt "Keep playing", Escape or the close button
+  child -> dialog : Choose "Keep playing"
+  dialog --> page : Closed with keep playing
+  page -> solo : resume()
+  solo -> clock : resume(), timers run on
+  solo --> page : DuelState, paused false, same remaining time
+  page --> child : The same flash card, timer bar draining again;\nthe focus returns to "Pause"
+else "Go home"
+  child -> dialog : Choose "Go home"
+  dialog --> page : Closed with go home
+  page -> solo : leave()
+  solo -> clock : Cancel every timer
+  page --> child : Home opens, the game's state is released
+end
+@enduml

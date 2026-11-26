@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Keep children safe
+
+Container_Boundary(game, "game and its libraries") {
+  Component(routes, "app.routes.ts", "Angular routes", "The ten screens, Not Found and Something Went Wrong, and nothing else: no sign-in, shop or account route")
+  Component(codeboxes, "CodeBoxes", "components", "The only field a child types in: four letters")
+  Component(playerlist, "PlayerList / PodiumSteps", "components", "Render a nickname by text interpolation")
+  Component(roomsapi, "RoomsApi", "api contract", "makeRoom and joinRoom take a code, a KidId and a Nickname")
+  Component(conn, "RoomConnection", "api contract", "One typed method per hub message; no string a child fills")
+  Component(nick, "NicknameGenerator", "domain storage/", "Holds the two fixed lists; makes a Nickname and builds its text from indexes")
+  Component(voice, "SpeechVoiceAnswer", "domain voice/", "The only code that touches the microphone; emits numbers")
+  Component(csp, "Content Security Policy", "Response header", "Limits every fetch to the game's own origin and its backend")
+}
+Container_Boundary(api, "AroundTheWorld.Api") {
+  Component(ctrl, "RoomsController", "ASP.NET Core controller", "Binds typed request bodies")
+  Component(hub, "RoomHub", "SignalR hub", "Typed hub methods; one MediatR request each")
+  Component(val, "Validators", "FluentValidation", "Refuse a value outside its closed set")
+  Component(player, "RoomPlayer", "Domain entity", "Stores nickname indexes, never nickname text")
+}
+Rel(codeboxes, roomsapi, "Supplies the room code to")
+Rel(nick, roomsapi, "Supplies the Nickname indexes to")
+Rel(voice, conn, "Supplies an answer as a number to")
+Rel(roomsapi, ctrl, "Sends code, kid id, indexes", "JSON/HTTPS")
+Rel(conn, hub, "Sends number, sticker id, setup values, connection token", "SignalR/WSS")
+Rel(ctrl, val, "Sends a command through")
+Rel(hub, val, "Sends a command through")
+Rel(val, player, "Lets valid values reach")
+Rel(playerlist, nick, "Shows text built by")
+Rel(csp, routes, "Applies to every screen of")
+@enduml

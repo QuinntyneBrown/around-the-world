@@ -1,0 +1,81 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — End a tour
+
+class Tour {
+  +timeLimitMs: number
+  +isOver(atMs: number): boolean
+  +result(own: PlayerId): TourResult
+}
+class Standings {
+  +record(player: PlayerId, distance: number, atMs: number): void
+  +entries(): StandingEntry[]
+}
+class StandingEntry {
+  +player: PlayerId
+  +distance: number
+  +reachedAtMs: number
+  +place: number
+  +isOwn: boolean
+}
+class TourResult {
+  +ending: TourEnding
+  +winner: PlayerId
+  +places: StandingEntry[]
+  +ownPlace: number
+  +ownPassport: PassportPage[]
+  +countriesReached: number
+  +tourLength: number
+}
+enum TourEnding {
+  allTheWayRound
+  timeLimit
+}
+class PassportPage {
+  +country: CountryId
+  +stamped: boolean
+}
+class Passport {
+  +stamps(): Stamp[]
+  +pages(desks: DeskState[]): PassportPage[]
+}
+interface GameSession {
+  +tour: Signal<TourState>
+  +result: Signal<TourResult | null>
+  +playAgain(): void
+  +leave(): void
+}
+class SoloGame {
+  -onDuelDecided(winner: PlayerId): void
+  +playAgain(): void
+  +leave(): void
+}
+class PodiumPage {
+  -session: GameSession
+  +onPlayAgain(): void
+  +onHome(): void
+}
+
+SoloGame ..|> GameSession
+SoloGame *-- Tour
+Tour *-- Standings
+Tour *-- Passport
+Tour ..> TourResult : builds
+Standings *-- StandingEntry
+TourResult --> TourEnding
+TourResult *-- StandingEntry : places
+TourResult *-- PassportPage
+Passport ..> PassportPage : builds
+PodiumPage ..> GameSession : injects GAME_SESSION
+@enduml

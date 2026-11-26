@@ -1,0 +1,43 @@
+@startuml
+title UML sequence behaviour — Play again or go Home from the Podium in a solo game
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — game application" #E0F2FE
+  participant "PodiumPage" as page
+  participant "SoloGame\n(GameSession)" as solo
+  participant "DuelPage" as duel
+  participant "HomePage" as home
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "Tour" as tour
+end box
+alt Play again in a solo game (L2-035 criterion 3)
+  child -> page : Choose "Play again"
+  page -> solo : playAgain()
+  solo -> solo : Drop the ended tour and its result
+  solo -> tour : start(the same setup, the same kid)
+  tour --> solo : A new tour
+  solo --> page : TourState phase duel
+  page -> duel : Navigate to Duel, Mic Check is not shown again (L2-012 criterion 6)
+  duel --> child : The first flash card of the new tour
+else Home (L2-035 criterion 4)
+  child -> page : Choose "Home"
+  page -> solo : leave()
+  solo -> solo : Cancel timers, drop the tour
+  page -> home : Navigate to Home, the game route and SoloGame are destroyed
+  home --> child : Home, with "Play again" (L2-032 criterion 2)
+end
+@enduml

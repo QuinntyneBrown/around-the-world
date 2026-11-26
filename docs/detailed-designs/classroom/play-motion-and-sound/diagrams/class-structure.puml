@@ -1,0 +1,87 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Play motion and sound
+
+enum GameMoment {
+  cardShown
+  keyPressed
+  answerCorrect
+  wrongAnswer
+  duelWon
+  duelLost
+  travellerHopsOn
+  travellerSitsDown
+  countryReached
+}
+enum SoundId {
+  pop
+  chime
+  jingle
+}
+interface Sound {
+  +muted: Signal<boolean>
+  +play(sound: SoundId): void
+  +setMuted(muted: boolean): void
+}
+class BrowserSound {
+  -unlocked: boolean
+  +muted: Signal<boolean>
+  +play(sound: SoundId): void
+  +setMuted(muted: boolean): void
+  -unlockOnFirstTouch(): void
+  -release(): void
+}
+interface MotionPreference {
+  +reduced: Signal<boolean>
+}
+class BrowserMotionPreference {
+  +reduced: Signal<boolean>
+  -release(): void
+}
+class MomentPlan <<helper>> {
+  +for(moment: GameMoment, reduced: boolean): MomentRow
+}
+class MomentRow {
+  +sound: SoundId | null
+  +animations: KidAnimation[]
+  +effect: ScreenEffect
+  +lastsMs: number
+}
+class MomentPlayer {
+  +effect: Signal<ScreenEffect>
+  +arrived: Signal<boolean>
+  -timers: Set<number>
+  -carryOut(row: MomentRow): void
+  -release(): void
+}
+interface ClassroomRenderer {
+  +play(kid: KidId, animation: KidAnimation): Promise<void>
+  +show(state: ClassroomState): void
+}
+interface PlayerChoices {
+  +soundMuted: Signal<boolean>
+  +setSoundMuted(muted: boolean): void
+}
+
+Sound <|.. BrowserSound
+MotionPreference <|.. BrowserMotionPreference
+BrowserSound --> PlayerChoices : keeps mute
+MomentPlan ..> MomentRow : returns
+MomentPlan ..> GameMoment
+MomentRow --> SoundId
+MomentPlayer ..> MomentPlan : looks up
+MomentPlayer --> Sound : plays
+MomentPlayer --> MotionPreference : reads
+MomentPlayer --> ClassroomRenderer : animates
+@enduml

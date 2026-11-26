@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Wait in the Lobby
+
+Person(host, "Host", "Starts the game")
+Person(player, "Player", "Waits in the Lobby")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "The Lobby on each player's device")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core with RoomHub", "Holds the room and pushes each change")
+  ContainerDb(store, "Room store", "EF Core, engine to supply", "Rooms, their players and setup")
+}
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+Rel(host, game, "Copies the link, starts the race", "HTTPS")
+Rel(player, game, "Watches the Lobby", "HTTPS")
+Rel(game, signalr, "Holds one connection per player", "SignalR over WebSockets")
+Rel(signalr, api, "Relays hub messages", "SignalR")
+Rel(api, store, "Reads and saves the room", "EF Core")
+@enduml

@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Arrange Duel by width
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+participant "Browser" as browser
+box "Frontend — game application" #E0F2FE
+  participant "MediaQueryViewport" as viewport
+  participant "DuelPage" as duel
+  participant "duel.scss" as css
+end box
+box "Frontend — components library" #E0F2FE
+  participant "FlashCardView" as card
+  participant "NumberPad" as pad
+  participant "WorldRing" as ring
+end box
+actor -> browser : Open Duel at some width, or turn or resize the device
+browser -> viewport : matchMedia change at 576, 768, 992 or 1200 px wide, or 544 px tall
+viewport --> duel : band and short signals
+browser -> css : Evaluate min-width queries and Duel's height queries
+css -> card : Page fills the dynamic viewport height; no scroll (L2-033 criterion 5)
+alt narrower than 768 px
+  css -> pad : Place under the flash card (L2-050 criterion 2)
+else 768 px or wider
+  css -> pad : Place beside the flash card (L2-050 criterion 2)
+end
+alt under 544 px tall
+  duel -> duel : Render "Desk {n} of {tour length}" in the HUD; no ring, no pill (L2-050 criterion 5)
+else narrower than 768 px
+  duel -> duel : Render the pill of text: "{country} · desk {n} of {tour length}" (L2-050 criterion 3)
+else 768 px or wider
+  duel -> ring : Render the world ring (L2-050 criterion 3)
+end
+opt under 672 px tall
+  css -> card : Shrink the flash card and the keys; a key stays 44 px tall or more (L2-050 criterion 5)
+end
+opt 200% zoom
+  browser -> css : Width in CSS pixels halves; a narrower band applies (L2-051 criterion 7)
+end
+duel --> actor : Flash card and pad both whole, nothing cut off (L2-050 criterion 1)
+actor -> pad : Tab to a key and press it, or touch a 44 x 44 px key (L2-051 criteria 1 and 2)
+pad --> duel : digit
+@enduml

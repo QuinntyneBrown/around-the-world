@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Set up a game
+
+Container_Boundary(game, "game application and its libraries") {
+  Component(page, "GameSetupPage", "Angular page in game", "Orchestrates the screen; Go! in a solo game, Save for a host, with Saving… and the alert when it did not save")
+  Component(toggles, "MathsToggles, TourLengthPicker, CardSpeedPicker", "Presentation components", "Show the choices, emit the choice pressed")
+  Component(rules, "GameSetupRules", "Pure helper in domain tour/", "Defaults, last one stays on, Easy, All, tables off with Times")
+  Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Keeps the setup on the device")
+  Component(conn, "RoomConnection", "SignalR client behind ROOM_CONNECTION", "Sends the host's setup to the room")
+}
+Container_Boundary(api, "AroundTheWorld.Api and its layers") {
+  Component(hub, "RoomHub", "SignalR hub", "SaveSetup sends one MediatR request")
+  Component(validator, "SaveSetupCommandValidator", "FluentValidation validator", "Refuses values Game Setup does not offer")
+  Component(handler, "SaveSetupCommandHandler", "MediatR handler", "Loads the room, saves the setup, notifies")
+  Component(room, "Room", "Domain entity", "Lets only the host save, only while waiting")
+  Component(notifier, "IRoomNotifier", "Port, implemented over the hub", "Pushes RoomState to the room's players")
+  ComponentDb(store, "Room store", "EF Core, IAppDbContext", "Rooms and their setup")
+}
+Rel(page, toggles, "Renders")
+Rel(page, rules, "Applies each choice with")
+Rel(page, choices, "Reads and writes the setup")
+Rel(page, conn, "saveSetup(setup)")
+Rel(conn, hub, "SaveSetup", "SignalR")
+Rel(hub, validator, "Sends SaveSetupCommand through")
+Rel(validator, handler, "Passes a valid command to")
+Rel(handler, room, "Loads and mutates")
+Rel(handler, store, "Reads and saves", "EF Core")
+Rel(handler, notifier, "RoomChanged")
+Rel(notifier, conn, "RoomState to every player", "SignalR")
+@enduml

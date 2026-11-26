@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Load lazily and release
+
+Person(child, "Child", "Plays a tour")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections")
+System_Boundary(atw, "Around the World") {
+  Container(initial, "game — initial chunks", "Angular application", "Shell, route table, tokens. Within the angular.json budget")
+  Container(screens, "game — screen chunks", "Lazy routes", "One chunk per screen, fetched by loadComponent")
+  Container(heavy, "Dynamic chunks", "import()", "Three.js and the world library; the SignalR client; the classmates' model code")
+  Container(api, "AroundTheWorld.Api", "ASP.NET Core, SignalR", "Decides an answer and pushes the result in one server step")
+}
+Rel(child, initial, "Opens", "HTTPS")
+Rel(initial, screens, "Loads a screen when its route is entered")
+Rel(screens, heavy, "Imports a heavy part when first needed")
+Rel(heavy, signalr, "Connects, in a game with friends only", "SignalR/WSS")
+Rel(signalr, api, "Delivers hub messages", "SignalR")
+@enduml

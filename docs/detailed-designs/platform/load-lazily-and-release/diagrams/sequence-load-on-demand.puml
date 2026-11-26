@@ -1,0 +1,63 @@
+@startuml
+title UML sequence behaviour — Load a chunk only when it is needed
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+participant "Browser network" as net
+box "Frontend — game application" #E0F2FE
+  participant "Initial chunks\n(shell, app.routes.ts)" as shell
+  participant "HomePage" as home
+  participant "SoloOrFriendsPage" as sof
+  participant "SoloGame" as solo
+  participant "FriendsGame" as friends
+  participant "DuelPage" as duel
+end box
+box "Frontend — domain library" #E0F2FE
+  participant "classmates/" as classmates
+end box
+box "Frontend — api library" #E0F2FE
+  participant "SignalRRoomConnection" as conn
+end box
+box "Frontend — world library" #E0F2FE
+  participant "ThreeClassroomRenderer" as renderer
+end box
+actor -> net : Open the game
+net --> shell : Initial chunks, within the angular.json budget (L2-047 criterion 1)
+shell -> net : loadComponent: Home chunk (L2-047 criterion 2)
+net --> home : HomePage
+home --> actor : Still picture of the classroom and "Play" (L2-047 criterion 4)
+home -> net : import() world chunk after the interface is drawn (L2-036 criterion 2)
+net --> renderer : Three.js and the renderer
+actor -> home : Play; a child with no kid kept confirms a kid first (L2-030 criterion 1)
+shell -> net : loadComponent: each screen's own chunk
+net --> sof : SoloOrFriendsPage
+alt Play solo
+  actor -> sof : Play solo
+  shell -> solo : Provide at the solo game route as GAME_SESSION
+  solo -> net : import() classmates' model code
+  net --> classmates : ClassmateAgent, OnDeviceModelSession
+  shell -> net : loadComponent: Duel chunk
+  net --> duel : DuelPage
+  note over conn : Never requested in a solo game (L2-047 criterion 3)
+else Make a room or join a room
+  actor -> sof : Make a room
+  shell -> friends : Provide at the friends game route as GAME_SESSION
+  friends -> net : import() SignalR client through ROOM_CONNECTION
+  net --> conn : SignalRRoomConnection
+  shell -> net : loadComponent: Lobby chunk, later Duel chunk
+  net --> duel : DuelPage
+end
+duel --> actor : First flash card
+@enduml

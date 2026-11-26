@@ -1,0 +1,15 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Play motion and sound
+
+Person(child, "Child", "Player on their own device")
+System_Boundary(atw, "Around the World") {
+  Container(game, "game", "Angular application", "Plays motion and sound for each moment of the game")
+  Container(world, "world", "Angular library, Three.js, lazy chunk", "Plays the kids' animations in the classroom")
+  ContainerDb(store, "Device storage", "Browser storage", "Keeps the sound setting")
+}
+Rel(child, game, "Plays, mutes and unmutes in", "browser")
+Rel(game, world, "Asks for a kid's animation")
+Rel(game, store, "Reads and writes the sound setting", "PlayerStorage")
+@enduml

@@ -1,0 +1,93 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Return after a lost connection
+
+enum ConnectionState <<frontend, api>> {
+  connected
+  reconnecting
+  closed
+}
+interface RoomConnection <<frontend, api>> {
+  +state: Signal<ConnectionState>
+  +slow: Signal<boolean>
+  +open(token: string): Promise<void>
+  +onSnapshot(handler): void
+  +close(): Promise<void>
+}
+class FriendsGame <<frontend, game>> {
+  +connection: Signal<ConnectionState>
+  +connectionSlow: Signal<boolean>
+  -token: string (memory only)
+}
+class GameSnapshot <<frontend, api>> {
+  +room: RoomState
+  +tour: TourState
+  +duel: DuelState
+}
+class RoomHub {
+  +OnConnectedAsync(): Task
+  +OnDisconnectedAsync(error: Exception?): Task
+}
+class ReconnectCommand {
+  +ConnectionToken Token
+  +string ConnectionId
+}
+class ReconnectCommandHandler {
+  +Handle(command: ReconnectCommand): Task<GameSnapshotDto>
+}
+class MarkPlayerAwayCommand {
+  +string ConnectionId
+}
+class MarkPlayerAwayCommandHandler
+class RemoveAbsentPlayerCommand {
+  +Guid RoomId
+  +Guid PlayerId
+}
+class RemoveAbsentPlayerCommandHandler
+class RoomTimers <<hosted service>> {
+  -time: TimeProvider
+}
+class Room {
+  +{static} TimeSpan SpotSavedFor = 30 s
+  +Return(token: ConnectionToken, connectionId: string, now: DateTimeOffset): RoomPlayer
+  +Remove(player: RoomPlayer, now: DateTimeOffset): void
+}
+class RoomPlayer {
+  +ConnectionToken Token
+  +string? ConnectionId
+  +DateTimeOffset? AwaySince
+  +int Position
+  +MarkAway(now: DateTimeOffset): void
+}
+class Tour {
+  +Leave(player: Guid): void
+  +End(): void
+}
+
+FriendsGame ..> RoomConnection : uses
+FriendsGame ..> GameSnapshot : replaces its state with
+RoomConnection --> ConnectionState : reports
+RoomConnection ..> RoomHub : connects with the token
+RoomHub ..> ReconnectCommand : sends on connect
+RoomHub ..> MarkPlayerAwayCommand : sends on disconnect
+RoomTimers ..> RemoveAbsentPlayerCommand : sends after 30 s away
+ReconnectCommandHandler ..> ReconnectCommand : handles
+MarkPlayerAwayCommandHandler ..> MarkPlayerAwayCommand : handles
+RemoveAbsentPlayerCommandHandler ..> RemoveAbsentPlayerCommand : handles
+ReconnectCommandHandler --> Room : loads / mutates
+MarkPlayerAwayCommandHandler --> RoomPlayer : marks away
+RemoveAbsentPlayerCommandHandler --> Room : loads / mutates
+Room *-- "0..8" RoomPlayer
+Room *-- "0..1" Tour
+@enduml

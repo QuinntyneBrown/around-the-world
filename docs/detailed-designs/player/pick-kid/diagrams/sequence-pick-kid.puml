@@ -1,0 +1,61 @@
+@startuml
+title UML sequence behaviour — Pick a kid
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as actor
+box "Frontend — game" #E0F2FE
+  participant "PickYourKidPage" as page
+end box
+box "Frontend — components" #E0F2FE
+  participant "KidPicker" as picker
+end box
+box "Frontend — domain" #E0F2FE
+  participant "StoredPlayerChoices" as choices
+  participant "NicknameGenerator" as gen
+  participant "LocalPlayerStorage" as storage
+  database "Device storage" as db
+end box
+actor -> page : Open Pick Your Kid: "Play" with no kid kept, or "Change kid"
+page -> choices : Read kid and nickname
+choices --> page : Kept kid and nickname, or none
+opt no nickname kept
+  page -> gen : generate() (L2-014 criterion 1)
+  gen --> page : Nickname of two list indexes
+end
+page -> picker : Offer five kids, the kept kid or Zuri selected (L2-013 criterion 1)
+picker --> actor : Kids with their colours, nickname as text, no field to type in
+actor -> picker : Select a kid
+picker --> page : picked(kid)
+page --> actor : Kid comes forward with tagline and description, button reads "I'm {kid}!" (L2-013 criterion 2)
+opt child chooses "New name"
+  actor -> page : New name
+  page -> gen : generateOtherThan(current) (L2-014 criterion 2)
+  gen --> page : A different nickname
+  page --> actor : New nickname as text
+end
+actor -> page : Confirm "I'm {kid}!"
+page -> choices : confirmKid(kid, nickname)
+choices -> storage : write(PlayerRecord)
+storage -> db : Store the five fields (L2-015 criterion 4)
+alt storage accepts the write
+  db --> storage : Stored
+else storage is unavailable
+  db --> storage : Failure
+  storage -> storage : Ignore the failure, show no error
+end
+storage --> choices : Done
+choices --> page : Kid and nickname kept (L2-013 criterion 3)
+page --> actor : Open Solo Or Friends
+@enduml

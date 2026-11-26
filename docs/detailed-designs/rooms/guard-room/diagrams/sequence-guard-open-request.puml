@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Guard a request that is open to anyone
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Anyone" as actor
+box "Frontend — game" #E0F2FE
+  participant "RoomPage" as page
+end box
+box "Frontend — api" #E0F2FE
+  participant "RoomsApi" as client
+end box
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "CORS policy" as cors
+  participant "Rate limiter" as limiter
+  participant "RoomsController" as controller
+  participant "ErrorCodeWriter" as errors
+end box
+box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
+  participant "ValidationBehaviour" as validation
+  participant "JoinRoomCommandHandler" as handler
+end box
+actor -> page : Choose "Join"
+page -> client : joinRoom(code, kid, nickname indexes)
+client -> cors : POST /rooms/join over HTTPS (L2-045 criterion 4)
+alt the request comes from another origin (L2-044 criterion 4)
+  cors --> client : No CORS grant; the browser refuses the request
+else the frontend's origin
+  cors -> limiter : Pass
+  alt more than 10 codes in a minute from one address, to confirm (L2-045 criterion 2)
+    limiter --> client : 429 ProblemDetails rate_limited
+    client --> page : ApiError rate_limited
+    page --> actor : Alert "That's a lot of tries! Wait a moment, then try again."; "Join" disabled
+  else within the join-room limit (L2-045 criterion 1)
+    limiter -> controller : Join, marked open to anyone
+    alt the body is larger than 1 KB (L2-044 criterion 2)
+      controller --> client : 413, request refused
+    else the body fits
+      controller -> validation : Send JoinRoomCommand
+      alt the code is not 4 letters, or the kid or nickname is out of range (L2-044 criterion 1)
+        validation -> errors : Refused with invalid_code, invalid_kid or invalid_nickname
+        errors --> client : 400 ProblemDetails with the code, no detail of the server (L2-044 criterion 3)
+        client --> page : ApiError
+        page --> actor : Message for the code, or the generic message
+      else the request is valid
+        validation -> handler : Handle
+        handler --> controller : RoomEntryDto with the player's ConnectionToken (L2-043 criterion 1)
+        controller --> client : 200
+        client --> page : RoomEntry
+        page --> actor : Open the Lobby
+      end
+    end
+  end
+end
+@enduml

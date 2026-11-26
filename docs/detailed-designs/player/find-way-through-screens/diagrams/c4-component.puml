@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Find the way through the screens
+
+Person(child, "Child", "Player on their own device")
+Container_Boundary(game, "game application") {
+  Component(router, "Router and app.routes.ts", "Angular Router", "Lazy route per screen; solo group and room group")
+  Component(home, "HomePage", "Angular page", "Classroom, name, Play or Play again (Pick Your Kid with no kid kept, else Solo Or Friends), sound and settings buttons")
+  Component(settings, "SettingsDialog", "CDK Dialog", "Two switches, Sound and Answer by shouting, each kept the moment it is changed")
+  Component(notFound, "NotFoundPage", "Angular page", "This desk isn't on the map; one way on, Home")
+  Component(gameGuard, "inGameGuard", "CanActivate guard", "Redirects to home when the child is in no game")
+  Component(roomGuard, "inRoomGuard", "CanActivate guard", "Redirects to home when the child is in no room")
+  Component(nav, "GameScreenNavigator", "Service in each game group", "Follows GameSession.screen: Mic Check, Duel, World Map after every decided duel, Podium")
+  Component(preload, "SoloPathPreloading", "PreloadingStrategy", "Preloads the chunks on the way to the first solo duel")
+  Component(visit, "Visit", "In-memory state", "Whether a tour was finished in this visit")
+  Component(session, "SoloGame or FriendsGame", "Service behind GAME_SESSION", "The game in progress")
+}
+Container_Boundary(domain, "domain library") {
+  Component(choices, "StoredPlayerChoices", "Store behind PLAYER_CHOICES", "Kid, nickname, setup, sound setting and way of answering")
+}
+Rel(child, home, "Chooses Play on")
+Rel(home, router, "Navigates through")
+Rel(home, choices, "Reads kid and nickname")
+Rel(home, visit, "Reads tourFinished")
+Rel(home, settings, "Opens")
+Rel(settings, choices, "Writes the sound setting and the way of answering")
+Rel(router, notFound, "Loads for an address that leads to no screen")
+Rel(router, gameGuard, "Runs before a game screen")
+Rel(router, roomGuard, "Runs before the room group")
+Rel(router, preload, "Asks which routes to preload")
+Rel(gameGuard, session, "Reads hasGame")
+Rel(nav, session, "Watches screen")
+Rel(nav, router, "Navigates through")
+@enduml

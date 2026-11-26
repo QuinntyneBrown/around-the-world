@@ -1,0 +1,73 @@
+@startuml
+title UML sequence behaviour — Answer a flash card with the number pad
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Child" as child
+box "Frontend — components library" #E0F2FE
+  participant "NumberPad" as pad
+  participant "NumberEntry" as entry
+  participant "FlashCardView" as card
+end box
+box "Frontend — game application" #E0F2FE
+  participant "DuelPage" as page
+  participant "SoloGame\n(GameSession)" as solo
+end box
+child -> pad : Press 2 (or type 2 on a keyboard, L2-010 criterion 5)
+pad -> entry : add(2)
+entry --> pad : "2"
+pad --> page : entryChange "2", keyPress
+page -> card : entered "2", shown within 100 ms (L2-049 criterion 1)
+child -> pad : Press 4
+pad -> entry : add(4)
+entry --> pad : "24"
+pad --> page : entryChange "24"
+page -> card : entered "24" (L2-010 criterion 1)
+opt a fourth digit (L2-010 criterion 2)
+  child -> pad : Press a digit with three entered
+  pad -> entry : add(digit)
+  entry --> pad : Unchanged
+end
+opt Delete or Backspace (L2-010 criterion 3)
+  child -> pad : Press Delete
+  pad -> entry : removeLast()
+  entry --> pad : One digit fewer
+  pad --> page : entryChange
+end
+child -> pad : Press Go (or Enter)
+pad -> entry : value()
+alt no digit entered (L2-010 criterion 4)
+  entry --> pad : Nothing
+  pad -> pad : No answer is given
+else digits entered
+  entry --> pad : 24
+  pad --> page : go 24
+  page -> solo : answer(24)
+  alt correct
+    solo --> page : DuelState, outcome won
+  else wrong (L2-004)
+    solo --> page : DuelState, ownFrozen true, ownWrongAnswer 24
+    page -> card : "Not 24! Frozen for a sec…" (L2-004 criterion 5)
+    page -> pad : disabled true for 1 s
+    opt a key while frozen (L2-010 criterion 6)
+      child -> pad : Press or type a key
+      pad -> pad : Nothing is entered
+    end
+    solo --> page : DuelState, ownFrozen false
+    page -> pad : disabled false
+    pad -> entry : clear()
+    pad --> page : entryChange "", the entry is empty (L2-010 criterion 7)
+  end
+end
+@enduml

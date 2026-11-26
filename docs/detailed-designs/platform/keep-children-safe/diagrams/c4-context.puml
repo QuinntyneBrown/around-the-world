@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Keep children safe
+
+Person(child, "Child", "A player aged 10 to 12, or the host of a room")
+System(atw, "Around the World", "The classroom flash-card game. Holds no account, no real name and no audio")
+System_Ext(speech, "Speech recognition", "The browser's own, optional. Turns a shout into words on the device's behalf")
+System_Ext(signalr, "Azure SignalR Service", "Carries the SignalR connections in a deployed system")
+
+Rel(child, atw, "Picks a kid, shouts or taps answers, types only a room code")
+Rel(atw, speech, "Listens through; keeps a number only")
+Rel(atw, signalr, "Sends a code, ids, indexes and numbers through", "WSS")
+@enduml

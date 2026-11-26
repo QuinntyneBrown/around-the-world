@@ -1,0 +1,58 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Answer with the number pad
+
+class NumberPad {
+  +disabled: InputSignal<boolean>
+  +entryChange: Output<string>
+  +go: Output<number>
+  +keyPress: Output<void>
+  -entry: Signal<NumberEntry>
+  +onDigit(digit: number): void
+  +onDelete(): void
+  +onGo(): void
+  +onKeydown(event: KeyboardEvent): void
+}
+class NumberEntry {
+  +{static} MAX_DIGITS = 3
+  +digits: string
+  +add(digit: number): NumberEntry
+  +removeLast(): NumberEntry
+  +clear(): NumberEntry
+  +value(): number | null
+}
+class FlashCardView {
+  +card: InputSignal<FlashCard>
+  +entered: InputSignal<string>
+}
+interface GameSession {
+  +duel: Signal<DuelState>
+  +answer(value: number): void
+}
+interface Sound {
+  +play(sound: SoundId): void
+}
+class DuelPage {
+  -session: GameSession
+  -entered: Signal<string>
+  +onEntryChange(digits: string): void
+  +onGo(value: number): void
+}
+
+NumberPad *-- NumberEntry
+DuelPage --> NumberPad : binds disabled, listens to outputs
+DuelPage --> FlashCardView : binds entered
+DuelPage ..> GameSession : injects GAME_SESSION
+DuelPage ..> Sound : injects SOUND
+@enduml
