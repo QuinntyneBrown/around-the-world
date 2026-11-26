@@ -1,0 +1,45 @@
+// The status-overlay block of docs/design-system/assets/components.css: the scrim over the whole
+// screen and the card centred on it, 24px from the edges at every width. It fades in over 200 ms.
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-bg-backdrop);
+  animation: fade-in var(--duration-base) var(--ease-standard);
+}
+
+.status-overlay__card {
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  text-align: center;
+  background: var(--color-bg-surface-raised);
+  color: var(--color-fg-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-4);
+
+  > atw-icon {
+    color: var(--color-fg-accent);
+  }
+}
+
+.status-overlay__title {
+  font: var(--text-h2);
+}
+
+.status-overlay__text {
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

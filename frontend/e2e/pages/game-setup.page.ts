@@ -20,6 +20,11 @@ export class GameSetupPage {
   readonly lastTableStatus: Locator;
   readonly timesOffHint: Locator;
   readonly go: Locator;
+  /** In a room: the alert when the host's setup did not save, and its "Try again". */
+  readonly notSaved: Locator;
+  readonly tryAgain: Locator;
+  /** The hidden status while the room's setup is arriving. */
+  readonly arriving: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.locator('.topbar__title');
@@ -48,6 +53,9 @@ export class GameSetupPage {
     this.lastTableStatus = page.getByText('Keep at least one times table on.');
     this.timesOffHint = page.getByText('Turn on Times to pick tables.');
     this.go = page.locator('.toy-btn--xl');
+    this.notSaved = page.locator('.alert--danger');
+    this.tryAgain = this.notSaved.getByRole('button', { name: 'Try again' });
+    this.arriving = page.getByRole('status').filter({ hasText: 'Getting your setup…' });
   }
 
   async open(): Promise<void> {

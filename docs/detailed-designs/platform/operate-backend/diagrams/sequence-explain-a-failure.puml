@@ -17,20 +17,20 @@ skinparam package {
 actor "Child" as actor
 box "Frontend — game application" #E0F2FE
   participant "RoomPage /\nSoloOrFriendsPage" as page
-  participant "messageForCode" as words
+  participant "joinRefusal" as words
   participant "SoloGame" as solo
   participant "GameErrorHandler" as geh
   participant "SomethingWentWrongPage" as sww
 end box
 box "Frontend — components library" #E0F2FE
-  participant "AlertMessage" as alert
+  participant "Alert" as alert
 end box
 box "Frontend — api library" #E0F2FE
   participant "RoomsApi" as client
 end box
 box "Backend — AroundTheWorld.Api" #D1FADF
   participant "RoomsController" as controller
-  participant "ProblemDetailsWriter" as writer
+  participant "ErrorCodeWriter" as writer
 end box
 box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
   participant "JoinRoomCommandHandler" as handler
@@ -40,7 +40,7 @@ page -> client : joinRoom(code, kid, nickname)
 alt the backend answers
   client -> controller : HTTPS request
   controller -> handler : Send JoinRoomCommand
-  handler --> controller : Refusal with ErrorCode room_not_found
+  handler --> controller : RefusedException with code room_not_found
   controller -> writer : Write the refusal
   writer --> controller : ProblemDetails with code; no stack trace, no server detail (L2-054 criterion 1)
   controller --> client : ProblemDetails response
@@ -49,13 +49,13 @@ else the backend cannot be reached
   client -> controller : HTTPS request
   client --> page : ApiError(code = backend_unreachable), made on the device
 end
-page -> words : messageForCode(joinRoom, ApiError)
+page -> words : joinRefusal(ApiError)
 alt a known code
-  words --> page : "Hmm, no room with that code. Check the letters?" (L2-023 criterion 4)
+  words --> page : not-found; the page words it "Hmm, no room with that code. Check the letters?" (L2-023 criterion 4)
 else a code with no message
-  words --> page : The generic message; the backend's detail is dropped (L2-054 criterion 2)
+  words --> page : error; the page's generic words, the backend's detail dropped (L2-054 criterion 2)
 end
-page -> alert : words
+page -> alert : the words
 alert --> actor : Words a child understands, announced as an alert
 opt the child is on Solo Or Friends and the backend cannot be reached
   actor -> page : Play solo

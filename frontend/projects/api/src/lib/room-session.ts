@@ -1,0 +1,40 @@
+import { InjectionToken, type Signal } from '@angular/core';
+import { type GameSetup } from './game-setup';
+import { type RoomEntry, type RoomState } from './rooms';
+
+/**
+ * Whether the room's connection is opening, live, lost and being tried again for 30 seconds, or
+ * lost for good (L2-029 criteria 1 and 6, docs/adr/0036).
+ */
+export type RoomLink = 'connecting' | 'live' | 'reconnecting' | 'lost';
+
+/**
+ * The room the device's player is in, kept up to date over its connection: what the Lobby reads
+ * (docs/detailed-designs/rooms/wait-in-lobby/, docs/adr/0032). The room group provides it.
+ */
+export interface RoomSession {
+  /** The code, the player's own id and the token, as the room was entered. */
+  readonly entry: RoomEntry;
+  /** The room as last received over the connection; null until it first arrives. */
+  readonly room: Signal<RoomState | null>;
+  readonly link: Signal<RoomLink>;
+  /**
+   * The host's "Save" on Game Setup: sends the setup to the room (L2-018 criterion 2). Resolves
+   * once the room has it; rejects when it is refused or cannot be sent (criterion 7).
+   */
+  saveSetup(setup: GameSetup): Promise<void>;
+  /**
+   * The host's "Start the race" (L2-025 criterion 2). Resolves once the room has started; rejects
+   * when it is refused or cannot be sent.
+   */
+  startRace(): Promise<void>;
+  /** Connects afresh with the same token after the room was lost ("Try again"). */
+  retry(): void;
+  /**
+   * Leaves the room: tells it, closes the connection and drops it from the visit
+   * (L2-030 criterion 8). It never rejects.
+   */
+  leave(): Promise<void>;
+}
+
+export const ROOM_SESSION = new InjectionToken<RoomSession>('ROOM_SESSION');

@@ -6,6 +6,7 @@ import {
   SOUND,
   WAY_OF_ANSWERING,
   type DuelState,
+  type GameConnection,
   type GameSession,
 } from '@atw/api';
 import { DuelPage } from './duel';
@@ -31,6 +32,10 @@ describe('DuelPage', () => {
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
       watchMoments: () => () => undefined,
+      stickers: signal([]),
+      connection: signal<GameConnection>('live'),
+      notice: signal(null),
+      sendSticker: () => undefined,
       kind: 'solo',
       paused: signal(false),
       pause: () => undefined,
@@ -101,6 +106,9 @@ describe('DuelPage', () => {
         duel: signal(EGYPT),
         tour: signal(null),
         result: signal(null),
+        stickers: signal([]),
+        connection: signal<GameConnection>('live'),
+        notice: signal(null),
         kind,
         paused: signal(false),
       } as unknown as GameSession;

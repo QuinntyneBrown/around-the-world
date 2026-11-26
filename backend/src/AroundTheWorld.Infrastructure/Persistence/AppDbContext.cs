@@ -13,6 +13,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<Room> Rooms => Set<Room>();
 
+    public void Forget() => ChangeTracker.Clear();
+
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => Database.CanConnectAsync(cancellationToken);
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Room>(room =>
@@ -26,6 +30,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             room.HasIndex(r => r.Code).IsUnique();
             room.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             room.HasIndex(r => r.LastActivityAt);
+            room.Property(r => r.Version).IsConcurrencyToken();
+            room.Property(r => r.Game)
+                .HasConversion(GameColumn.Converter, GameColumn.Comparer)
+                .HasColumnName("Game");
+            room.HasIndex(r => r.GameDueAt);
             room.OwnsOne(r => r.Setup, setup =>
             {
                 setup.Property(s => s.Kinds);
@@ -40,6 +49,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             player.ToTable("RoomPlayers");
             player.HasKey(p => p.Id);
+            // The domain makes each player's id, so a player added to a room is a new row.
+            player.Property(p => p.Id).ValueGeneratedNever();
             player.Property(p => p.Kid).HasConversion<string>().HasMaxLength(8);
             player.OwnsOne(p => p.Nickname);
             player.Property(p => p.Token)
@@ -47,6 +58,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasMaxLength(43)
                 .IsUnicode(false);
             player.HasIndex(p => p.Token).IsUnique();
+            // The room's timers find the players away for 30 seconds by this column (docs/adr/0036).
+            player.Property(p => p.ConnectionId).HasMaxLength(64).IsUnicode(false);
+            player.HasIndex(p => p.AwaySince);
         });
     }
 }

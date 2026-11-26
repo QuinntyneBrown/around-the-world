@@ -24,7 +24,7 @@ box "Frontend — api" #E0F2FE
 end box
 box "Backend — AroundTheWorld.Api" #D1FADF
   participant "RoomHub" as hub
-  participant "RoomTimers" as timers
+  participant "IdleRoomSweeper" as timers
 end box
 box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
   participant "SubmitAnswerCommandHandler" as handler
@@ -38,8 +38,8 @@ end box
 group the tour ends and the room is kept (L2-027 criterion 3)
   handler -> db : Save the room with status Over
   db --> handler : Commit result
-  handler -> hub : IRoomNotifier.TourEnded with every player's place
-  hub --> conn : TourEnded to the whole room
+  handler -> hub : IRoomNotifier.GameChangedAsync with the ending and every player's place
+  hub --> conn : GameChanged to the whole room, and RoomChanged with the status over
   conn --> session : Final TourState
   session --> page : tour signal
   page --> actor : Podium with "Play again", "Home" and "Everyone goes back to room {code}."
@@ -82,8 +82,8 @@ group nobody has done anything for 10 minutes, to confirm (L2-027 criterion 4)
   timers -> idle : Send DeleteIdleRoomsCommand
   idle -> db : Delete rooms whose LastActivityAt is 10 minutes old or more
   db --> idle : Commit result
-  idle -> hub : IRoomNotifier.RoomClosed for each deleted room
-  hub --> conn : RoomClosed, connections of the room closed
+  idle -> hub : The deleted room's connections find no room
+  hub --> conn : A Podium whose connection is lost for good shows "We lost the room"
   conn --> session : Room closed
   session --> page : Room lost
   page --> actor : Alert "We lost the room"; "Play with friends" in place of "Play again" (L2-035 criterion 6)

@@ -18,5 +18,19 @@ public sealed record RoomCode
     public static RoomCode From(string text) =>
         IsValid(text) ? new RoomCode(text) : throw new ArgumentException("A room code is 4 capital letters from A to Z.", nameof(text));
 
+    /// <summary>
+    /// The code as a child typed it, in capitals, so "bolt" finds BOLT (L2-023 criterion 8);
+    /// null when it is not 4 letters from A to Z in either case.
+    /// </summary>
+    public static RoomCode? Parse(string? typed)
+    {
+        if (typed is not { Length: Length } || !typed.All(letter => letter is >= 'A' and <= 'Z' or >= 'a' and <= 'z'))
+        {
+            return null;
+        }
+
+        return new RoomCode(typed.ToUpperInvariant());
+    }
+
     public override string ToString() => Value;
 }

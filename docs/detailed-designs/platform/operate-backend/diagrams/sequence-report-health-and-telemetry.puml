@@ -26,10 +26,12 @@ box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
 end box
 box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
   participant "RoomStoreProbe" as storeProbe
-  participant "SignalRServiceProbe" as svcProbe
   participant "TelemetryScrubber" as scrub
 end box
-probe -> pipeline : GET the live endpoint
+box "Backend — AroundTheWorld.Api" #D1FADF
+  participant "SignalRServiceProbe" as svcProbe
+end box
+probe -> pipeline : GET the live endpoint (rate limited for each address)
 pipeline -> health : Live()
 health --> probe : 200; the process answers (L2-053 criterion 3)
 probe -> pipeline : GET the ready endpoint
@@ -41,7 +43,7 @@ handler -> storeProbe : IsReady()
 storeProbe --> handler : Room store reachable or not
 opt Azure SignalR Service is set
   handler -> svcProbe : IsReady()
-  svcProbe --> handler : Service connected or not
+  svcProbe --> handler : HEAD {endpoint}/api/health answered within 2 s, or not
 end
 handler --> tel : Readiness
 tel -> tel : Record duration and outcome
@@ -52,6 +54,6 @@ else a probe is not ready
   health --> probe : 503 not ready; no detail of the server
 end
 pipeline -> scrub : End of span
-scrub -> scrub : Drop path values, query string and client address (L2-053 criterion 2)
+scrub -> scrub : Drop path values, query string, client address and user agent; log path, query and host (L2-053 criterion 2)
 scrub -> otel : Export trace, metrics and logs (OTLP)
 @enduml

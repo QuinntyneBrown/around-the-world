@@ -1,10 +1,14 @@
 import { InjectionToken, type Signal } from '@angular/core';
 import { type DuelState } from './duel';
 import { type GameSetup } from './game-setup';
+import { type ShownSticker, type StickerId } from './sticker';
 import { type TourResult, type TourState } from './tour';
 
-/** The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/). */
-export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium';
+/**
+ * The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/), or, in
+ * a game with friends, the room's Lobby once "Play again" returned the room to it (ADR 0034).
+ */
+export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium' | 'lobby';
 
 /**
  * A moment of the game that makes a sound (docs/adr/0029-motion-and-sound.md): the device's own
@@ -12,6 +16,24 @@ export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium';
  * stamped (`countryReached`). A lost duel, a wrong answer and a classmate's answer are none.
  */
 export type GameMoment = 'answerCorrect' | 'countryReached';
+
+/**
+ * The device's connection to a game with friends (L2-029, docs/adr/0036): live, lost and being
+ * tried again for 30 seconds (`reconnecting`), or lost for good (`gone`). A solo game is always
+ * `live`.
+ */
+export type GameConnection = 'live' | 'reconnecting' | 'gone';
+
+/**
+ * The connection's banner across the top of Duel (L2-029 criteria 2, 4, 5 and 7): back within 30
+ * seconds, another player dropped out (named by their nickname), everyone else has left, or the
+ * connection is slow. One shows at a time, the most urgent first.
+ */
+export type ConnectionNotice =
+  | { readonly kind: 'back' }
+  | { readonly kind: 'droppedOut'; readonly nickname: string }
+  | { readonly kind: 'everyoneLeft' }
+  | { readonly kind: 'wobbly' };
 
 /** Whether a game is played on the device against classmates, or in a room with friends. */
 export type GameKind = 'solo' | 'friends';
@@ -39,12 +61,26 @@ export interface GameSession {
   /** How the tour ended, once it is over and the Podium opens; null until then (L2-035). */
   readonly result: Signal<TourResult | null>;
   /**
+   * The stickers showing on Duel, at most three, newest last (L2-028 criteria 3 and 7); always
+   * none in a solo game.
+   */
+  readonly stickers: Signal<readonly ShownSticker[]>;
+  /** The device's connection to the room; always `live` in a solo game (L2-029). */
+  readonly connection: Signal<GameConnection>;
+  /** The connection's banner to show on Duel, or null; always null in a solo game (L2-029). */
+  readonly notice: Signal<ConnectionNotice | null>;
+  /**
    * Starts a game with the setup (L2-018 criterion 1). With `micCheck` the game waits at the
    * screen `mic-check` and deals no card until `continue()` (L2-012 criterion 8).
    */
   start(setup: GameSetup, options?: { readonly micCheck?: boolean }): void;
   /** Gives the device's player's answer to the duel (L2-010); it is ignored when it cannot count. */
   answer(value: number): void;
+  /**
+   * Sends a sticker to the room as its id, while the device's player watches a duel (L2-028
+   * criterion 3); a solo game sends none.
+   */
+  sendSticker(sticker: StickerId): void;
   /**
    * Moves the game on at the child's word: leaving Mic Check deals the first card, the pill after a lost duel opens World Map, and
    * "Back to the card" on World Map returns to Duel at once, or opens the Podium after the last

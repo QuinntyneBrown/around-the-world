@@ -37,12 +37,16 @@ export const PodiumWords = {
 
   /**
    * "You went around the world!", "Nia made it round first!", "Time’s up! You travelled
-   * furthest!" or "Time’s up! Nia travelled furthest!" (L2-035 criterion 1).
+   * furthest!" or "Time’s up! Nia travelled furthest!" (L2-035 criterion 1); "You travelled
+   * furthest!" when everyone else left a game with friends (L2-029 criterion 5, ADR 0036).
    */
   headline(result: TourResult): string {
     const winner = PodiumWords.player(result, result.winner);
     if (result.ending === 'timeLimit') {
       return `Time’s up! ${PodiumWords.nameFirst(winner)} travelled furthest!`;
+    }
+    if (result.ending === 'everyoneLeft') {
+      return `${PodiumWords.nameFirst(winner)} travelled furthest!`;
     }
     return winner.you
       ? 'You went around the world!'
@@ -50,13 +54,13 @@ export const PodiumWords = {
   },
 
   /**
-   * The winning kid's cheer; on the time limit "{n} desks out of {tour length}." before it. A
-   * classmate who is not one of the five kids has no cheer.
+   * The winning kid's cheer; on the time limit, or when everyone else left, "{n} desks out of
+   * {tour length}." before it. A classmate who is not one of the five kids has no cheer.
    */
   cheer(result: TourResult): string {
     const winner = PodiumWords.player(result, result.winner);
     const cheer = winner.kid === 'classmate' ? '' : CHEERS[winner.kid];
-    if (result.ending !== 'timeLimit') return cheer;
+    if (result.ending === 'allTheWayRound') return cheer;
     return `${result.winnerDistance} desks out of ${result.tourLength}. ${cheer}`.trim();
   },
 

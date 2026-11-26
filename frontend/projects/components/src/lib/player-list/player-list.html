@@ -1,6 +1,12 @@
-@for (player of players(); track player.id) {
-  <li atw-player-card [player]="player"></li>
-}
-@for (desk of emptyDesks(); track desk) {
-  <li atw-player-card></li>
+@if (loading()) {
+  @for (desk of placeholders; track desk) {
+    <li atw-player-card [loading]="true"></li>
+  }
+} @else {
+  @for (player of players(); track player.id) {
+    <li atw-player-card [player]="player"></li>
+  }
+  @for (desk of emptyDesks(); track desk) {
+    <li atw-player-card></li>
+  }
 }

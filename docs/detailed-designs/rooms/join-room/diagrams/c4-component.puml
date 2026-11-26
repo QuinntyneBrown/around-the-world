@@ -5,9 +5,9 @@ title Components — Join a room
 
 Container_Boundary(game, "game and its libraries") {
   Component(page, "RoomPage", "Angular page, game", "Holds the code, the Join button and the refusal messages")
-  Component(boxes, "CodeBoxes", "Presentation component, components", "The code-field block: four boxes that take letters only and show capitals")
+  Component(boxes, "CodeField", "Presentation component, components", "The code-field block: four boxes that take letters only and show capitals")
   Component(client, "RoomsApi", "HTTP client, api", "Sends the request and returns a RoomEntry or an ApiError")
-  Component(session, "FriendsGame", "Game service, game", "Keeps the code, the connection token and the RoomState in memory")
+  Component(session, "Visit", "Visit state, game", "Keeps the RoomEntry (the code, the connection token and the RoomState) in memory for this visit")
 }
 Container_Boundary(api, "AroundTheWorld.Api and its projects") {
   Component(ctrl, "RoomsController", "ASP.NET Core controller", "Open to anyone, rate limited, sends one request")
@@ -20,7 +20,7 @@ Container_Boundary(api, "AroundTheWorld.Api and its projects") {
 Rel(page, boxes, "Shows and reads the code from")
 Rel(page, client, "Calls joinRoom")
 Rel(page, session, "Hands the RoomEntry to")
-Rel(client, ctrl, "POST /rooms/join", "JSON/HTTPS")
+Rel(client, ctrl, "POST /api/rooms/join", "JSON/HTTPS")
 Rel(ctrl, handler, "Sends JoinRoomCommand")
 Rel(validator, handler, "Runs before")
 Rel(handler, room, "Calls Join on")

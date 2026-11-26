@@ -35,6 +35,13 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                         .HasColumnType("char(4)")
                         .IsFixedLength();
 
+                    b.Property<string>("Game")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Game");
+
+                    b.Property<DateTimeOffset?>("GameDueAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("LastActivityAt")
                         .HasColumnType("datetimeoffset");
 
@@ -43,10 +50,16 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("GameDueAt");
 
                     b.HasIndex("LastActivityAt");
 
@@ -56,8 +69,15 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("AroundTheWorld.Domain.Rooms.RoomPlayer", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("AwaySince")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ConnectionId")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<bool>("IsHost")
                         .HasColumnType("bit");
@@ -83,6 +103,8 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                         .HasColumnType("varchar(43)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AwaySince");
 
                     b.HasIndex("RoomId");
 

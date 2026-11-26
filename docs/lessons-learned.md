@@ -798,3 +798,364 @@ the lessons that fit.
   in the mocks too.
 - *Put a browser resource behind a count the fixture can read* (09, 1): not needed; the
   network listener is released with its route.
+
+## Journey 13: Join a room and wait in the Lobby
+
+**What slowed it.**
+
+- EF Core marks an entity with a client-made `Guid` key, found through a navigation, as
+  modified rather than added; the first join answered 500 until `RoomPlayer.Id` was configured
+  `ValueGeneratedNever`.
+- EF Core InMemory has no transactions: a save that fails its concurrency check has already
+  written its added rows, so two racing joins left 9 players in a room of 8. The rule is proved
+  with a store double that refuses the whole save, as the room store does, injected through
+  `IAppDbContext`; racing two real requests proves nothing on InMemory.
+- After a join was refused, Backspace in the code field did nothing: Chrome put the caret at
+  the start once the field was disabled and enabled again, and the fourth letter was then
+  refused by `maxlength`. The field moves the caret to the end before each key.
+- A room's link is the Lobby's own address, so joining from it navigates to the address already
+  shown, which the router ignores; the join navigates with `onSameUrlNavigation: 'reload'`.
+- `model()`, `afterNextRender` and `viewChild()` in one lazy component moved 1.25 kB of
+  `@angular/core` into `main`: esbuild splits by module, and the framework's modules are in
+  `main`.
+- Reading the boxes' text straight after typing raced the zoneless render; retrying
+  assertions (`toHaveText` on the list) fixed it.
+
+**New lessons.**
+
+1. Before using a framework API no screen used yet, build and compare `main`: a lazy chunk's
+   first use of a framework module's export lands in the initial bundle.
+2. A backend rule that relies on the store's unit of work is proved through a store double
+   that refuses the whole save; EF Core InMemory writes part of a failed save.
+3. Give an invisible input that stands in for drawn boxes a fixed caret, and test editing it
+   after it was disabled and enabled again.
+4. Fake a real-time channel in the shared fixture at its protocol (SignalR's JSON records over
+   `routeWebSocket`), with the tokens presented and the methods invoked recorded, so specs
+   prove what the game sends and that it closes the connection.
+5. A notification that leaves by itself is timed by a small pausable timer with its own unit
+   tests on a fake clock; the spec proves only that it leaves and that a failure stays.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build,
+  which showed the 1.25 kB in `main` at once.
+- *Check a fake once by hand* (01, 2): the join handler without its retry failed the race test,
+  the join without its push failed the hub test with the state that did arrive, and Room
+  ignoring `room_full` failed its spec.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place, and
+  `@microsoft/signalr` is imported by `api` only, dynamically.
+- *Build a component the first time a screen needs it* (01, 4): CodeField, FieldMessage, Toast
+  and ToastRegion added; PlayerCard and PlayerList (`loading`), IconButton (`onCode`),
+  TextButton (on `<a>`), Stack (`narrow`) and Icon (copy, person) extended; each marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0032
+  fills the designs' gaps and records the budget.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the SignalR client is its
+  own lazy chunk, imported dynamically by the room group's chunk only.
+- *A link or button block is an attribute component* (02, 2): CodeField on `<label>`,
+  FieldMessage on `<p>`, ToastRegion on `<div>`.
+- *Drive states through the fixture* (02, 3): `roomHub` (serves, holds back, refuses, drops,
+  changes) and `clipboard` (refuses, copied).
+- *Tag one spec per feature `@critical`* (02, 5): a friend joins and waits; a friend who joins
+  appears in the host's Lobby with a passing message.
+- *Put the page in the group that provides its service* (03, 1): the room group provides the
+  connection and `FriendsGame`, so leaving the group leaves the room and closes the
+  connection.
+- *Measure the initial bundle against the base commit* (03, 2): a worktree build of journey
+  12's commit, compared module by module, found the framework code and then the 0.96 kB.
+- *Prove a hand-over with a unit test* (03, 4): `FriendsGame`'s tests prove the connect, the
+  lost room, "Try again", the leave and the release when the group is destroyed.
+- *Prefer signals and outputs to `effect()`* (04, 2): the Lobby's messages are a
+  `linkedSignal` over the room; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the count of a full room reads
+  "8 of 8 players".
+- *Put a browser resource behind a count the fixture can read* (09, 1): `roomHub` counts the
+  open connections, proving the release on "Leave the room" and on Back.
+- *Read the chunk table before binding a framework service* (12, 1): CDK `Clipboard` stays in
+  the Lobby's chunk.
+- *Give the production limits a fixture of their own* (12, 3): the `join-room` limit is lifted
+  in `ApiFixture` and kept in `ThrottledApiFixture`.
+- *Await a background job through a pipeline behaviour* (12, 4): hub tests await each room state
+  through a client that records what arrived, by what it holds.
+- *Record what the game sent* (12, 5): the join's body and the tokens the connections presented.
+
+## Journey 14: Play a game with friends in real time
+
+**What slowed it.**
+
+- The rules live on the device for a solo game and had to be written again on the server for a
+  game with friends. One table of cases (`docs/specs/tour-cases.json`), played by a Vitest spec
+  of `domain` and an xUnit theory of the backend, keeps the two equal; the device's rules passed
+  every case first, which proved the table, and the server's port then failed only where it was
+  broken by hand (a freeze ending one millisecond late failed two cases) (ADR 0033).
+- The design's seven hub events (`GameStarted`, `FlashCardShown`, `DuelDecided`…) would each have
+  needed a handler and a fake. One `GameChanged` carrying the whole game, with durations left
+  rather than the server's times, let the device keep the last state only and let a pure helper
+  (`FriendsView`) work out the duel, the tour, the result and the screen from it.
+- A mutable domain object stored as a JSON column is not seen as changed by EF Core unless the
+  converter has a `ValueComparer` that compares and snapshots it by its JSON; the domain's
+  private setters are written through a `System.Text.Json` resolver modifier in Infrastructure,
+  so the domain knows nothing of storage.
+- A hosted service on `PeriodicTimer` with `FakeTimeProvider` runs at the final time of an
+  `Advance`, so every event of the game (the first card, a classmate's answer, a card's time)
+  runs at its own due time inside `RoomGame.Advance`, in order, however late the tick.
+- `RoomHubClient.WaitForAsync` returned the first matching state ever received, so "the room
+  waiting again" matched the Lobby before the race; `WaitForNextAsync` waits from now on.
+- `RoomSession.start` and `GameSession.start` clashed on `FriendsGame`, which implements both;
+  the Lobby's is `startRace`.
+- The backend's code for every slice, and the frontend's for slices 2 to 6, was written before
+  their specs ran, so most specs were green on their first run. Each was broken by hand (the
+  room's timers not registered; the loser's World Map, the Podium's lost room and Mic Check
+  switched off) and failed for the expected reason.
+
+**New lessons.**
+
+1. When the server and the device must apply the same rules, write one table of cases in a
+   neutral file both test projects read, and let the table name the requirement of each case.
+2. Send a real-time game as one state with durations left, not as events with the server's
+   times: a device then needs no clock of the server's, keeps one state, and a missed message
+   is put right by the next.
+3. Give a hosted service's work a "due at" column with an index and let the domain run every
+   event due by `now` at its own time, so a fake clock moved in one step plays out exactly.
+4. Store a domain aggregate as JSON only with a value comparer that snapshots it, or EF Core
+   saves nothing of a change made in place.
+5. A test helper that waits for "a state like this" must say whether it means any received so
+   far or the next one; offer both.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build.
+- *Check a fake once by hand* (01, 2): the room's timers, the freeze, the loser's World Map,
+  the Podium's lost room and Mic Check were each broken by hand.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): no new component; Icon
+  (`sliders`) and TableKeys (`locked`) extended; Alert, Spinner, Skeleton, TextButton and
+  ToyButton reused in the Lobby, Game Setup and Podium in a room.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADRs 0033 and
+  0034 fill the designs' gaps. `L2-030` criterion 8 (Mic Check's Back to the Lobby) was changed,
+  since the race has started when Mic Check shows.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): `main` grew 0.15 kB, the
+  room guard; everything else is in the room group's chunks.
+- *Drive states through the fixture* (02, 3): `roomHub` gained `game`, `invocations`,
+  `holdBackMethod`, `refusesMethod` and `acceptsMethod`.
+- *Tag one spec per feature `@critical`* (02, 5): the host starts, answers, hops and ends on the
+  Podium.
+- *Put the page in the group that provides its service* (03, 1): Game Setup, Mic Check, Duel,
+  World Map and the Podium join the room group, which provides `GAME_SESSION`.
+- *Drive game time from the wall clock* (04, 1): `FriendsGame` counts durations left on
+  `GameClock`, so `clock.pass` moves the timer bar, the freeze and the screens.
+- *Prefer signals and outputs to `effect()`* (04, 2): no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsView.screen` decides it,
+  and the navigator listens.
+- *Design the browser's Back on every screen* (08, 2): Back on Duel and World Map asks "Leave the
+  game?" in a race.
+- *Prove a backend rule through a store double* (13, 2): two answers saved together are proved
+  with `WithFirstSaveRacedBy` over the hub.
+- *Fake a real-time channel at its protocol* (13, 4): the fake hub completes, holds and refuses
+  invocations as SignalR does.
+
+## Journey 15: Watch a duel and send a sticker
+
+**What slowed it.**
+
+- ADR 0034 had a player not in the duel watch it on World Map, as a solo player who has sat down
+  does, while `L2-028` criterion 1 has them watch it on Duel. `FriendsView` had to publish the
+  duel with the role `watching` and send everyone to Duel while a card is open; journey 14's
+  spec that pinned the old screen was changed with the requirement (ADR 0035).
+- The mocks put the stickers 8.5 rem above the bottom of Duel. A spec that measured the stickers
+  against the flash card at 360, 390 and 768 px failed at all three: under 992 px the watching
+  player's bar wraps into two or three rows and the card leaves no room above it. The region now
+  passes over the bar there, and the bar still takes a press through it; a screenshot of each
+  size, taken by a throwaway line and then removed, showed where the room was.
+- A spec that asserted "no switch" by counting the footer's buttons broke as soon as the sticker
+  bar joined the footer; it now names the two switches.
+- The stack's bound was built with the buffer in slice 2, so slice 3's stacked spec was green
+  on its first run; it was broken by hand (four shown) and failed as expected.
+
+**New lessons.**
+
+1. When a spec says something must not cover something else, measure the two boxes at a
+   phone, a tablet and a desktop in the behaviour spec: a mock drawn at one size can hide the
+   overlap at the others.
+2. Keep a per-connection limit in the hub connection's own `Context.Items`: it needs no
+   dictionary, nothing to forget on disconnect, and cannot grow with the connections made.
+3. A message that should leave in silence (a sticker the server ignores) is proved by a later
+   message that does arrive: SignalR keeps one connection's order, so when the later one is
+   received, anything sent before it would have been too.
+4. Let a short-lived thing on screen (a sticker) live on the game's clock that already ticks,
+   in a fixed-size buffer worked by a pure helper, rather than a timer of its own.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` stayed at 252.46 kB and the stickers are in Duel's lazy chunk.
+- *Check a fake once by hand* (01, 2): the bound (four shown) was broken by hand and failed the
+  stacked spec; the backend's limit test failed with all five stickers before the filter.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): StickerBar, StickerPop and
+  StickerRegion added, reusing Portrait; marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0035
+  fills the design's gaps and amends ADR 0034.
+- *A link or button block is an attribute component* (02, 2): the bar on `<div>`, a pop on
+  `<p>`, the region on `<div>`.
+- *Drive states through the fixture* (02, 3): `roomHub.sticker(id, from)` sends `StickerShown`.
+- *Tag one spec per feature `@critical`* (02, 5): a watching player sends a sticker and everyone
+  sees it.
+- *Drive game time from the wall clock* (04, 1): a sticker leaves after `clock.pass(2000)`.
+- *Prefer signals and outputs to `effect()`* (04, 2): the stickers showing are a `computed` over
+  the buffer and the game's clock; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsView.screen` sends a
+  watching player to Duel.
+- *Give a fake every answer the browser can give* (07, 3): the voice and microphone fakes prove
+  that a watching player who answers by voice opens no microphone.
+- *Fake a real-time channel at its protocol* (13, 4): `StickerShown` is a SignalR record like
+  `GameChanged`.
+- *Say whether a test helper waits for any or the next* (14, 5): `WaitForStickerAsync` takes any
+  received, and the tests then compare every sticker received.
+
+## Journey 16: Come back after a lost connection
+
+**What slowed it.**
+
+- The design's `GameSnapshot` and `TourEnded` were types and events the game no longer needed:
+  ADR 0033's single `GameChanged`, sent to every connection as it opens, is already the snapshot
+  a returning device needs, so the return is the existing `RoomChanged` and `GameChanged` pair.
+- SignalR's retry delays run on real timers, which the fixture's `clock` does not move. The
+  30 seconds are counted on the game's clock, ticked every 100 ms, which now also ticks while
+  the connection is being tried again, even in the Lobby; the fake hub holds a returning
+  connection's handshake until `returns()`, so a return is instant and a give-up is a
+  `clock.pass(30_000)`, with no spec waiting on SignalR's back-off.
+- A backend test needs to know the server has noticed a lost connection before it moves the
+  clock 30 seconds on. A pipeline behaviour that records every request handled, by the token of
+  the connection it came from, let the tests await `MarkPlayerAwayCommand` for one player
+  without the command existing yet, so the first run failed for the right reason.
+- The host mark passed to "the earliest joiner" by `MinBy(JoinedAt)`, and every player of a test
+  joined at the same fake time: the store's order decided. Ties now fall to the place taken.
+- `FriendsGame`'s injected connection was named `connection`, the name `GameSession` now needed
+  for the connection's state; it is `hub` now.
+- The device's slices were written together, so most frontend specs passed at their first run
+  after the first slice's; the dropped-out banner, "You're back!", World Map's filter and the
+  wobbly rule were each broken by hand and failed their specs as expected. Breaking the
+  standings' numbering did not fail a spec, since World Map draws only the players it is given;
+  the spec guards the players' list, and a unit test of `FriendsView` the numbering.
+
+**New lessons.**
+
+1. When a library retries on its own timers, keep its back-off for the real network and decide
+   the deadline on the game's clock as well, and let the fake hold a connection's handshake rather
+   than refuse it, so a spec can return it at once or give up with one `clock.pass`.
+2. A server that holds a spot for a lost connection must record which connection it was: a
+   device that reconnects before the server notices the old one is gone must not be marked away
+   by the old one's disconnect.
+3. Let a test fixture record every request handled, with the caller's token, through one open
+   generic pipeline behaviour: a test can await a request that has no handler yet, and fails
+   naming what was handled.
+4. When "the earliest" decides something, give it a tie-breaker that does not depend on the
+   store's order: fake clocks make ties the rule in tests.
+5. Give a page that can be covered by an overlay an `inert` binding on everything else, and
+   hide the controls that would send while the overlay shows, so neither keyboard nor touch
+   reaches them.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` stayed at 252.46 kB and the initial total at 273.28 kB.
+- *Check a fake once by hand* (01, 2): four behaviours were broken by hand, as above.
+- *Check an ESLint boundary by hand* (01, 3): the boundary caught `ConnectionBanner`'s value
+  import of `@atw/api`; it is `import type` now.
+- *Build a component the first time a screen needs it* (01, 4): StatusOverlay and
+  ConnectionBanner (composing Alert) added; Icon extended (`wifi`); marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0036 fills
+  the design's gaps and supersedes ADR 0032's Lobby retries.
+- *Drive states through the fixture* (02, 3): `roomHub` gained `loses()` and `returns()`.
+- *Tag one spec per feature `@critical`* (02, 5): a lost connection comes back to the same spot.
+- *Measure the initial bundle against the base commit* (03, 2): 252.46 kB before and after.
+- *Drive game time from the wall clock* (04, 1): the 30 seconds and every banner's time are on
+  the game's clock.
+- *Prefer signals and outputs to `effect()`* (04, 2): `connection` and `notice` are `computed`
+  signals; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsGame` opens Duel when
+  the connection is away, and `FriendsView` the Podium 3 seconds after everyone left.
+- *Await a background job through a pipeline behaviour* (12, 4): the removal sweep is awaited by
+  the time it swept at.
+- *Prove a backend rule through a store double* (13, 2): not needed; a return and a removal that
+  race are taken one at a time by the room's `Version`, as joins are.
+- *Fake a real-time channel at its protocol* (13, 4): a lost connection is a WebSocket closed
+  with no SignalR close message, and a refused return a handshake followed by a close message.
+- *A test helper that waits must say any or next* (14, 5): the traveller test first matched the
+  room state of the join; it waits for a room without the removed host now.
+- *Measure overlap at three sizes* (15, 1): the wobbly banner was measured against the flash card
+  on a phone, a tablet and a desktop.
+- *Let a short-lived thing live on the game's clock* (15, 4): the banners are times on the clock
+  that already ticks, not timers of their own.
+
+## Journey 17: Run the backend in a deployed system
+
+**What slowed it.**
+
+- Azure SignalR Service never sees a client's query string or headers at the hub: the hub sees
+  only the claims its negotiation put in the service's access token. `CurrentPlayerFilter` read
+  the token from `access_token`, which would have known nobody once deployed, and the device
+  skipped the negotiation the service needs (ADR 0032). The token became a claim of an
+  authentication scheme, and the device negotiates; the self-served tests guard the claim (a
+  wrong claim type failed 52 of them), and a negotiation through the SDK showed the claim in the
+  service's token.
+- The server SDK refuses a negotiation while the instance has no connection to the service, but
+  counts a new endpoint online until its first try fails, so the same test answered a redirect
+  in one run and a 500 in the next. The test now accepts either, and checks each fully.
+- Its count of its connections to the service is internal, so readiness asks the service's
+  public health API instead, through a named `HttpClient` the test answers in memory.
+- An activity source is seen by every tracer in a process: the telemetry test caught another
+  test server's `SubmitAnswerCommand` span about one run in three. It runs in an xUnit
+  collection with parallelization off.
+- The test server gives a request no remote address, so the forwarded headers were proved
+  behind an `IStartupFilter` that sets the ingress's address first.
+- `WebApplication` adds `UseAuthentication` by itself when a scheme is registered, so taking the
+  explicit call out by hand failed nothing; the claim was broken instead.
+
+**New lessons.**
+
+1. A managed relay (Azure SignalR Service) changes what a hub can read about its caller: carry
+   identity as claims from the negotiation, never as the request's query or headers, and do not
+   let the client skip the negotiation.
+2. When a vendor SDK's state is not public, probe the vendor's public health API through a
+   named `HttpClient` the test can answer in memory, rather than reflect on internals.
+3. Prove telemetry holds nothing about a child by exporting it in memory after the scrubber and
+   searching every span, metric point and log record for the values the test sent; break each
+   scrubber by hand once, and run that test alone, since activity sources are process-wide.
+4. A test of a background state an SDK reaches in its own time must accept each state the
+   product allows and assert each fully, not pin the one that happened to show first.
+5. Prove forwarded headers with a known and an unknown proxy, each in its own fixture: the rate
+   limit is what shows whose address was counted.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the new spec ran against the build;
+  `main` stayed at 252.46 kB and the initial total at 273.28 kB.
+- *Check a fake once by hand* (01, 2): each scrubber, the claim and the answers' limit were
+  broken by hand and failed their tests.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no screen changed.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0037 records the decisions
+  and supersedes ADR 0032's skipped negotiation; ADR 0009's proposed `AGENTS.md` exception for
+  the live endpoint stands.
+- *Tag one spec per feature `@critical`* (02, 5): a host's device follows the instance to the
+  service and opens the Lobby.
+- *Give the production limits a fixture of their own* (12, 3): the health limit is lifted in
+  `ApiFixture` and kept in `ThrottledApiFixture` and the ingress fixtures.
+- *Await a background job through a pipeline behaviour* (12, 4): the answers' limit counts the
+  requests handled by token through the same request log.
+- *Fake a real-time channel at its protocol* (13, 4): the fixture answers SignalR's negotiation,
+  and the service's redirect and second negotiation, as the instance and the service would.
+- *Let a test fixture record every request handled* (16, 3): `HandledCount` reads the same log.
+- *Keep a per-connection limit in the connection's own items* (15, 2): the answers' limit is a
+  ring of 5 times there, and the stickers' a ring of 1.

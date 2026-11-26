@@ -14,9 +14,12 @@ import {
   type DuelState,
   type Duellist,
   type FlashCard as Card,
+  type StickerId,
   type VoiceError,
 } from '@atw/api';
+import { RouterLink } from '@angular/router';
 import {
+  ConnectionBanner,
   DuelHud,
   FlashCard,
   IconButton,
@@ -26,13 +29,19 @@ import {
   Screen,
   Shout,
   StampCard,
+  StatusOverlay,
+  StickerBar,
+  StickerPop,
+  StickerRegion,
   TextButton,
   TimerBar,
+  ToyButton,
   WorldRing,
   type DuelHudPlayer,
   type PadKey,
+  type StickerChoice,
 } from '@atw/components';
-import { ClassroomStates, kidById } from '@atw/domain';
+import { ClassroomStates, kidById, STICKERS, stickerById } from '@atw/domain';
 import {
   ClassroomCanvas,
   sameClassroom,
@@ -54,23 +63,32 @@ import { DuelWords } from './duel-words';
  * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md). The 3D classroom is
  * drawn behind the scrim once it arrives, the duellists thinking, then cheering or "so close";
  * the still picture stays on a device that cannot draw it (docs/adr/0028). A key of the number
- * pad pops, and each new flash card flips in (docs/adr/0029-motion-and-sound.md).
+ * pad pops, and each new flash card flips in (docs/adr/0029-motion-and-sound.md). In a game with
+ * friends a lost connection shows "Reconnecting…", or the lost game with "Home", over the inert
+ * screen, and the connection's banner runs across the top (docs/adr/0036).
  */
 @Component({
   selector: 'atw-duel-page',
   imports: [
     ClassroomCanvas,
+    ConnectionBanner,
     DuelHud,
     FlashCard,
     IconButton,
     Listening,
     NumberPad,
     Pill,
+    RouterLink,
     Screen,
     Shout,
     StampCard,
+    StatusOverlay,
+    StickerBar,
+    StickerPop,
+    StickerRegion,
     TextButton,
     TimerBar,
+    ToyButton,
     WorldRing,
   ],
   templateUrl: './duel.html',
@@ -89,6 +107,18 @@ export class DuelPage {
   private readonly failedDuel = signal<string | null>(null);
 
   protected readonly duel = this.session.duel;
+  /** The connection to the room, always live in a solo game (L2-029). */
+  protected readonly connection = this.session.connection;
+  protected readonly live = computed(() => this.connection() === 'live');
+  /** The connection's banner across the top (L2-029 criteria 2, 4, 5 and 7). */
+  protected readonly notice = this.session.notice;
+  /** The country of the device's player's spot: their desk, or the desk they travel beside. */
+  protected readonly spot = computed(() => {
+    const tour = this.session.tour();
+    const you = tour?.players.find((player) => player.you)?.id;
+    const seat = tour?.desks.find((desk) => desk.holder === you);
+    return seat?.country ?? this.duel()?.country ?? tour?.desks[tour.travellerDesk - 1]?.country;
+  });
   /** The classroom behind the card: the tour's ring, the duellists doing what the moment asks. */
   protected readonly classroom = computed(
     () => {
@@ -125,9 +155,25 @@ export class DuelPage {
       duel?.outcome === 'open' &&
       duel.role !== 'watching' &&
       !this.stamp() &&
-      !this.session.paused()
+      !this.session.paused() &&
+      this.live()
     );
   });
+  /** The six stickers a watching player can send (L2-028 criteria 2 and 6). */
+  protected readonly stickerChoices: readonly StickerChoice[] = STICKERS.map((sticker) => ({
+    ...sticker,
+    picture: sticker.kid === 'bolt' ? '' : kidById(sticker.kid).picture,
+  }));
+  /** The stickers received, with the sender's kid, the words and the sender (L2-028 3 and 7). */
+  protected readonly stickers = computed(() =>
+    this.session.stickers().map((shown) => ({
+      key: shown.key,
+      kid: shown.kid,
+      picture: kidById(shown.kid).picture,
+      words: stickerById(shown.sticker).words,
+      from: shown.from,
+    })),
+  );
   /** Whether the device listens now: by voice, playing and not frozen (L2-009 criterion 5). */
   protected readonly listening = computed(
     () => this.byVoice() && this.playing() && !this.duel()?.frozen,
@@ -141,10 +187,12 @@ export class DuelPage {
   /** What the answer box shows: the entry, the wrong answer while frozen, or nothing. */
   protected readonly answerBox = computed(() => {
     const duel = this.duel();
-    if (!duel || duel.outcome !== 'open' || this.byVoice()) return null;
+    if (!duel || duel.outcome !== 'open' || duel.role === 'watching' || this.byVoice()) return null;
     return duel.frozen ? String(duel.wrongAnswer ?? '') : this.entry();
   });
   protected readonly open = computed(() => this.duel()?.outcome === 'open');
+  /** A player of a game with friends who is not in the duel watches it (L2-028 criterion 1). */
+  protected readonly watching = computed(() => this.duel()?.role === 'watching');
   protected readonly sum = computed(() => {
     const duel = this.duel();
     return duel ? DuelWords.sum(duel.card) : undefined;
@@ -202,6 +250,11 @@ export class DuelPage {
   /** The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8). */
   protected moveOn(): void {
     this.session.continue();
+  }
+
+  /** A watching player sends a sticker, as its id (L2-028 criterion 3). */
+  protected sendSticker(sticker: StickerId): void {
+    this.session.sendSticker(sticker);
   }
 
   /** A number the child shouted (L2-009 criteria 1 and 3). */

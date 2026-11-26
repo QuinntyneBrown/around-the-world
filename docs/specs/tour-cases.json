@@ -1,0 +1,388 @@
+{
+  "about": "One table of cases for the rules of a duel and a tour, played by the device's domain tour/ (Vitest) and by the backend's AroundTheWorld.Domain.Tours (xUnit), so the two implementations stay equal (docs/adr/0033-deciding-a-game-on-the-server.md). A duel's answers are given in order, each by the traveller, the desk holder or another player, with the time in milliseconds from the card appearing; a tour's duels are decided in order, each won by one side at a time in milliseconds of game time. T is the first traveller; Pn is seated at desk n.",
+  "duels": [
+    {
+      "id": "L2-001 1: the traveller's first correct answer wins",
+      "card": { "kind": "times", "left": 6, "right": 4 },
+      "steps": [
+        { "by": "traveller", "value": 24, "atMs": 900, "result": "won" },
+        { "by": "deskHolder", "value": 24, "atMs": 950, "result": "ignored" }
+      ],
+      "outcome": "won",
+      "winner": "traveller"
+    },
+    {
+      "id": "L2-001 2: the desk holder's first correct answer wins",
+      "card": { "kind": "times", "left": 6, "right": 4 },
+      "steps": [
+        { "by": "deskHolder", "value": 24, "atMs": 800, "result": "won" },
+        { "by": "traveller", "value": 24, "atMs": 801, "result": "ignored" }
+      ],
+      "outcome": "won",
+      "winner": "deskHolder"
+    },
+    {
+      "id": "L2-001 3: an answer from a player in neither seat is ignored",
+      "card": { "kind": "plus", "left": 17, "right": 25 },
+      "steps": [
+        { "by": "other", "value": 42, "atMs": 500, "result": "ignored" },
+        { "by": "other", "value": 7, "atMs": 600, "result": "ignored" },
+        { "by": "traveller", "value": 42, "atMs": 700, "result": "won" }
+      ],
+      "outcome": "won",
+      "winner": "traveller"
+    },
+    {
+      "id": "L2-001 4: once won, the result does not change",
+      "card": { "kind": "minus", "left": 50, "right": 8 },
+      "steps": [
+        { "by": "traveller", "value": 42, "atMs": 1200, "result": "won" },
+        { "by": "deskHolder", "value": 42, "atMs": 1200, "result": "ignored" },
+        { "by": "deskHolder", "value": 1, "atMs": 1300, "result": "ignored" }
+      ],
+      "outcome": "won",
+      "winner": "traveller"
+    },
+    {
+      "id": "L2-004 1 and 2: a wrong answer freezes for 1 second, then the same card can be answered",
+      "card": { "kind": "divide", "left": 56, "right": 8 },
+      "steps": [
+        { "by": "traveller", "value": 8, "atMs": 1000, "result": "wrong" },
+        { "by": "traveller", "value": 7, "atMs": 1500, "result": "ignored" },
+        { "by": "traveller", "value": 7, "atMs": 1999, "result": "ignored" },
+        { "by": "traveller", "value": 7, "atMs": 2000, "result": "won" }
+      ],
+      "outcome": "won",
+      "winner": "traveller"
+    },
+    {
+      "id": "L2-004 3: while the traveller is frozen, the desk holder's correct answer wins",
+      "card": { "kind": "times", "left": 6, "right": 4 },
+      "steps": [
+        { "by": "traveller", "value": 23, "atMs": 900, "result": "wrong" },
+        { "by": "deskHolder", "value": 24, "atMs": 1400, "result": "won" }
+      ],
+      "outcome": "won",
+      "winner": "deskHolder"
+    },
+    {
+      "id": "L2-004 4: a wrong answer freezes only the player who gave it",
+      "card": { "kind": "times", "left": 3, "right": 9 },
+      "steps": [
+        { "by": "deskHolder", "value": 26, "atMs": 900, "result": "wrong" },
+        { "by": "traveller", "value": 28, "atMs": 950, "result": "wrong" },
+        { "by": "deskHolder", "value": 27, "atMs": 1900, "result": "won" }
+      ],
+      "outcome": "won",
+      "winner": "deskHolder"
+    },
+    {
+      "id": "L2-005 2: a card nobody answers in time has no winner, and later answers are ignored",
+      "card": { "kind": "times", "left": 7, "right": 8 },
+      "steps": [
+        { "by": "traveller", "value": 54, "atMs": 2000, "result": "wrong" },
+        { "timeOut": true, "result": true },
+        { "by": "deskHolder", "value": 56, "atMs": 6100, "result": "ignored" },
+        { "timeOut": true, "result": false }
+      ],
+      "outcome": "timedOut",
+      "winner": null
+    },
+    {
+      "id": "L2-005 2: a won card does not time out",
+      "card": { "kind": "times", "left": 2, "right": 2 },
+      "steps": [
+        { "by": "deskHolder", "value": 4, "atMs": 900, "result": "won" },
+        { "timeOut": true, "result": false }
+      ],
+      "outcome": "won",
+      "winner": "deskHolder"
+    }
+  ],
+  "tours": [
+    {
+      "id": "L2-007 4 and 7: the first traveller stands at desk 2 with a distance of 1 and the stamp of desk 1",
+      "tourLength": 6,
+      "seated": [2, 3, 4, 5, 6],
+      "duels": [],
+      "then": {
+        "traveller": "T",
+        "desk": 2,
+        "holders": [null, "P2", "P3", "P4", "P5", "P6"],
+        "distances": { "T": 1, "P2": 0, "P6": 0 },
+        "stamps": { "T": [1], "P2": [] },
+        "ordered": ["T", "P2", "P3", "P4", "P5", "P6"],
+        "endingAtMs": 0,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-002 1, 2 and 3: the traveller who wins hops on, a distance and a stamp more, and the desk holder keeps the desk",
+      "tourLength": 12,
+      "seated": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "duels": [
+        {
+          "winner": "traveller",
+          "atMs": 3000,
+          "move": {
+            "kind": "hop",
+            "traveller": "T",
+            "from": 2,
+            "to": 3,
+            "passedEmptyDesk": false,
+            "satDown": null
+          }
+        },
+        {
+          "winner": "traveller",
+          "atMs": 9000,
+          "move": {
+            "kind": "hop",
+            "traveller": "T",
+            "from": 3,
+            "to": 4,
+            "passedEmptyDesk": false,
+            "satDown": null
+          }
+        }
+      ],
+      "then": {
+        "traveller": "T",
+        "desk": 4,
+        "holders": [
+          null,
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9",
+          "P10",
+          "P11",
+          "P12"
+        ],
+        "distances": { "T": 3, "P2": 0, "P3": 0 },
+        "stamps": { "T": [1, 3, 4] },
+        "endingAtMs": 9000,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-003 1, 2, 3 and 4: the desk holder who wins travels on with a distance of 1 and no stamp, and the beaten traveller sits down",
+      "tourLength": 12,
+      "seated": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "duels": [
+        {
+          "winner": "deskHolder",
+          "atMs": 2000,
+          "move": {
+            "kind": "deskHolderTravels",
+            "traveller": "P2",
+            "from": 2,
+            "to": 3,
+            "passedEmptyDesk": false,
+            "satDown": "T"
+          }
+        },
+        {
+          "winner": "traveller",
+          "atMs": 7000,
+          "move": {
+            "kind": "hop",
+            "traveller": "P2",
+            "from": 3,
+            "to": 4,
+            "passedEmptyDesk": false,
+            "satDown": null
+          }
+        }
+      ],
+      "then": {
+        "traveller": "P2",
+        "desk": 4,
+        "holders": [
+          null,
+          "T",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9",
+          "P10",
+          "P11",
+          "P12"
+        ],
+        "distances": { "T": 1, "P2": 2 },
+        "stamps": { "T": [1], "P2": [4] },
+        "ordered": [
+          "P2",
+          "T",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9",
+          "P10",
+          "P11",
+          "P12"
+        ],
+        "endingAtMs": 7000,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-003 3: a desk holder who travels again keeps the distance they had",
+      "tourLength": 6,
+      "seated": [2, 3, 4, 5, 6],
+      "duels": [
+        { "winner": "deskHolder", "atMs": 1000 },
+        { "winner": "traveller", "atMs": 2000 },
+        { "winner": "deskHolder", "atMs": 3000 },
+        { "winner": "traveller", "atMs": 4000 },
+        {
+          "winner": "deskHolder",
+          "atMs": 5000,
+          "move": {
+            "kind": "deskHolderTravels",
+            "traveller": "P6",
+            "from": 6,
+            "to": 2,
+            "passedEmptyDesk": true,
+            "satDown": "P4"
+          }
+        }
+      ],
+      "then": {
+        "traveller": "P6",
+        "desk": 2,
+        "holders": [null, "T", "P3", "P2", "P5", "P4"],
+        "distances": { "T": 1, "P2": 2, "P4": 2, "P6": 1 },
+        "endingAtMs": 5000,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-002 4, L2-006 1 and 5: hopping past the empty desk, the traveller goes all the way round",
+      "tourLength": 6,
+      "seated": [2, 3, 4, 5, 6],
+      "duels": [
+        { "winner": "traveller", "atMs": 1000 },
+        { "winner": "traveller", "atMs": 2000 },
+        { "winner": "traveller", "atMs": 3000 },
+        { "winner": "traveller", "atMs": 4000 },
+        {
+          "winner": "traveller",
+          "atMs": 5000,
+          "move": {
+            "kind": "hop",
+            "traveller": "T",
+            "from": 6,
+            "to": 2,
+            "passedEmptyDesk": true,
+            "satDown": null
+          }
+        }
+      ],
+      "then": {
+        "traveller": "T",
+        "desk": 2,
+        "holders": [null, "P2", "P3", "P4", "P5", "P6"],
+        "distances": { "T": 6 },
+        "stamps": { "T": [1, 3, 4, 5, 6, 2] },
+        "endingAtMs": 5000,
+        "ending": "allTheWayRound"
+      }
+    },
+    {
+      "id": "L2-002 4: a desk left empty is passed, and the distance goes up by 1",
+      "tourLength": 6,
+      "seated": [2, 4, 5, 6],
+      "duels": [
+        {
+          "winner": "traveller",
+          "atMs": 1000,
+          "move": {
+            "kind": "hop",
+            "traveller": "T",
+            "from": 2,
+            "to": 4,
+            "passedEmptyDesk": true,
+            "satDown": null
+          }
+        }
+      ],
+      "then": {
+        "traveller": "T",
+        "desk": 4,
+        "holders": [null, "P2", null, "P4", "P5", "P6"],
+        "distances": { "T": 2 },
+        "stamps": { "T": [1, 4] },
+        "endingAtMs": 1000,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-006 2: once the time limit has passed, the tour ends when the current duel is decided",
+      "tourLength": 6,
+      "seated": [2, 3, 4, 5, 6],
+      "endsAtMs": 180000,
+      "duels": [{ "winner": "traveller", "atMs": 1000 }],
+      "then": {
+        "traveller": "T",
+        "desk": 3,
+        "distances": { "T": 2 },
+        "endingAtMs": 180000,
+        "ending": "timeLimit"
+      }
+    },
+    {
+      "id": "L2-006 2: before the time limit the tour goes on",
+      "tourLength": 6,
+      "seated": [2, 3, 4, 5, 6],
+      "endsAtMs": 180000,
+      "duels": [{ "winner": "traveller", "atMs": 1000 }],
+      "then": {
+        "traveller": "T",
+        "desk": 3,
+        "endingAtMs": 179999,
+        "ending": null
+      }
+    },
+    {
+      "id": "L2-006 3 and 6: of two players as far, the one who reached it first is higher, and players level since the start keep their desks' order",
+      "tourLength": 12,
+      "seated": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "duels": [
+        { "winner": "deskHolder", "atMs": 1000 },
+        { "winner": "deskHolder", "atMs": 2000 }
+      ],
+      "then": {
+        "traveller": "P3",
+        "desk": 4,
+        "distances": { "T": 1, "P2": 1, "P3": 1 },
+        "ordered": [
+          "T",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9",
+          "P10",
+          "P11",
+          "P12"
+        ],
+        "endingAtMs": 2000,
+        "ending": null
+      }
+    }
+  ]
+}

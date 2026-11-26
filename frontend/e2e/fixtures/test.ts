@@ -14,6 +14,13 @@ import {
  * - `model`: a fake on-device model that answers as the spec tells it to;
  * - `backend`: API and hub requests answered from fixtures (no real backend or database), held
  *   back or left unanswered as an unreachable backend, and the record of what the game sent;
+ * - `roomHub`: the room hub's negotiation and WebSocket (`/hubs/room`), speaking SignalR's JSON
+ *   protocol, or Azure SignalR Service's on localhost when the spec sends the device there
+ *   (docs/adr/0037): it sends the room and the game the spec sets, holds it back, refuses or drops connections,
+ *   loses them as a network does and lets them return (docs/adr/0036), holds back or refuses a
+ *   method, and records the
+ *   tokens presented and the methods invoked (docs/adr/0032);
+ * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
  * - `network`: the device's network, taken away and given back (`navigator.onLine`);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
@@ -88,6 +95,68 @@ export interface FakeBackend {
   requests(): { method: string; path: string; body: Json }[];
   /** Takes over the hub's WebSocket at a path (e.g. `/hubs/room`). */
   hub(path: string, handler: (socket: WebSocketRoute) => void): void;
+  /** Answers the negotiation of the hub at a path (`{path}/negotiate`), given the bearer token and the page's origin. */
+  negotiation(path: string, handler: (token: string, origin: string) => Json): void;
+}
+
+/**
+ * The room hub (docs/adr/0032-joining-a-room-and-the-lobby.md): each connection is answered in
+ * SignalR's JSON protocol, as the backend's `RoomHub` answers it.
+ */
+export interface FakeRoomHub {
+  /** Each connection, once its handshake is done, receives this room (`RoomChanged`). */
+  serves(room: Json): void;
+  /** New connections wait for the room until the returned function is called. */
+  holdBack(): () => void;
+  /** Every new connection is closed at once for good, as for a token that names no player. */
+  refuses(): void;
+  /** Sends the room's new state to every open connection, and to every later one. */
+  changes(room: Json): void;
+  /** Closes every open connection for good, as when the room cannot be got back. */
+  drop(): void;
+  /**
+   * Loses every open connection as a dropped network does: SignalR is told nothing, so the game
+   * tries again, and each new connection waits for its handshake until `returns()` (ADR 0036).
+   */
+  loses(): void;
+  /**
+   * The network is back: each connection waiting since `loses()` is answered, and served the
+   * room and the game, or refused when `refuses()` was called, as the server refuses a token
+   * whose player was removed.
+   */
+  returns(): void;
+  /** The connection tokens the connections presented, in order. */
+  tokens(): string[];
+  /**
+   * The instance's negotiation sends the device to Azure SignalR Service, here a fake on
+   * localhost at `/service/client/`, with the service's own access token (docs/adr/0037).
+   */
+  throughService(): void;
+  /** Each negotiation the game made: the hub's path and the bearer token it presented, in order. */
+  negotiations(): { path: string; token: string }[];
+  /** The hub methods the game invoked, in order. */
+  invoked(): string[];
+  /** The hub methods the game invoked with the arguments it sent, in order (L2-040 criterion 1). */
+  invocations(): { target: string; args: Json[] }[];
+  /** The answers to the method wait until the returned function is called. */
+  holdBackMethod(target: string): () => void;
+  /** The method is refused with a hub error holding the code, as the backend refuses it. */
+  refusesMethod(target: string, code: string): void;
+  /** The method is answered again after `refusesMethod`. */
+  acceptsMethod(target: string): void;
+  /** Sends the game's new state (`GameChanged`) to every open connection, and to every later one. */
+  game(state: object | null): void;
+  /** Sends a sticker (`StickerShown`: its id and the sender's player id) to every open connection. */
+  sticker(sticker: number, from: string): void;
+  /** How many connections are open now. */
+  openConnections(): number;
+}
+
+export interface FakeClipboard {
+  /** Copying fails, as in a browser that refuses the clipboard. */
+  refuses(): Promise<void>;
+  /** What the game copied, in order. */
+  copied(): Promise<string[]>;
 }
 
 /** The player's record as the game keeps it on the device (ADR 0011). */
@@ -177,6 +246,8 @@ interface Fixtures {
   microphone: FakeMicrophone;
   model: FakeModel;
   backend: FakeBackend;
+  roomHub: FakeRoomHub;
+  clipboard: FakeClipboard;
   network: FakeNetwork;
 }
 
@@ -196,6 +267,7 @@ interface FakesPatch {
   modelWhenNoReply?: 'problem' | 'hold' | 'fail';
   modelReplies?: string[];
   webglSupported?: boolean;
+  clipboardWorks?: boolean;
 }
 
 function applyPatch(patch: FakesPatch): void {
@@ -206,6 +278,7 @@ function applyPatch(patch: FakesPatch): void {
   if (patch.modelWhenNoReply !== undefined) fakes.modelWhenNoReply = patch.modelWhenNoReply;
   if (patch.modelReplies !== undefined) fakes.modelReplies.push(...patch.modelReplies);
   if (patch.webglSupported !== undefined) fakes.webglSupported = patch.webglSupported;
+  if (patch.clipboardWorks !== undefined) fakes.clipboardWorks = patch.clipboardWorks;
 }
 
 /** Changes the fakes now (when a page is open) and again on every page loaded after. */
@@ -251,6 +324,7 @@ class BackendFixtures implements FakeBackend {
   readonly unreachables = new Set<string>();
   readonly sent: { method: string; path: string; body: Json }[] = [];
   readonly hubs = new Map<string, (socket: WebSocketRoute) => void>();
+  readonly negotiators = new Map<string, (token: string, origin: string) => Json>();
 
   answer(method: string, path: string, body: Json = null, status = 200): void {
     const key = `${method.toUpperCase()} ${path}`;
@@ -291,6 +365,256 @@ class BackendFixtures implements FakeBackend {
   hub(path: string, handler: (socket: WebSocketRoute) => void): void {
     this.hubs.set(path, handler);
   }
+
+  /** Answers the negotiation of the hub at a path with what the handler returns for the token. */
+  negotiation(path: string, handler: (token: string, origin: string) => Json): void {
+    this.negotiators.set(path, handler);
+  }
+
+  /** Answers a hub's negotiation (`{hub}/negotiate`); false when no hub is at that path. */
+  async negotiate(route: Route, pathname: string): Promise<boolean> {
+    if (!pathname.endsWith('/negotiate')) return false;
+    const negotiator = this.negotiators.get(hubPath(pathname.slice(0, -'/negotiate'.length)));
+    if (!negotiator) return false;
+    const bearer = route.request().headers()['authorization'] ?? '';
+    const answer = negotiator(
+      bearer.replace(/^Bearer /, ''),
+      new URL(route.request().url()).origin,
+    );
+    await route.fulfill({ status: 200, json: answer }).catch(() => undefined);
+    return true;
+  }
+}
+
+/** The record separator that ends each message of SignalR's JSON protocol. */
+const RS = '\u001e';
+const ROOM_HUB = '/hubs/room';
+/** Where the fake Azure SignalR Service takes the room's connections, on localhost (ADR 0037). */
+const SERVICE_HUB = '/service/client';
+const SERVICE_ACCESS_TOKEN = 'service-access-token';
+
+/** A hub's path with no trailing slash, so `/service/client/` and `/service/client` are one. */
+function hubPath(pathname: string): string {
+  return pathname.replace(/\/+$/, '');
+}
+
+class RoomHubFixtures implements FakeRoomHub {
+  private room: Json | null = null;
+  private mode: 'serve' | 'hold' | 'refuse' = 'serve';
+  private readonly held: WebSocketRoute[] = [];
+  /** Whether the network is lost: new connections wait for their handshake. */
+  private lost = false;
+  private readonly waiting: WebSocketRoute[] = [];
+  private readonly open = new Set<WebSocketRoute>();
+  private readonly presented: string[] = [];
+  private readonly calls: { target: string; args: Json[] }[] = [];
+  private readonly heldMethods = new Map<string, (() => void)[]>();
+  private readonly refusedMethods = new Map<string, string>();
+  private gameState: object | null = null;
+  private service = false;
+  private readonly negotiated: { path: string; token: string }[] = [];
+  private connectionCount = 0;
+
+  serves(room: Json): void {
+    this.room = room;
+    this.mode = 'serve';
+  }
+
+  holdBack(): () => void {
+    this.mode = 'hold';
+    return () => {
+      this.mode = 'serve';
+      for (const socket of this.held.splice(0)) this.sendRoom(socket);
+    };
+  }
+
+  refuses(): void {
+    this.mode = 'refuse';
+  }
+
+  changes(room: Json): void {
+    this.room = room;
+    for (const socket of this.open) if (!this.held.includes(socket)) this.sendRoom(socket);
+  }
+
+  drop(): void {
+    for (const socket of [...this.open]) this.closeForGood(socket);
+  }
+
+  loses(): void {
+    this.lost = true;
+    for (const socket of [...this.open]) {
+      this.open.delete(socket);
+      void socket.close({ code: 1011, reason: 'The network went away.' });
+    }
+  }
+
+  returns(): void {
+    this.lost = false;
+    for (const socket of this.waiting.splice(0)) {
+      socket.send(`{}${RS}`);
+      this.afterHandshake(socket);
+    }
+  }
+
+  tokens(): string[] {
+    return [...this.presented];
+  }
+
+  throughService(): void {
+    this.service = true;
+  }
+
+  negotiations(): { path: string; token: string }[] {
+    return this.negotiated.map((negotiation) => ({ ...negotiation }));
+  }
+
+  /**
+   * Answers a negotiation as the backend does: the instance's own connection, by WebSockets
+   * only, or, with the service set, the service's address and access token, after which the
+   * service answers its own negotiation with a connection.
+   */
+  negotiate(path: string, token: string, origin: string): Json {
+    this.negotiated.push({ path, token });
+    if (path === ROOM_HUB && this.service) {
+      return { url: `${origin}${SERVICE_HUB}/?hub=roomhub`, accessToken: SERVICE_ACCESS_TOKEN };
+    }
+    this.connectionCount += 1;
+    return {
+      negotiateVersion: 1,
+      connectionId: `connection-${this.connectionCount}`,
+      connectionToken: `connection-token-${this.connectionCount}`,
+      availableTransports: [{ transport: 'WebSockets', transferFormats: ['Text', 'Binary'] }],
+    };
+  }
+
+  invoked(): string[] {
+    return this.calls.map(({ target }) => target);
+  }
+
+  invocations(): { target: string; args: Json[] }[] {
+    return this.calls.map((call) => ({ target: call.target, args: [...call.args] }));
+  }
+
+  holdBackMethod(target: string): () => void {
+    this.heldMethods.set(target, []);
+    return () => {
+      const waiting = this.heldMethods.get(target) ?? [];
+      this.heldMethods.delete(target);
+      for (const answer of waiting) answer();
+    };
+  }
+
+  refusesMethod(target: string, code: string): void {
+    this.refusedMethods.set(target, code);
+  }
+
+  acceptsMethod(target: string): void {
+    this.refusedMethods.delete(target);
+  }
+
+  game(state: object | null): void {
+    this.gameState = state;
+    for (const socket of this.open) if (!this.held.includes(socket)) this.sendGame(socket);
+  }
+
+  sticker(sticker: number, from: string): void {
+    const message = { type: 1, target: 'StickerShown', arguments: [{ sticker, from }] };
+    for (const socket of this.open) {
+      if (!this.held.includes(socket)) socket.send(JSON.stringify(message) + RS);
+    }
+  }
+
+  openConnections(): number {
+    return this.open.size;
+  }
+
+  /** Speaks SignalR's JSON protocol on one connection of the game's. */
+  handle(socket: WebSocketRoute): void {
+    this.presented.push(new URL(socket.url()).searchParams.get('access_token') ?? '');
+    this.open.add(socket);
+    socket.onClose(() => {
+      this.open.delete(socket);
+      const waiting = this.waiting.indexOf(socket);
+      if (waiting >= 0) this.waiting.splice(waiting, 1);
+    });
+    socket.onMessage((message) => {
+      for (const record of String(message).split(RS)) {
+        if (record === '') continue;
+        const data = JSON.parse(record) as {
+          protocol?: string;
+          type?: number;
+          target?: string;
+          invocationId?: string;
+          arguments?: Json[];
+        };
+        if (data.protocol !== undefined && this.lost) {
+          this.waiting.push(socket);
+        } else if (data.protocol !== undefined) {
+          socket.send(`{}${RS}`);
+          this.afterHandshake(socket);
+        } else if (data.type === 1) {
+          const target = data.target ?? '';
+          this.calls.push({ target, args: data.arguments ?? [] });
+          if (data.invocationId !== undefined) {
+            const id = data.invocationId;
+            const answer = () => this.complete(socket, target, id);
+            const held = this.heldMethods.get(target);
+            if (held) held.push(answer);
+            else answer();
+          }
+        } else if (data.type === 7) {
+          this.open.delete(socket);
+          void socket.close();
+        }
+      }
+    });
+  }
+
+  /** Completes an invocation, with the hub error the backend sends for a refusal. */
+  private complete(socket: WebSocketRoute, target: string, invocationId: string): void {
+    const code = this.refusedMethods.get(target);
+    const completion =
+      code === undefined
+        ? { type: 3, invocationId }
+        : {
+            type: 3,
+            invocationId,
+            error: `An unexpected error occurred invoking '${target}' on the server. HubException: ${code}`,
+          };
+    socket.send(JSON.stringify(completion) + RS);
+  }
+
+  private afterHandshake(socket: WebSocketRoute): void {
+    if (this.mode === 'refuse') this.closeForGood(socket);
+    else if (this.mode === 'hold') this.held.push(socket);
+    else this.sendRoom(socket);
+  }
+
+  private sendRoom(socket: WebSocketRoute): void {
+    if (this.room === null) return;
+    socket.send(JSON.stringify({ type: 1, target: 'RoomChanged', arguments: [this.room] }) + RS);
+    this.sendGame(socket);
+  }
+
+  private sendGame(socket: WebSocketRoute): void {
+    if (this.gameState === null) return;
+    socket.send(
+      JSON.stringify({ type: 1, target: 'GameChanged', arguments: [this.gameState] }) + RS,
+    );
+  }
+
+  private closeForGood(socket: WebSocketRoute): void {
+    socket.send(
+      JSON.stringify({
+        type: 7,
+        error: 'Connection closed with an error.',
+        allowReconnect: false,
+      }) + RS,
+    );
+    this.open.delete(socket);
+    void socket.close();
+  }
 }
 
 /** Answers API and hub requests from the spec's fixtures and refuses anything off localhost. */
@@ -307,6 +631,7 @@ async function guardRequests(
       return route.abort('blockedbyclient');
     }
     if (pictures.handle(route, url.pathname)) return;
+    if (await backend.negotiate(route, url.pathname)) return;
     if (!BACKEND_PATH.test(url.pathname)) return route.continue();
     const key = `${route.request().method()} ${url.pathname}`;
     const text = route.request().postData();
@@ -331,7 +656,7 @@ async function guardRequests(
       problems.push(`WebSocket off localhost: ${url.origin}`);
       return socket.close();
     }
-    const handler = backend.hubs.get(url.pathname);
+    const handler = backend.hubs.get(hubPath(url.pathname));
     if (handler) return handler(socket);
     problems.push(`Unanswered WebSocket: ${url.pathname}`);
     return socket.close();
@@ -450,6 +775,22 @@ export const test = base.extend<Fixtures>({
       holdBack: () => pictures.holdBack(CLASSROOM_SCENES),
       refuse: () => pictures.refuse(CLASSROOM_SCENES),
       openContexts: () => page.evaluate(() => window.__atwFakes.openContexts()),
+    });
+  },
+
+  roomHub: async ({ backend }, use) => {
+    const hub = new RoomHubFixtures();
+    for (const path of [ROOM_HUB, SERVICE_HUB]) {
+      backend.hub(path, (socket) => hub.handle(socket));
+      backend.negotiation(path, (token, origin) => hub.negotiate(path, token, origin));
+    }
+    await use(hub);
+  },
+
+  clipboard: async ({ page }, use) => {
+    await use({
+      refuses: () => setFake(page, { clipboardWorks: false }),
+      copied: () => page.evaluate(() => [...window.__atwFakes.copied]),
     });
   },
 

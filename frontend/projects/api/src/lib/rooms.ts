@@ -3,8 +3,8 @@ import { type GameSetup } from './game-setup';
 import { type KidId } from './kid';
 import { type Nickname } from './nickname';
 
-/** Whether a room's players are waiting in the Lobby or playing. */
-export type RoomStatus = 'waiting' | 'playing';
+/** Whether a room's players are waiting in the Lobby, playing, or on the Podium (ADR 0033). */
+export type RoomStatus = 'waiting' | 'playing' | 'over';
 
 /** One player in a room as every player sees them: no connection token (L2-043). */
 export interface RoomPlayer {
@@ -47,6 +47,18 @@ export type ApiErrorCode =
   | 'invalid_request'
   | 'no_free_code'
   | 'too_large'
+  | 'invalid_code'
+  | 'room_not_found'
+  | 'room_full'
+  | 'game_started'
+  | 'not_in_room'
+  | 'not_host'
+  | 'not_enough_players'
+  | 'invalid_setup'
+  | 'invalid_answer'
+  | 'not_playing'
+  | 'not_over'
+  | 'server_error'
   | 'unknown';
 
 /** A refusal or a failure of the backend, with the `code` a screen branches on. */
@@ -61,12 +73,17 @@ export class ApiError extends Error {
 }
 
 /**
- * Rooms over HTTP (docs/detailed-designs/rooms/make-room/). Each method sends closed values
- * only (L2-040 criterion 1) and rejects with an `ApiError`.
+ * Rooms over HTTP (docs/detailed-designs/rooms/make-room/, docs/detailed-designs/rooms/join-room/).
+ * Each method sends closed values only (L2-040 criterion 1) and rejects with an `ApiError`.
  */
 export interface RoomsApi {
   /** Makes a room whose host is the device's player: the kid and the nickname's indexes only. */
   makeRoom(kid: KidId, nickname: Nickname): Promise<RoomEntry>;
+  /**
+   * Joins the room the code names: the code (4 letters, the one thing a child types), the kid
+   * and the nickname's indexes only (L2-023 criterion 3, L2-040 criterion 1).
+   */
+  joinRoom(code: string, kid: KidId, nickname: Nickname): Promise<RoomEntry>;
 }
 
 export const ROOMS_API = new InjectionToken<RoomsApi>('ROOMS_API');

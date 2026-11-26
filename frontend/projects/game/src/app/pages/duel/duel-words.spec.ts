@@ -55,6 +55,20 @@ describe('DuelWords', () => {
       undefined,
     ],
     [
+      'a duel watched (L2-028 criterion 1)',
+      { role: 'watching', traveller: { name: 'Cosmic Llama', kid: 'nia' } },
+      'You are watching. Cosmic Llama against Nia: 6 × 4.',
+      'Watching… your turn is next',
+      undefined,
+    ],
+    [
+      'a duel watched and won',
+      { role: 'watching', outcome: 'won', winner: 'deskHolder', answer: 24 },
+      'Nia said 24 first.',
+      'Nia said 24 first.',
+      undefined,
+    ],
+    [
       'a card nobody answered',
       { outcome: 'timedOut', answer: 24 },
       'Time is up. It was 24. A new card is coming.',

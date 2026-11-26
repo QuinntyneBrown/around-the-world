@@ -11,12 +11,27 @@
           [stamps]="stamps()"
           [place]="result.yourPlace"
         />
-        <div class="action-row">
-          <button atw-toy-button size="xl" [block]="true" type="button" (click)="playAgain()">
-            Play again
-          </button>
-          <a atw-toy-button variant="paper" icon="home" routerLink="/">Home</a>
-        </div>
+        @if (lost()) {
+          <atw-alert tone="warning" icon="wifi-off" heading="We lost the room" [urgent]="true">
+            <p>
+              Your passport is safe here. To play with your friends again, make or join a new room.
+            </p>
+          </atw-alert>
+          <div class="action-row">
+            <a atw-toy-button size="xl" [block]="true" routerLink="/play">Play with friends</a>
+            <a atw-toy-button variant="paper" icon="home" routerLink="/">Home</a>
+          </div>
+        } @else {
+          <div class="action-row">
+            <button atw-toy-button size="xl" [block]="true" type="button" (click)="playAgain()">
+              Play again
+            </button>
+            <a atw-toy-button variant="paper" icon="home" routerLink="/">Home</a>
+          </div>
+          @if (code) {
+            <p class="podium-page__hint">Everyone goes back to room {{ code }}.</p>
+          }
+        }
       </section>
     </main>
   } @else {

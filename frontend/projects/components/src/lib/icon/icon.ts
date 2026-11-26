@@ -7,6 +7,7 @@ export type IconName =
   | 'check'
   | 'clock'
   | 'close'
+  | 'copy'
   | 'crown'
   | 'delete'
   | 'dice'
@@ -21,11 +22,14 @@ export type IconName =
   | 'mic-off'
   | 'mute'
   | 'pause'
+  | 'person'
   | 'play'
   | 'retry'
   | 'settings'
+  | 'sliders'
   | 'solo'
   | 'sound'
+  | 'wifi'
   | 'wifi-off';
 
 /**

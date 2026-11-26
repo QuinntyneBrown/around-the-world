@@ -12,30 +12,33 @@ skinparam class {
 title Class structure — Operate the backend
 
 package "Backend — AroundTheWorld.Application" {
-  class ErrorCode <<static>> {
+  class ErrorCodes <<static>> {
     +RoomNotFound = "room_not_found"
     +RoomFull = "room_full"
     +GameStarted = "game_started"
-    +NotHost = "not_host"
+    +RateLimited = "rate_limited"
+    +ServerError = "server_error"
   }
-  class "Result<T>" as Result {
-    +T Value
+  class RefusedException {
     +string Code
-    +bool Refused
+    +int Status
   }
   class "TelemetryBehavior<TRequest, TResponse>" as TelemetryBehavior {
     +Handle(request, next): Task<TResponse>
+  }
+  class RequestTelemetry {
+    +ActivitySource Source
+    +Record(request, outcome, duration): void
   }
   interface IRoomNotifier {
     +NotifyRoom(roomId, roomEvent): Task
   }
   interface IReadinessProbe {
-    +string Name
-    +IsReady(): Task<bool>
+    +IsReadyAsync(): Task<bool>
   }
   class CheckReadinessQuery
   class CheckReadinessQueryHandler {
-    +Handle(query): Task<Result<Readiness>>
+    +Handle(query): Task<bool>
   }
 }
 package "Backend — AroundTheWorld.Infrastructure" {
@@ -44,62 +47,63 @@ package "Backend — AroundTheWorld.Infrastructure" {
     +NotifyRoom(roomId, roomEvent): Task
   }
   class RoomStoreProbe
-  class SignalRServiceProbe
   class TelemetryScrubber {
-    +OnEnd(activity): void
+    +Spans.OnEnd(activity): void
+    +LogRecords.OnEnd(logRecord): void
   }
 }
 package "Backend — AroundTheWorld.Api" {
   class HealthController {
-    +Live(): IActionResult
-    +Ready(): Task<IActionResult>
+    +Live(): HealthResponse
+    +Ready(): Task<HealthResponse>
   }
-  class ProblemDetailsWriter {
-    +Write(result): ProblemDetails
+  class ErrorCodeWriter {
+    +TryHandleAsync(context, exception): bool
   }
-  class HubErrorFilter {
+  class CurrentPlayerFilter {
     +InvokeMethodAsync(context, next)
   }
-  class RealTimeOptions {
-    +string AzureSignalRConnectionString
-    +bool UsesAzureSignalR
+  class RealTime <<static>> {
+    +ServiceSetting = "Azure:SignalR:ConnectionString"
+    +AddRealTime(services, configuration)
   }
+  class RoomTokenAuthentication {
+    +TokenClaim = "atw.room_token"
+  }
+  class SignalRServiceProbe
+  class HubRateLimitFilter
 }
 package "Frontend — api library and game" {
   class ApiError <<type>> {
     +code: string
     +status: number
   }
-  enum RefusedRequest {
-    makeRoom
-    joinRoom
-    saveSetup
+  class "joinRefusal" as joinRefusal <<function>> {
+    +(failure): JoinRefusal
   }
-  class ErrorWords <<type>> {
-    +title: string
-    +text: string
-  }
-  class "messageForCode" as messageForCode <<function>> {
-    +(request: RefusedRequest, error: ApiError): ErrorWords
+  class "roomRefusal" as roomRefusal <<function>> {
+    +(failure): RoomRefusal
   }
   class GameErrorHandler {
     +handleError(error): void
   }
   class SomethingWentWrongPage
 }
-TelemetryBehavior ..> Result : reads outcome code
+TelemetryBehavior ..> RefusedException : reads outcome code
+TelemetryBehavior --> RequestTelemetry : records through
 CheckReadinessQueryHandler ..> CheckReadinessQuery : handles
 CheckReadinessQueryHandler --> "1..*" IReadinessProbe : asks
 IReadinessProbe <|.. RoomStoreProbe
 IReadinessProbe <|.. SignalRServiceProbe
 IRoomNotifier <|.. HubRoomNotifier
 HealthController ..> CheckReadinessQuery : sends
-ProblemDetailsWriter ..> Result : writes code of
-HubErrorFilter ..> Result : writes code of
-Result ..> ErrorCode : holds one
-ProblemDetailsWriter ..> ApiError : becomes on the device
-messageForCode ..> ApiError : reads code and status of
-messageForCode ..> RefusedRequest : reads
-messageForCode ..> ErrorWords : returns
+ErrorCodeWriter ..> RefusedException : writes code of
+CurrentPlayerFilter ..> RefusedException : writes code of
+CurrentPlayerFilter ..> RoomTokenAuthentication : reads the token claim of
+RealTime ..> SignalRServiceProbe : registers when the service is set
+RefusedException ..> ErrorCodes : holds one
+ErrorCodeWriter ..> ApiError : becomes on the device
+joinRefusal ..> ApiError : reads code of
+roomRefusal ..> ApiError : reads code of
 GameErrorHandler ..> SomethingWentWrongPage : opens
 @enduml

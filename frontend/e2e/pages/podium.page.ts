@@ -25,6 +25,10 @@ export class PodiumPage {
   readonly stampTiles: Locator;
   readonly playAgain: Locator;
   readonly home: Locator;
+  /** In a game with friends: "Everyone goes back to room {code}.", the lost room, and its way on. */
+  readonly backToRoom: Locator;
+  readonly lostRoom: Locator;
+  readonly playWithFriends: Locator;
 
   constructor(private readonly page: Page) {
     this.headline = page.locator('.podium__headline');
@@ -37,6 +41,9 @@ export class PodiumPage {
     this.stampTiles = this.stamps.locator('.stamp');
     this.playAgain = page.getByRole('button', { name: 'Play again' });
     this.home = page.getByRole('link', { name: 'Home' });
+    this.backToRoom = page.locator('.podium-page__hint');
+    this.lostRoom = page.locator('.alert--warning');
+    this.playWithFriends = page.getByRole('link', { name: 'Play with friends' });
   }
 
   async open(): Promise<void> {

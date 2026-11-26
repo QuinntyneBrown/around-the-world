@@ -1,8 +1,12 @@
+using System.Net;
+using AroundTheWorld.Application.Common;
 using AroundTheWorld.Application.Rooms;
+using AroundTheWorld.Application.Rooms.AdvanceGames;
 using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
 using AroundTheWorld.Domain.Rooms;
 using AroundTheWorld.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -28,12 +32,46 @@ public class ApiFixture : WebApplicationFactory<Program>
 
     private readonly SweepWatcher _sweeps = new();
 
+    private readonly SweepWatcher _games = new();
+
+    private readonly RequestLog _requests = new();
+
     /// <summary>
     /// Completes when the idle rooms have been swept at that time or later, so a test awaits the
     /// sweep after advancing <see cref="Clock"/> instead of sleeping; it fails after 10 seconds,
     /// naming the last sweep that did arrive.
     /// </summary>
     public Task SweepAt(DateTimeOffset at) => _sweeps.WaitForAsync(at, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when the room's timers have brought the games up to that time or later, so a test
+    /// awaits the tick after advancing <see cref="Clock"/>; it fails after 10 seconds, naming the
+    /// last tick that did arrive.
+    /// </summary>
+    public Task GamesAt(DateTimeOffset at) => _games.WaitForAsync(at, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when a request of that name (such as <c>MarkPlayerAwayCommand</c>) from the
+    /// connection that presented the token has been handled, so a test awaits what the hub does
+    /// when a connection is lost; it fails after 10 seconds, naming the requests that were handled.
+    /// </summary>
+    public Task HandledForAsync(string request, string token) => _requests.WaitForAsync(request, token, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when a request of that name carrying a time (<c>Now</c>) at or after
+    /// <paramref name="at"/> has been handled, such as the room's timers' sweep of absent players.
+    /// </summary>
+    public Task HandledAtAsync(string request, DateTimeOffset at) => _requests.WaitForAtAsync(request, at, TimeSpan.FromSeconds(10));
+
+    /// <summary>How many requests of that name from the connection that presented the token have been handled so far.</summary>
+    public int HandledCount(string request, string token) => _requests.Count(request, token);
+
+    /// <summary>Moves the clock on and waits until the games have caught up with it.</summary>
+    public async Task PassAsync(TimeSpan time)
+    {
+        Clock.Advance(time);
+        await GamesAt(Clock.GetUtcNow());
+    }
 
     /// <summary>The clock of the backend under test. Advance it; never sleep.</summary>
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 1, 5, 9, 0, 0, TimeSpan.Zero));
@@ -50,6 +88,8 @@ public class ApiFixture : WebApplicationFactory<Program>
         if (!ThrottledAsInProduction)
         {
             builder.UseSetting("RateLimits:MakeRoom:PermitLimit", "1000");
+            builder.UseSetting("RateLimits:JoinRoom:PermitLimit", "1000");
+            builder.UseSetting("RateLimits:Health:PermitLimit", "1000");
         }
 
         builder.ConfigureServices(services =>
@@ -63,6 +103,10 @@ public class ApiFixture : WebApplicationFactory<Program>
 
             services.AddSingleton(_sweeps);
             services.AddTransient<IPipelineBehavior<DeleteIdleRoomsCommand, int>, SweepSignal>();
+            services.AddKeyedSingleton("games", _games);
+            services.AddTransient<IPipelineBehavior<AdvanceGamesCommand, int>, GamesSignal>();
+            services.AddSingleton(_requests);
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestLogged<,>));
         });
     }
 
@@ -78,27 +122,194 @@ public class ApiFixture : WebApplicationFactory<Program>
         }));
 
     /// <summary>
+    /// The same backend, store and clock, in which the first save of a request is refused as a
+    /// whole because the rival's change, saved through a store of its own, reached the room
+    /// first: a fault injected through <see cref="IAppDbContext"/>. The room store refuses
+    /// such a unit of work entirely; EF Core InMemory has no transactions, so the double
+    /// refuses it before anything of it is written.
+    /// </summary>
+    public WebApplicationFactory<Program> WithFirstSaveRacedBy(Func<AppDbContext, Task> rival) =>
+        WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IAppDbContext>();
+            services.AddScoped<IAppDbContext>(provider => new FirstSaveRaced(
+                provider.GetRequiredService<AppDbContext>(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                rival));
+        }));
+
+    /// <summary>
+    /// The same backend, store and clock, whose room store cannot be reached: a fault injected
+    /// through <see cref="IAppDbContext"/>, as a store that is down answers.
+    /// </summary>
+    public WebApplicationFactory<Program> WithRoomStoreDown() =>
+        WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IAppDbContext>();
+            services.AddScoped<IAppDbContext>(provider => new StoreDown(provider.GetRequiredService<AppDbContext>()));
+        }));
+
+    /// <summary>
     /// A real SignalR client connected to a hub of the test server over WebSockets, the hub's
     /// one transport. The caller starts it and disposes it.
     /// </summary>
-    public HubConnection CreateHubConnection(string hubPath) =>
-        new HubConnectionBuilder()
-            .WithUrl(new Uri(Server.BaseAddress, hubPath), options =>
-            {
-                options.Transports = HttpTransportType.WebSockets;
-                options.SkipNegotiation = true;
-                options.HttpMessageHandlerFactory = _ => Server.CreateHandler();
-                options.WebSocketFactory = (context, cancellationToken) =>
-                    new ValueTask<System.Net.WebSockets.WebSocket>(
-                        Server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
-            })
-            .Build();
+    public HubConnection CreateHubConnection(string hubPath) => HubConnections.Create(Server, hubPath);
+}
+
+/// <summary>A store whose first save is refused, after a rival's change was saved through a store of its own.</summary>
+internal sealed class FirstSaveRaced(AppDbContext inner, IServiceScopeFactory scopes, Func<AppDbContext, Task> rival) : IAppDbContext
+{
+    private bool _raced;
+
+    public DbSet<Room> Rooms => inner.Rooms;
+
+    public void Forget() => inner.Forget();
+
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => inner.CanConnectAsync(cancellationToken);
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        if (!_raced)
+        {
+            _raced = true;
+            await using var scope = scopes.CreateAsyncScope();
+            await rival(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+            throw new DbUpdateConcurrencyException("Another change reached the room first.");
+        }
+
+        return await inner.SaveChangesAsync(cancellationToken);
+    }
+}
+
+/// <summary>A room store that cannot be reached: every call fails as a store that is down does.</summary>
+internal sealed class StoreDown(AppDbContext inner) : IAppDbContext
+{
+    public DbSet<Room> Rooms => inner.Rooms;
+
+    public void Forget() => inner.Forget();
+
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("The room store cannot be reached.");
 }
 
 /// <summary>The backend with the rate limits of production: their defaults, from no setting (L2-045).</summary>
 public sealed class ThrottledApiFixture : ApiFixture
 {
     protected override bool ThrottledAsInProduction => true;
+}
+
+/// <summary>
+/// The backend with the rate limits of production, every request reaching it from the hosting
+/// platform's ingress at 10.0.0.1, as behind a deployed system's proxy (docs/adr/0037). With
+/// <paramref name="knownProxies"/> set, the ingress is a known proxy whose forwarded headers are read.
+/// </summary>
+public abstract class BehindIngressApiFixture(string? knownProxies) : ApiFixture
+{
+    /// <summary>The ingress's own address.</summary>
+    public static readonly IPAddress Ingress = IPAddress.Parse("10.0.0.1");
+
+    protected override bool ThrottledAsInProduction => true;
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        if (knownProxies is not null)
+        {
+            builder.UseSetting("ForwardedHeaders:KnownProxies", knownProxies);
+        }
+
+        builder.ConfigureServices(services => services.AddTransient<IStartupFilter, FromIngress>());
+    }
+
+    /// <summary>Every request arrives from the ingress, before the backend's own middleware.</summary>
+    private sealed class FromIngress : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use((context, nextMiddleware) =>
+            {
+                context.Connection.RemoteIpAddress = Ingress;
+                return nextMiddleware(context);
+            });
+            next(app);
+        };
+    }
+}
+
+/// <summary>Behind the ingress, which the settings name as a known proxy.</summary>
+public sealed class KnownIngressApiFixture() : BehindIngressApiFixture("10.0.0.1");
+
+/// <summary>Behind an ingress that no setting names, whose forwarded headers are not to be believed.</summary>
+public sealed class UnknownIngressApiFixture() : BehindIngressApiFixture(null);
+
+/// <summary>The backend whose setting names the game's origin, the only one CORS allows (docs/adr/0037).</summary>
+public sealed class FrontendOriginApiFixture : ApiFixture
+{
+    /// <summary>The origin of the <c>game</c> application in this deployment.</summary>
+    public const string Origin = "https://play.around-the-world.test";
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Frontend:Origin", Origin);
+    }
+}
+
+/// <summary>
+/// The backend with Azure SignalR Service set, as deployed (docs/adr/0037). The service's address
+/// is on localhost, where nothing answers, so the instance never connects to it and no test
+/// reaches Azure; the service's health API is answered by <see cref="ServiceHealth"/>.
+/// </summary>
+public sealed class AzureSignalRApiFixture : ApiFixture
+{
+    /// <summary>A connection string of the service's form, to an address where nothing answers. Not a secret.</summary>
+    public const string ConnectionString =
+        "Endpoint=http://localhost:1;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
+
+    /// <summary>The service's health API, answering what the test sets.</summary>
+    public ServiceHealthApi ServiceHealth { get; } = new();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Azure:SignalR:ConnectionString", ConnectionString);
+        builder.ConfigureTestServices(services => services
+            .AddHttpClient("azure-signalr-health")
+            .ConfigurePrimaryHttpMessageHandler(() => ServiceHealth));
+    }
+}
+
+/// <summary>Azure SignalR Service's health API, answering 200 or 503 as the test sets, and recording what it was asked.</summary>
+public sealed class ServiceHealthApi : HttpMessageHandler
+{
+    private readonly List<string> _asked = [];
+
+    /// <summary>Whether the service answers that it is healthy.</summary>
+    public bool Healthy { get; set; } = true;
+
+    /// <summary>The requests the probe sent, as method and address.</summary>
+    public IReadOnlyList<string> Asked
+    {
+        get
+        {
+            lock (_asked)
+            {
+                return [.. _asked];
+            }
+        }
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        lock (_asked)
+        {
+            _asked.Add($"{request.Method} {request.RequestUri}");
+        }
+
+        return Task.FromResult(new HttpResponseMessage(Healthy ? HttpStatusCode.OK : HttpStatusCode.ServiceUnavailable));
+    }
 }
 
 /// <summary>A code generator that draws the codes it was given, in order, then the last again.</summary>
@@ -162,4 +373,116 @@ internal sealed class SweepSignal(SweepWatcher sweeps) : IPipelineBehavior<Delet
         sweeps.Swept(request.Now);
         return deleted;
     }
+}
+
+/// <summary>Tells the games' <see cref="SweepWatcher"/> once the room's timers have brought the games up to a time.</summary>
+internal sealed class GamesSignal([FromKeyedServices("games")] SweepWatcher games) : IPipelineBehavior<AdvanceGamesCommand, int>
+{
+    public async Task<int> Handle(AdvanceGamesCommand request, RequestHandlerDelegate<int> next, CancellationToken cancellationToken)
+    {
+        var changed = await next(cancellationToken);
+        games.Swept(request.Now);
+        return changed;
+    }
+}
+
+/// <summary>Records each request the backend handled, by its type's name and the time it carried, if any.</summary>
+internal sealed class RequestLog
+{
+    private readonly Lock _gate = new();
+    private readonly List<(string Name, DateTimeOffset? At, string? Token)> _handled = [];
+    private readonly List<(Func<bool> Ready, TaskCompletionSource Done)> _waiting = [];
+
+    public Task WaitForAsync(string name, string token, TimeSpan timeout) =>
+        WaitAsync(() => _handled.Any(handled => handled.Name == name && handled.Token == token), $"{name} for the token", timeout);
+
+    public Task WaitForAtAsync(string name, DateTimeOffset at, TimeSpan timeout) =>
+        WaitAsync(() => _handled.Any(handled => handled.Name == name && handled.At >= at), $"{name} at {at:O}", timeout);
+
+    public int Count(string name, string token)
+    {
+        lock (_gate)
+        {
+            return _handled.Count(handled => handled.Name == name && handled.Token == token);
+        }
+    }
+
+    public void Handled(string name, DateTimeOffset? at, string? token)
+    {
+        List<TaskCompletionSource> ready;
+        lock (_gate)
+        {
+            _handled.Add((name, at, token));
+            ready = [.. _waiting.Where(waiter => waiter.Ready()).Select(waiter => waiter.Done)];
+            _waiting.RemoveAll(waiter => waiter.Ready());
+        }
+
+        ready.ForEach(done => done.TrySetResult());
+    }
+
+    private async Task WaitAsync(Func<bool> ready, string what, TimeSpan timeout)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (ready())
+            {
+                return;
+            }
+
+            _waiting.Add((ready, done));
+        }
+
+        try
+        {
+            await done.Task.WaitAsync(timeout, TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            string handled;
+            lock (_gate)
+            {
+                handled = string.Join(", ", _handled.Select(request => request.Name).Distinct());
+            }
+
+            Assert.Fail($"No {what} was handled; what was: {(handled.Length == 0 ? "nothing" : handled)}.");
+        }
+    }
+}
+
+/// <summary>Tells the <see cref="RequestLog"/> of every request once it has been handled, failed or not.</summary>
+internal sealed class RequestLogged<TRequest, TResponse>(RequestLog log, ICurrentPlayer caller) : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
+{
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await next(cancellationToken);
+        }
+        finally
+        {
+            var at = typeof(TRequest).GetProperty("Now")?.GetValue(request) as DateTimeOffset?;
+            log.Handled(typeof(TRequest).Name, at, caller.Token);
+        }
+    }
+}
+
+/// <summary>
+/// Real SignalR clients on a test server, over WebSockets, the hub's one transport. Each
+/// negotiates first, as the game's client does (docs/adr/0037).
+/// </summary>
+internal static class HubConnections
+{
+    public static HubConnection Create(TestServer server, string hubPath) =>
+        new HubConnectionBuilder()
+            .WithUrl(new Uri(server.BaseAddress, hubPath), options =>
+            {
+                options.Transports = HttpTransportType.WebSockets;
+                options.HttpMessageHandlerFactory = _ => server.CreateHandler();
+                options.WebSocketFactory = (context, cancellationToken) =>
+                    new ValueTask<System.Net.WebSockets.WebSocket>(
+                        server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
+            })
+            .Build();
 }

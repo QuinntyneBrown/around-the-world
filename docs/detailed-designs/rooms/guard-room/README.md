@@ -33,8 +33,12 @@ not the code, is what lets a player act. The features this guard surrounds are
 ## Description
 
 Journey 12 built the parts that making a room needs (the token, `ValidationBehaviour`,
-`RefusedException`, the error writer, `OpenToAnyoneAttribute` and the `make-room` limit); the
-rest arrive with journeys 13 to 17. Its decisions are in
+`RefusedException`, the error writer, `OpenToAnyoneAttribute` and the `make-room` limit).
+Journey 13 built the `join-room` limit, `invalid_code`, the room hub with `ICurrentPlayer`
+(read by `CurrentPlayerFilter`, a hub filter), `RoomPlayerBehaviour` for every request marked
+`IRoomPlayerRequest`, the hub's 1 KB limit and its refusals as hub errors
+([`docs/adr/0032-joining-a-room-and-the-lobby.md`](../../../adr/0032-joining-a-room-and-the-lobby.md)).
+The rest arrive with journeys 14 to 17. Its decisions are in
 [`docs/adr/0031-making-a-room.md`](../../../adr/0031-making-a-room.md). Most of the slice
 lives in the backend. The frontend's part is to present the token, to send nothing but ids,
 indexes and numbers, and to show each refusal in words.
@@ -78,8 +82,8 @@ Everything received is validated (`L2-044`):
   ([`rooms/watch-duel-and-send-sticker`](../watch-duel-and-send-sticker/README.md)).
 - **1 KB limit** — `RoomHub` is configured to receive messages of at most 1 KB, and
   `RoomsController` to accept bodies of at most 1 KB; a larger one is refused before any handler
-  runs (`L2-044` criterion 2). Where the limit is applied when Azure SignalR Service relays the
-  message is decided by journey 17 (`platform/operate-backend`); `RoomsController` limits each body to
+  runs (`L2-044` criterion 2). When Azure SignalR Service relays a message the service's own
+  limit applies, and every hub argument is a number or a setup its validator bounds (ADR 0037); `RoomsController` limits each body to
   1 KB with `[RequestSizeLimit(1024)]` (ADR 0031).
 - **`RefusedException`** and **`ErrorCodeWriter`** — a refusal carries a `code` and a status.
   `ErrorCodeWriter` writes it as ProblemDetails with a `code` extension for an HTTP request and
@@ -88,8 +92,8 @@ Everything received is validated (`L2-044`):
   off (`L2-044` criterion 3). On the device, `RoomsApi` and `RoomConnection` turn each into an
   `ApiError`, and the page shows a message for its `code` (`L2-054` criteria 1 and 2).
 - **CORS policy** — allows the frontend's origin and no other, for the controller and the hub
-  (`L2-044` criterion 4). The origin is a deployment setting documented by
-  `platform/operate-backend` (`L2-052` criterion 4).
+  (`L2-044` criterion 4). The origin is the deployment setting `Frontend:Origin`, documented in
+  `docs/operations/settings.md` (`L2-052` criterion 4, ADR 0037).
 
 What is open to anyone is rate limited (`L2-045`):
 
@@ -97,20 +101,24 @@ What is open to anyone is rate limited (`L2-045`):
   names its rate limit policy in one declaration. `RoomsController.Make` and
   `RoomsController.Join` carry it; no other endpoint does (`L2-045` criterion 1).
 - **Rate limiter** — ASP.NET Core rate limiting middleware with two policies counted for each
-  address. `join-room` allows 10 attempts in a minute **(to confirm)**; a further attempt is
+  address. `join-room` allows 10 attempts in a minute **(to confirm)**, from the settings
+  `RateLimits:JoinRoom:PermitLimit` and `RateLimits:JoinRoom:WindowSeconds` (ADR 0032); a further attempt is
   refused with status 429 and the code `rate_limited`, and Room tells the child to wait a
   moment and disables "Join" (`L2-045` criterion 2). A 429 carries a `Retry-After` header and the code `rate_limited`. `make-room` allows 10 rooms
   in a minute **(to confirm)**, from the settings `RateLimits:MakeRoom:PermitLimit` and
   `RateLimits:MakeRoom:WindowSeconds` (ADR 0031); over it, Solo Or Friends tells the child to wait and disables "Make a room"
   (`L2-022` criterion 4). The limits are deployment settings (`L2-052` criterion 4). The address is the connection's remote address; behind a deployed system's proxy it is read
-  from the forwarded headers of the known proxy, which journey 17 configures (ADR 0031).
+  from the forwarded headers of the known proxies only, the settings
+  `ForwardedHeaders:KnownProxies` and `ForwardedHeaders:KnownNetworks` (ADR 0037).
 - **`HubRateLimitFilter`** — SignalR hub filter in `AroundTheWorld.Api`. It counts messages for
   each connection on `TimeProvider`. It drops `SubmitAnswer` messages beyond 5 a second
   (`L2-045` criterion 3) and `SendSticker` messages beyond 1 a second (`L2-028` criterion 5),
-  without an error. It forgets a connection's counts when the connection ends.
+  without an error, from the settings `RateLimits:Answers:PerSecond` and
+  `RateLimits:Stickers:PerSecond` (ADR 0037). It keeps a connection's counts in the
+  connection's own items, so they end with the connection.
 - **HTTPS and WSS only** — the API serves no plain HTTP endpoint, and `RoomConnection` uses the
-  WebSockets transport over WSS (`L2-045` criterion 4). Where TLS ends in a deployed system is
-  decided by journey 17 (`platform/operate-backend`).
+  WebSockets transport over WSS (`L2-045` criterion 4). TLS ends at the hosting platform's ingress,
+  which serves HTTPS and WSS only; the API listens on plain HTTP behind it (ADR 0037).
 
 The backend holds no personal data (`L2-046`):
 
@@ -147,8 +155,8 @@ The screens word each refusal as an alert, and the words are those of the mocks:
 [`rooms/join-room`](../join-room/README.md) and [`rooms/make-room`](../make-room/README.md)
 describe the states that show them. No mock words a generic message for any other `code`. On Solo Or Friends the generic message
 is the error state's, "We couldn't make your room" with "Something went wrong on our side. Try
-again, or play solo while you wait." (ADR 0031); on Room it is decided with journey 13
-(`L2-054` criterion 2). The messages follow the
+again, or play solo while you wait." (ADR 0031); on Room it is "Something went wrong on our
+side. Try again in a moment." (ADR 0032, `L2-054` criterion 2). The messages follow the
 mocks `docs/mocks/pages/room/` (states `invalid`, `full`, `started`, `rate-limited`, `error`) and
 `docs/mocks/pages/solo-or-friends/` (states `error`, `rate-limited`).
 

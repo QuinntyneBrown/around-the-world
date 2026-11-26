@@ -21,4 +21,18 @@ public static class ErrorCodes
     public const string RateLimited = "rate_limited";
     public const string NoFreeCode = "no_free_code";
     public const string TooLarge = "too_large";
+    public const string InvalidCode = "invalid_code";
+    public const string RoomNotFound = "room_not_found";
+    public const string RoomFull = "room_full";
+    public const string GameStarted = "game_started";
+    public const string NotHost = "not_host";
+    public const string NotEnoughPlayers = "not_enough_players";
+    public const string NotInRoom = "not_in_room";
+    public const string InvalidSetup = "invalid_setup";
+    public const string InvalidAnswer = "invalid_answer";
+    public const string NotPlaying = "not_playing";
+    public const string NotOver = "not_over";
+
+    /// <summary>A failure that is not a refusal: the backend itself went wrong (docs/adr/0037).</summary>
+    public const string ServerError = "server_error";
 }

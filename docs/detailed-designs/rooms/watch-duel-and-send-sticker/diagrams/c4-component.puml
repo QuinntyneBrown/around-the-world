@@ -5,7 +5,7 @@ title Components — Watch a duel and send a sticker
 
 Container_Boundary(game, "game and its libraries") {
   Component(page, "DuelPage", "Angular page, game", "Shows the watching state: no number pad, no microphone")
-  Component(tray, "StickerTray", "Presentation component, components", "The sticker-bar block: offers the six stickers and emits a StickerId")
+  Component(tray, "StickerBar", "Presentation component, components", "The sticker-bar block: offers the six stickers and emits a StickerId")
   Component(card, "FlashCardView, KidTag, TimerBar", "Presentation components, components", "The flash card, who is duelling and the time left")
   Component(session, "FriendsGame", "GameSession, game", "Sends a sticker, keeps the stickers shown in a bounded buffer")
   Component(conn, "RoomConnection", "SignalR client, api", "One connection per player")

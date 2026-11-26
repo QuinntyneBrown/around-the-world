@@ -1,0 +1,93 @@
+// The toast block of docs/design-system/assets/components.css, on the host element: it rises
+// in over 200 ms, and fades in under reduced motion.
+:host {
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--color-bg-inverse);
+  color: var(--color-fg-inverse);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  animation: rise-in var(--duration-base) var(--ease-standard);
+}
+
+:host(.toast--success) > atw-icon {
+  color: var(--palette-green-300);
+}
+
+:host(.toast--warning) > atw-icon {
+  color: var(--palette-amber-300);
+}
+
+:host(.toast--danger) > atw-icon {
+  color: var(--palette-red-300);
+}
+
+:host(.toast--info) > atw-icon {
+  color: var(--palette-blue-300);
+}
+
+:host-context([data-theme='dark']) > atw-icon {
+  color: inherit;
+}
+
+.toast__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.toast__title {
+  font: var(--text-name);
+}
+
+.toast__text {
+  font: var(--text-body-sm);
+  opacity: 0.9;
+}
+
+.toast__close {
+  display: grid;
+  place-items: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  flex: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.toast__close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.toast__close:focus-visible {
+  outline-color: var(--color-fg-inverse);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation-name: fade-in;
+  }
+}

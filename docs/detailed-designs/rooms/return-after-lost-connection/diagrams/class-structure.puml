@@ -13,81 +13,86 @@ skinparam class {
 ' --------------------------
 title Class structure — Return after a lost connection
 
-enum ConnectionState <<frontend, api>> {
-  connected
+enum RoomLink <<frontend, api>> {
+  connecting
+  live
   reconnecting
-  closed
+  lost
+}
+interface RoomEvents <<frontend, api>> {
+  +changed(room: RoomState): void
+  +gameChanged(game: GameState): void
+  +reconnecting(): void
+  +reconnected(): void
+  +lost(): void
 }
 interface RoomConnection <<frontend, api>> {
-  +state: Signal<ConnectionState>
-  +slow: Signal<boolean>
-  +open(token: string): Promise<void>
-  +onSnapshot(handler): void
+  +connect(token: string, events: RoomEvents): Promise<void>
+  +answer(value: number): Promise<void>
   +close(): Promise<void>
 }
+class SignalRRoomConnection <<frontend, api>> {
+  -retry: at once, 1 s, then every 2 s, until 30 s
+}
 class FriendsGame <<frontend, game>> {
-  +connection: Signal<ConnectionState>
-  +connectionSlow: Signal<boolean>
+  +link: Signal<RoomLink>
+  +connection: Signal<GameConnection>
+  +notice: Signal<ConnectionNotice | null>
   -token: string (memory only)
+  -lostAtMs: number | null
 }
-class GameSnapshot <<frontend, api>> {
-  +room: RoomState
-  +tour: TourState
-  +duel: DuelState
-}
+class StatusOverlay <<frontend, components>>
+class ConnectionBanner <<frontend, components>>
+class DuelPage <<frontend, game>>
 class RoomHub {
   +OnConnectedAsync(): Task
   +OnDisconnectedAsync(error: Exception?): Task
 }
-class ReconnectCommand {
-  +ConnectionToken Token
-  +string ConnectionId
-}
-class ReconnectCommandHandler {
-  +Handle(command: ReconnectCommand): Task<GameSnapshotDto>
-}
-class MarkPlayerAwayCommand {
-  +string ConnectionId
-}
+class ReconnectCommandHandler
 class MarkPlayerAwayCommandHandler
-class RemoveAbsentPlayerCommand {
-  +Guid RoomId
-  +Guid PlayerId
+class RemoveAbsentPlayersCommand {
+  +DateTimeOffset Now
 }
-class RemoveAbsentPlayerCommandHandler
+class RemoveAbsentPlayersCommandHandler
 class RoomTimers <<hosted service>> {
   -time: TimeProvider
 }
 class Room {
-  +{static} TimeSpan SpotSavedFor = 30 s
-  +Return(token: ConnectionToken, connectionId: string, now: DateTimeOffset): RoomPlayer
-  +Remove(player: RoomPlayer, now: DateTimeOffset): void
+  +{static} TimeSpan SpotHeldFor = 30 s
+  +Return(player: RoomPlayer, connectionId: string): void
+  +MarkAway(player: RoomPlayer, connectionId: string, now: DateTimeOffset): bool
+  +RemoveAbsent(now: DateTimeOffset, random: IRandomSource): IReadOnlyList<RoomPlayer>
 }
 class RoomPlayer {
   +ConnectionToken Token
   +string? ConnectionId
   +DateTimeOffset? AwaySince
-  +int Position
-  +MarkAway(now: DateTimeOffset): void
+  +IsAbsentAt(now: DateTimeOffset): bool
+}
+class RoomGame {
+  +Remove(playerId: Guid, at: DateTimeOffset): void
+  +EndAsEveryoneLeft(at: DateTimeOffset): void
 }
 class Tour {
-  +Leave(player: Guid): void
-  +End(): void
+  +Remove(player: string, at: DateTimeOffset): void
 }
 
+DuelPage ..> FriendsGame : reads connection and notice
+DuelPage ..> StatusOverlay : shows
+DuelPage ..> ConnectionBanner : shows
 FriendsGame ..> RoomConnection : uses
-FriendsGame ..> GameSnapshot : replaces its state with
-RoomConnection --> ConnectionState : reports
-RoomConnection ..> RoomHub : connects with the token
-RoomHub ..> ReconnectCommand : sends on connect
-RoomHub ..> MarkPlayerAwayCommand : sends on disconnect
-RoomTimers ..> RemoveAbsentPlayerCommand : sends after 30 s away
-ReconnectCommandHandler ..> ReconnectCommand : handles
-MarkPlayerAwayCommandHandler ..> MarkPlayerAwayCommand : handles
-RemoveAbsentPlayerCommandHandler ..> RemoveAbsentPlayerCommand : handles
-ReconnectCommandHandler --> Room : loads / mutates
-MarkPlayerAwayCommandHandler --> RoomPlayer : marks away
-RemoveAbsentPlayerCommandHandler --> Room : loads / mutates
+FriendsGame --> RoomLink : reports
+SignalRRoomConnection ..|> RoomConnection
+RoomConnection ..> RoomEvents : tells
+SignalRRoomConnection ..> RoomHub : connects with the token
+RoomHub ..> ReconnectCommandHandler : ReconnectCommand on connect
+RoomHub ..> MarkPlayerAwayCommandHandler : MarkPlayerAwayCommand on disconnect
+RoomTimers ..> RemoveAbsentPlayersCommand : sends each tick
+RemoveAbsentPlayersCommandHandler ..> RemoveAbsentPlayersCommand : handles
+ReconnectCommandHandler --> Room : Return
+MarkPlayerAwayCommandHandler --> Room : MarkAway
+RemoveAbsentPlayersCommandHandler --> Room : RemoveAbsent
 Room *-- "0..8" RoomPlayer
-Room *-- "0..1" Tour
+Room *-- "0..1" RoomGame
+RoomGame *-- Tour
 @enduml

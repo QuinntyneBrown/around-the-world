@@ -17,6 +17,9 @@ import {
   type TourPlayer,
   type TourResult,
   type TourState,
+  type ConnectionNotice,
+  type GameConnection,
+  type ShownSticker,
 } from '@atw/api';
 import { kidById } from '../cast/kids';
 import { ClassFactory } from '../classmates/class-factory';
@@ -127,6 +130,11 @@ export class SoloGame implements GameSession {
   readonly duel = this.state.asReadonly();
   readonly tour = this.tourState.asReadonly();
   readonly result = this.ended.asReadonly();
+  /** A solo game has no room to send a sticker to, and classmates send none (ADR 0030). */
+  readonly stickers = signal<readonly ShownSticker[]>([]).asReadonly();
+  /** A solo game is played on the device: it has no connection to lose (L2-029). */
+  readonly connection = signal<GameConnection>('live').asReadonly();
+  readonly notice = signal<ConnectionNotice | null>(null).asReadonly();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stop());
@@ -302,6 +310,10 @@ export class SoloGame implements GameSession {
         return [profile.id, agent];
       }),
     );
+  }
+
+  sendSticker(): void {
+    // Stickers are sent in a game with friends only (L2-028).
   }
 
   answer(value: number): void {

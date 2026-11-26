@@ -28,54 +28,47 @@ box "Backend — AroundTheWorld.Api" #D1FADF
 end box
 box "Backend — AroundTheWorld.Application and Domain" #ECFDF3
   participant "SubmitAnswerCommandHandler" as handler
-  participant "Tour" as tour
-  participant "FlashCardMaker" as maker
+  participant "RoomGame, Duel and Tour" as tour
 end box
 box "Backend — AroundTheWorld.Infrastructure" #FFF4E5
   database "Room store" as db
 end box
-hub --> conn : FlashCardShown to the whole room in one step, without the answer (L2-026 criterion 5)
-conn --> session : FlashCard and DuelState
-session --> page : duel signal
+hub --> conn : GameChanged to the whole room in one step, its card without the answer (L2-026 criterion 5)
+conn --> session : GameState, kept in place of the last
+session --> page : duel signal, from FriendsView
 page --> a : Flash card
 page --> b : Flash card
 a -> page : Answer
 page -> session : answer(value)
-session -> conn : submitAnswer(number)
+session -> conn : answer(number), only while the card is open and the player not frozen
 conn -> hub : SubmitAnswer(number), no time and no claim (L2-026 criteria 1, 2)
 hub -> handler : Send SubmitAnswerCommand (validated 0 to 999, L2-044)
 handler -> handler : Read the arrival time from TimeProvider
 handler -> db : Load the room the token names
-db --> handler : Room with its Tour
-handler -> tour : Answer(player, answer, receivedAt)
+db --> handler : Room with its game
+handler -> tour : Answer(player, answer, receivedAt): first run what fell due by then
 tour -> tour : Check against the flash card the server made (L2-026 criterion 3)
 alt the sender is not in the duel, is frozen, or the duel is already won
-  tour --> handler : Ignored (L2-001 criteria 3, 4; L2-026 criterion 4)
+  tour --> handler : Ignored (L2-001 criteria 3, 4; L2-026 criterion 4); nothing is sent
 else the answer is wrong
-  tour --> handler : Frozen for 1 second from receivedAt (L2-004)
-  handler -> db : Save changes
-  handler -> hub : IRoomNotifier.PlayerFrozen
-  hub --> conn : PlayerFrozen to the room
+  tour --> handler : Wrong: frozen for 1 second from receivedAt (L2-004)
+  handler -> db : Save with the room's version
+  handler -> hub : IRoomNotifier.GameChangedAsync
+  hub --> conn : GameChanged with the freeze left and the wrong answer
 else the answer is correct and the first to arrive
   tour -> tour : Apply the hop, passing the empty desk, or the change of traveller (L2-002, L2-003)
-  alt the tour has not ended
-    tour -> maker : Make(setup, last card)
-    maker --> tour : Next flash card with its answer
-    tour --> handler : Won
-    handler -> db : Save changes in one unit of work
-    db --> handler : Commit result
-    handler -> hub : IRoomNotifier.DuelDecided, then FlashCardShown
-    hub --> conn : Result, new traveller, every position, to the whole room (L2-027 criterion 1)
-    hub --> conn : FlashCardShown for the next duel
-  else the tour has ended (L2-006)
-    tour --> handler : Won, tour over
-    handler -> db : Save changes in one unit of work, room kept with status Over
-    handler -> hub : IRoomNotifier.DuelDecided, then TourEnded
-    hub --> conn : Result and final places to the whole room
+  tour --> handler : Won; the next card is due 3.8 s later, or the tour is over (L2-006)
+  handler -> db : Save with the room's version
+  alt another change was saved first
+    db --> handler : Refused as a whole
+    handler -> tour : Apply the same answer, same arrival, to the room as it now stands (ADR 0033)
   end
-  conn --> session : DuelState and TourState
+  handler -> hub : IRoomNotifier.GameChangedAsync (and RoomChanged when the tour is over)
+  hub --> conn : Result, new traveller, every position, to the whole room (L2-027 criterion 1)
+  conn --> session : GameState
   session --> page : duel and tour signals
   page --> a : Result within 1 second
   page --> b : Result within 1 second
 end
+note over hub, db : RoomTimers sends AdvanceGamesCommand every 250 ms: the next card from FlashCardMaker,\na classmate's answer and a card's time running out each run at their own time, and go out as GameChanged
 @enduml

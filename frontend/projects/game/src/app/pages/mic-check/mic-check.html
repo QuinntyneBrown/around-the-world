@@ -1,6 +1,8 @@
 <atw-screen>
   <header atw-top-bar heading="Mic check">
-    <a atw-icon-button slot="back" icon="back" routerLink="/setup" aria-label="Back"></a>
+    @if (canGoBack) {
+      <a atw-icon-button slot="back" icon="back" routerLink="/setup" aria-label="Back"></a>
+    }
   </header>
   <main id="main" class="mic-check">
     <atw-listener [state]="listener()" [picture]="milo.picture" alt="Milo and his robot Bolt" />

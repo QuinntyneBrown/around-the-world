@@ -72,7 +72,11 @@ export interface TourState {
 }
 
 /** How a tour ended (L2-006): someone went all the way round, or its time limit passed. */
-export type TourEnding = 'allTheWayRound' | 'timeLimit';
+/**
+ * How a tour ended: someone went all the way round, its time limit passed, or, in a game with
+ * friends, fewer than two players remained after a removal (L2-029 criterion 5, ADR 0036).
+ */
+export type TourEnding = 'allTheWayRound' | 'timeLimit' | 'everyoneLeft';
 
 /** One page of a passport: a desk's country, stamped when the player reached it (L2-035 2). */
 export interface PassportPage {

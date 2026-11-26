@@ -1,0 +1,26 @@
+@for (sticker of stickers(); track sticker.id) {
+  @if (sticker.kid === 'bolt') {
+    <button type="button" class="sticker sticker--bolt" (click)="chosen.emit(sticker.id)">
+      <span class="sticker__bolt">
+        <svg class="sticker__robot" viewBox="-12 -22 24 26" aria-hidden="true" focusable="false">
+          <rect class="sticker__metal-light" x="-8" y="-16" width="16" height="13" rx="4" />
+          <circle class="sticker__eye" cx="-3" cy="-10" r="2" />
+          <circle class="sticker__eye" cx="3.5" cy="-10" r="2" />
+          <rect class="sticker__metal" x="-5" y="-3" width="10" height="5" rx="2" />
+          <path class="sticker__line" d="M0 -16v-5" />
+        </svg>
+      </span>
+      {{ sticker.words }}
+    </button>
+  } @else {
+    <button
+      type="button"
+      class="sticker"
+      [attr.data-kid]="sticker.kid"
+      (click)="chosen.emit(sticker.id)"
+    >
+      <atw-portrait [kid]="sticker.kid" [src]="sticker.picture" size="sm" />
+      {{ sticker.words }}
+    </button>
+  }
+}
