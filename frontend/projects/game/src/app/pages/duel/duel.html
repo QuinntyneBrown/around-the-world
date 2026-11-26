@@ -7,8 +7,11 @@
     (status)="scene.set($event)"
   ></canvas>
   <div class="duel__scrim"></div>
+  @if (notice(); as notice) {
+    <atw-connection-banner [notice]="notice" />
+  }
   @if (duel(); as duel) {
-    <header class="duel__hud">
+    <header class="duel__hud" [inert]="!live()">
       <atw-duel-hud
         [traveller]="traveller()"
         [deskHolder]="deskHolder()"
@@ -43,7 +46,7 @@
     <div class="duel__progress">
       <p atw-pill>{{ duel.country }} · desk {{ duel.desk }} of {{ duel.tourLength }}</p>
     </div>
-    <main id="main" class="duel__stage">
+    <main id="main" class="duel__stage" [inert]="!live()">
       <h1 class="visually-hidden">Duel at {{ duel.country }}</h1>
       <p class="visually-hidden" role="status" aria-live="assertive">{{ announcement() }}</p>
       @if (stamp(); as stamp) {
@@ -87,18 +90,18 @@
           </atw-flash-card>
         }
       }
-      @if (open() && !byVoice() && !watching()) {
+      @if (open() && !byVoice() && !watching() && live()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>
   } @else {
-    <header class="duel__hud"><atw-duel-hud [loading]="true" /></header>
-    <main id="main" class="duel__stage">
+    <header class="duel__hud" [inert]="!live()"><atw-duel-hud [loading]="true" /></header>
+    <main id="main" class="duel__stage" [inert]="!live()">
       <h1 class="visually-hidden">Duel</h1>
       <atw-flash-card status="Getting the first card ready…" result="Get ready…" />
     </main>
   }
-  <footer class="duel__foot">
+  <footer class="duel__foot" [inert]="!live()">
     @if (watching()) {
       <div atw-sticker-bar [stickers]="stickerChoices" (chosen)="sendSticker($event)"></div>
     }
@@ -132,4 +135,20 @@
       ></p>
     }
   </div>
+  @switch (connection()) {
+    @case ('reconnecting') {
+      <atw-status-overlay
+        heading="Reconnecting…"
+        [text]="'Hang tight! Your spot at ' + spot() + ' is saved for 30 seconds.'"
+      />
+    }
+    @case ('gone') {
+      <atw-status-overlay
+        heading="We lost the game"
+        text="The connection was away for too long, so your desk was given up. Nothing was your fault."
+      >
+        <a atw-toy-button slot="action" icon="home" routerLink="/">Home</a>
+      </atw-status-overlay>
+    }
+  }
 </atw-screen>

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { HubConnection } from '@microsoft/signalr';
+import type { HubConnection, IRetryPolicy, RetryContext } from '@microsoft/signalr';
 import { type GameSetup } from './game-setup';
 import { type GameState } from './game-state';
 import { type RoomConnection, type RoomEvents } from './room-connection';
@@ -8,14 +8,25 @@ import { type StickerId, type StickerMessage } from './sticker';
 
 /** Where the room hub is, on the game's own origin (docs/adr/0031-making-a-room.md). */
 export const ROOM_HUB_PATH = '/hubs/room';
-/** When the client tries to get a dropped connection back: at once, then after 1 and 3 s (ADR 0032). */
-export const ROOM_RETRY_DELAYS = [0, 1000, 3000];
+/** How long a player's spot is held, and so how long the device tries to get back (L2-029). */
+export const SPOT_HELD_MS = 30_000;
+
+/**
+ * When the client tries to get a lost connection back: at once, after 1 second, then every 2
+ * seconds, until 30 seconds have passed since the loss on the device's clock (docs/adr/0036).
+ */
+export const ROOM_RETRY_POLICY: IRetryPolicy = {
+  nextRetryDelayInMilliseconds({ previousRetryCount, elapsedMilliseconds }: RetryContext) {
+    if (elapsedMilliseconds >= SPOT_HELD_MS) return null;
+    return previousRetryCount === 0 ? 0 : previousRetryCount === 1 ? 1000 : 2000;
+  },
+};
 
 /**
  * `RoomConnection` over SignalR's WebSockets transport. The SignalR client is imported when
  * the first connection opens, so it is in no initial chunk and a child who plays only solo
  * never downloads it (L2-047 criteria 2 and 3). The token travels as SignalR's access token
- * (docs/adr/0031). The client's logging is off: a lost room is the Lobby's state to show, not
+ * (docs/adr/0031), the same one on every try to get a lost connection back (docs/adr/0036). The client's logging is off: a lost room is the Lobby's state to show, not
  * an error in the console.
  */
 @Injectable()
@@ -31,12 +42,18 @@ export class SignalRRoomConnection implements RoomConnection {
         transport: signalR.HttpTransportType.WebSockets,
         skipNegotiation: true,
       })
-      .withAutomaticReconnect(ROOM_RETRY_DELAYS)
+      .withAutomaticReconnect(ROOM_RETRY_POLICY)
       .configureLogging(signalR.LogLevel.None)
       .build();
     hub.on('RoomChanged', (room: RoomState) => events.changed(room));
     hub.on('GameChanged', (game: GameState) => events.gameChanged(game));
     hub.on('StickerShown', (sticker: StickerMessage) => events.stickerShown(sticker));
+    hub.onreconnecting(() => {
+      if (this.hub === hub) events.reconnecting();
+    });
+    hub.onreconnected(() => {
+      if (this.hub === hub) events.reconnected();
+    });
     hub.onclose(() => {
       if (this.hub === hub) events.lost();
     });

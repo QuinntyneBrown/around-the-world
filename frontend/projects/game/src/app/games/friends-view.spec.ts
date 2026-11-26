@@ -13,12 +13,33 @@ function state(overrides: Partial<GameState> = {}): GameState {
     phase: 'duel',
     firstCardInMs: 0,
     players: [
-      { id: HOST, kid: 'zuri', nickname: { adjective: 0, animal: 0 }, distance: 1, stamps: [1] },
-      { id: NIA, kid: 'nia', nickname: { adjective: 8, animal: 4 }, distance: 0, stamps: [] },
-      { id: MILO, kid: 'milo', nickname: { adjective: 3, animal: 2 }, distance: 0, stamps: [] },
-      { id: 'c4', kid: 'classmate', nickname: null, distance: 0, stamps: [] },
-      { id: 'c5', kid: 'classmate', nickname: null, distance: 0, stamps: [] },
-      { id: 'c6', kid: 'classmate', nickname: null, distance: 0, stamps: [] },
+      {
+        id: HOST,
+        kid: 'zuri',
+        nickname: { adjective: 0, animal: 0 },
+        distance: 1,
+        stamps: [1],
+        removed: false,
+      },
+      {
+        id: NIA,
+        kid: 'nia',
+        nickname: { adjective: 8, animal: 4 },
+        distance: 0,
+        stamps: [],
+        removed: false,
+      },
+      {
+        id: MILO,
+        kid: 'milo',
+        nickname: { adjective: 3, animal: 2 },
+        distance: 0,
+        stamps: [],
+        removed: false,
+      },
+      { id: 'c4', kid: 'classmate', nickname: null, distance: 0, stamps: [], removed: false },
+      { id: 'c5', kid: 'classmate', nickname: null, distance: 0, stamps: [], removed: false },
+      { id: 'c6', kid: 'classmate', nickname: null, distance: 0, stamps: [], removed: false },
     ],
     desks: [null, NIA, MILO, 'c4', 'c5', 'c6'],
     traveller: HOST,
@@ -271,5 +292,52 @@ describe('FriendsView', () => {
       expect(result.passport).toHaveLength(6);
       expect(result.countriesReached).toBe(0);
     });
+  });
+
+  describe('a player removed after 30 seconds away (L2-029 4 and 5, ADR 0036)', () => {
+    const withoutMilo = (overrides: Partial<GameState> = {}) =>
+      state({
+        desks: [null, NIA, null, 'c4', 'c5', 'c6'],
+        players: state().players.map((player) =>
+          player.id === MILO ? { ...player, distance: 2, removed: true } : player,
+        ),
+        standings: [MILO, HOST, NIA, 'c4', 'c5', 'c6'],
+        ...overrides,
+      });
+
+    it('has no place on World Map or round the ring, the others numbered among themselves', () => {
+      const tour = FriendsView.tour(seen(withoutMilo(), HOST), names);
+      expect(tour.players.map(({ id }) => id)).not.toContain(MILO);
+      expect(tour.standings).toEqual([
+        { place: 1, player: HOST, distance: 1 },
+        { place: 2, player: NIA, distance: 0 },
+      ]);
+      expect(FriendsView.duel(seen(withoutMilo(), HOST), names)!.ring).toHaveLength(2);
+    });
+
+    it('keeps their distance on the Podium', () => {
+      const over = withoutMilo({ phase: 'over', ending: 'everyoneLeft', winner: MILO });
+      expect(FriendsView.result(seen(over, HOST), names)!.places[0]).toEqual({
+        place: 1,
+        player: MILO,
+        distance: 2,
+      });
+    });
+
+    it.each([
+      [0, 'duel'],
+      [2999, 'duel'],
+      [3000, 'podium'],
+    ] as const)(
+      'when everyone else has left, is on Duel until 3 seconds have passed (%i ms: %s)',
+      (sinceMs, screen) => {
+        const over = withoutMilo({
+          phase: 'over',
+          ending: 'everyoneLeft',
+          duel: { ...state().duel!, outcome: 'timedOut', answer: 24 },
+        });
+        expect(FriendsView.screen(seen(over, HOST, sinceMs))).toBe(screen);
+      },
+    );
   });
 });

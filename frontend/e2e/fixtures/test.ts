@@ -16,7 +16,8 @@ import {
  *   back or left unanswered as an unreachable backend, and the record of what the game sent;
  * - `roomHub`: the room hub's WebSocket (`/hubs/room`), speaking SignalR's JSON protocol: it
  *   sends the room and the game the spec sets, holds it back, refuses or drops connections,
- *   holds back or refuses a method, and records the
+ *   loses them as a network does and lets them return (docs/adr/0036), holds back or refuses a
+ *   method, and records the
  *   tokens presented and the methods invoked (docs/adr/0032);
  * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
  * - `network`: the device's network, taken away and given back (`navigator.onLine`);
@@ -110,6 +111,17 @@ export interface FakeRoomHub {
   changes(room: Json): void;
   /** Closes every open connection for good, as when the room cannot be got back. */
   drop(): void;
+  /**
+   * Loses every open connection as a dropped network does: SignalR is told nothing, so the game
+   * tries again, and each new connection waits for its handshake until `returns()` (ADR 0036).
+   */
+  loses(): void;
+  /**
+   * The network is back: each connection waiting since `loses()` is answered, and served the
+   * room and the game, or refused when `refuses()` was called, as the server refuses a token
+   * whose player was removed.
+   */
+  returns(): void;
   /** The connection tokens the connections presented, in order. */
   tokens(): string[];
   /** The hub methods the game invoked, in order. */
@@ -352,6 +364,9 @@ class RoomHubFixtures implements FakeRoomHub {
   private room: Json | null = null;
   private mode: 'serve' | 'hold' | 'refuse' = 'serve';
   private readonly held: WebSocketRoute[] = [];
+  /** Whether the network is lost: new connections wait for their handshake. */
+  private lost = false;
+  private readonly waiting: WebSocketRoute[] = [];
   private readonly open = new Set<WebSocketRoute>();
   private readonly presented: string[] = [];
   private readonly calls: { target: string; args: Json[] }[] = [];
@@ -383,6 +398,22 @@ class RoomHubFixtures implements FakeRoomHub {
 
   drop(): void {
     for (const socket of [...this.open]) this.closeForGood(socket);
+  }
+
+  loses(): void {
+    this.lost = true;
+    for (const socket of [...this.open]) {
+      this.open.delete(socket);
+      void socket.close({ code: 1011, reason: 'The network went away.' });
+    }
+  }
+
+  returns(): void {
+    this.lost = false;
+    for (const socket of this.waiting.splice(0)) {
+      socket.send(`{}${RS}`);
+      this.afterHandshake(socket);
+    }
   }
 
   tokens(): string[] {
@@ -434,7 +465,11 @@ class RoomHubFixtures implements FakeRoomHub {
   handle(socket: WebSocketRoute): void {
     this.presented.push(new URL(socket.url()).searchParams.get('access_token') ?? '');
     this.open.add(socket);
-    socket.onClose(() => this.open.delete(socket));
+    socket.onClose(() => {
+      this.open.delete(socket);
+      const waiting = this.waiting.indexOf(socket);
+      if (waiting >= 0) this.waiting.splice(waiting, 1);
+    });
     socket.onMessage((message) => {
       for (const record of String(message).split(RS)) {
         if (record === '') continue;
@@ -445,7 +480,9 @@ class RoomHubFixtures implements FakeRoomHub {
           invocationId?: string;
           arguments?: Json[];
         };
-        if (data.protocol !== undefined) {
+        if (data.protocol !== undefined && this.lost) {
+          this.waiting.push(socket);
+        } else if (data.protocol !== undefined) {
           socket.send(`{}${RS}`);
           this.afterHandshake(socket);
         } else if (data.type === 1) {

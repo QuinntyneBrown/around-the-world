@@ -1,7 +1,14 @@
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { GAME_SESSION, type GameSession, type TourResult, type Visit, VISIT } from '@atw/api';
+import {
+  GAME_SESSION,
+  type GameConnection,
+  type GameSession,
+  type TourResult,
+  type Visit,
+  VISIT,
+} from '@atw/api';
 import { PodiumPage } from './podium';
 
 /** A child who came 4th of the five kids with 5 of 12 countries (mock `podium/unplaced`). */
@@ -69,6 +76,8 @@ describe('PodiumPage', () => {
       watchScreen: () => () => undefined,
       watchMoments: () => () => undefined,
       stickers: signal([]),
+      connection: signal<GameConnection>('live'),
+      notice: signal(null),
       sendSticker: () => undefined,
       kind: 'solo',
       paused: signal(false),

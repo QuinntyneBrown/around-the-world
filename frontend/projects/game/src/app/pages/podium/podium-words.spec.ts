@@ -40,6 +40,8 @@ describe('PodiumWords', () => {
     ['timeLimit', 'you', 'Time’s up! You travelled furthest!'],
     ['timeLimit', 'kenji', 'Time’s up! Kenji travelled furthest!'],
     ['timeLimit', 'classmate-3', 'Time’s up! A classmate travelled furthest!'],
+    ['everyoneLeft', 'you', 'You travelled furthest!'],
+    ['everyoneLeft', 'nia', 'Nia travelled furthest!'],
   ] as const)('reads the headline for %s won by %s as "%s" (L2-035 1)', (ending, winner, words) => {
     expect(PodiumWords.headline(result({ ending, winner }))).toBe(words);
   });
@@ -60,6 +62,13 @@ describe('PodiumWords', () => {
     expect(PodiumWords.cheer(timeUp)).toBe('8 desks out of 12. Nia does a star jump.');
     const classmate = result({ ending: 'timeLimit', winner: 'classmate-3', winnerDistance: 3 });
     expect(PodiumWords.cheer(classmate)).toBe('3 desks out of 12.');
+  });
+
+  it('puts the distance before the cheer when everyone else left (L2-029 5, ADR 0036)', () => {
+    const left = result({ ending: 'everyoneLeft', winner: 'you', winnerDistance: 3 });
+    expect(PodiumWords.cheer(left)).toBe(
+      '3 desks out of 12. Zuri raises her pencil like a knight.',
+    );
   });
 
   it('gives the top three their kids, "You" for the child, in place order (L2-035 1)', () => {

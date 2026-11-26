@@ -17,6 +17,24 @@ export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium' | 'lobby'
  */
 export type GameMoment = 'answerCorrect' | 'countryReached';
 
+/**
+ * The device's connection to a game with friends (L2-029, docs/adr/0036): live, lost and being
+ * tried again for 30 seconds (`reconnecting`), or lost for good (`gone`). A solo game is always
+ * `live`.
+ */
+export type GameConnection = 'live' | 'reconnecting' | 'gone';
+
+/**
+ * The connection's banner across the top of Duel (L2-029 criteria 2, 4, 5 and 7): back within 30
+ * seconds, another player dropped out (named by their nickname), everyone else has left, or the
+ * connection is slow. One shows at a time, the most urgent first.
+ */
+export type ConnectionNotice =
+  | { readonly kind: 'back' }
+  | { readonly kind: 'droppedOut'; readonly nickname: string }
+  | { readonly kind: 'everyoneLeft' }
+  | { readonly kind: 'wobbly' };
+
 /** Whether a game is played on the device against classmates, or in a room with friends. */
 export type GameKind = 'solo' | 'friends';
 
@@ -47,6 +65,10 @@ export interface GameSession {
    * none in a solo game.
    */
   readonly stickers: Signal<readonly ShownSticker[]>;
+  /** The device's connection to the room; always `live` in a solo game (L2-029). */
+  readonly connection: Signal<GameConnection>;
+  /** The connection's banner to show on Duel, or null; always null in a solo game (L2-029). */
+  readonly notice: Signal<ConnectionNotice | null>;
   /**
    * Starts a game with the setup (L2-018 criterion 1). With `micCheck` the game waits at the
    * screen `mic-check` and deals no card until `continue()` (L2-012 criterion 8).
