@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- EF Core, the room store and its migrations. Depends on Application. -->
+  <ItemGroup>
+    <ProjectReference Include="..\AroundTheWorld.Application\AroundTheWorld.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- MediatR handlers, validators, DTOs and the ports (IAppDbContext). Depends on Domain. -->
+  <ItemGroup>
+    <ProjectReference Include="..\AroundTheWorld.Domain\AroundTheWorld.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>
