@@ -16,7 +16,10 @@ export interface ShownCard {
   answer: number;
 }
 
-/** Duel (docs/mocks/pages/duel/): the duel strip, the flash card and the number pad. */
+/**
+ * Duel (docs/mocks/pages/duel/): the classroom behind a scrim, the duel strip, the flash card
+ * and the number pad.
+ */
 export class DuelPage {
   readonly heading: Locator;
   readonly announcement: Locator;
@@ -49,8 +52,16 @@ export class DuelPage {
   readonly switchWay: Locator;
   readonly voiceFailed: Locator;
   readonly pause: Locator;
+  readonly scene: Locator;
+  readonly scrim: Locator;
+  readonly classroom: Locator;
+  readonly classroomDrawn: Locator;
 
   constructor(private readonly page: Page) {
+    this.scene = page.locator('img.duel__scene');
+    this.scrim = page.locator('.duel__scrim');
+    this.classroom = page.locator('canvas.duel__canvas');
+    this.classroomDrawn = page.locator('canvas.duel__canvas--drawn');
     this.pause = page.locator('.duel__hud').getByRole('button', { name: 'Pause' });
     this.stamp = page.locator('.stamp-card');
     this.stampCountry = this.stamp.locator('.stamp-card__country');

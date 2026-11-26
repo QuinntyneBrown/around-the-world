@@ -198,6 +198,19 @@ describe('ClassroomScene', () => {
     expect(shadow.visible).toBe(true);
   });
 
+  it('makes every material again once when the shadows change', () => {
+    const scene = new ClassroomScene(templates(), palette);
+    scene.show(stateOf([figure('a')]));
+    scene.applyStep(QUALITY_STEPS[0]);
+    const floor = scene.root.getObjectByName('floor') as Mesh;
+    const material = floor.material as Material;
+    const version = material.version;
+    scene.applyStep(QUALITY_STEPS[1]);
+    expect(material.version).toBe(version);
+    scene.applyStep(QUALITY_STEPS[2]);
+    expect(material.version).toBeGreaterThan(version);
+  });
+
   it('removes a figure no longer shown and disposes the materials coloured for it', () => {
     const scene = new ClassroomScene(templates(), palette);
     scene.show(stateOf([figure('a')]));

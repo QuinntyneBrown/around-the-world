@@ -1,62 +1,70 @@
 <svg width="0" height="0" class="world-map__defs" aria-hidden="true" focusable="false">
   <defs>
     <g [attr.id]="roomId">
-      <path class="art-floor-edge" d="M600 70L1170 400L1170 428L600 758L30 428L30 400Z" />
-      <path class="art-floor" d="M600 70L1170 400L600 730L30 400Z" />
-      <path class="art-floor-left" d="M30 400L600 730L600 758L30 428Z" />
-      <path class="art-floor-right" d="M1170 400L600 730L600 758L1170 428Z" />
-      <path
-        class="art-tile"
-        d="M529 111L1099 441M671 111L101 441M458 152L1028 482M742 152L172 482M386 194L956 524M814 194L244 524M315 235L885 565M885 235L315 565M244 276L814 606M956 276L386 606M172 318L742 648M1028 318L458 648M101 359L671 689M1099 359L529 689"
-      />
-      <ellipse class="art-rug-deep" cx="600" cy="406" rx="250" ry="124" />
-      <ellipse class="art-rug" cx="600" cy="400" rx="250" ry="124" />
-      <g class="art-rug-line">
-        <ellipse cx="600" cy="400" rx="170" ry="84" />
-        <ellipse cx="600" cy="400" rx="90" ry="44" />
-        <path d="M350 400H850M600 276V524" />
-      </g>
-      <g class="art-outline" stroke-width="2">
+      @if (!labelsOnly()) {
+        <path class="art-floor-edge" d="M600 70L1170 400L1170 428L600 758L30 428L30 400Z" />
+        <path class="art-floor" d="M600 70L1170 400L600 730L30 400Z" />
+        <path class="art-floor-left" d="M30 400L600 730L600 758L30 428Z" />
+        <path class="art-floor-right" d="M1170 400L600 730L600 758L1170 428Z" />
         <path
-          class="art-land-1"
-          d="M440 340q40 -24 80 -6q10 26 -18 40q-12 30 -40 22q-30 -20 -22 -56z"
+          class="art-tile"
+          d="M529 111L1099 441M671 111L101 441M458 152L1028 482M742 152L172 482M386 194L956 524M814 194L244 524M315 235L885 565M885 235L315 565M244 276L814 606M956 276L386 606M172 318L742 648M1028 318L458 648M101 359L671 689M1099 359L529 689"
         />
-        <path class="art-land-1" d="M500 420q26 -6 30 20q-4 34 -26 40q-16 -26 -4 -60z" />
-        <path
-          class="art-land-2"
-          d="M590 330q30 -14 50 0q6 20 -14 26q16 40 -10 70q-30 -26 -26 -60q-14 -20 0 -36z"
-        />
-        <path
-          class="art-land-3"
-          d="M660 326q60 -24 110 6q10 30 -30 44q-40 4 -60 -10q-26 -14 -20 -40z"
-        />
-        <path class="art-land-4" d="M730 430q30 -10 46 8q-4 22 -30 22q-24 -8 -16 -30z" />
-      </g>
-      <ellipse class="art-path" cx="600" cy="440" rx="420" ry="210" />
-      @for (
-        item of layout().drawn;
-        track item.type + (item.type === 'desk' ? item.desk : item.kid)
-      ) {
-        @if (item.type === 'desk') {
-          <g [attr.transform]="'translate(' + item.x + ' ' + item.y + ')'">
-            <ellipse class="art-shadow" cx="0" cy="0" rx="36" ry="15" />
-            <path class="art-desk-leg" d="M-29 -28v24M29 -28v24M0 -17v26" />
-            <path class="art-desk-side-1" d="M-34 -32L0 -15L0 -8L-34 -25Z" />
-            <path class="art-desk-side-2" d="M34 -32L0 -15L0 -8L34 -25Z" />
-            <path
-              class="art-desk-top"
-              [class.art-desk-top--lit]="item.lit"
-              d="M-34 -32L0 -49L34 -32L0 -15Z"
-            />
-          </g>
-        } @else {
-          <g
-            [attr.transform]="
-              'translate(' + item.x + ' ' + item.y + ') scale(' + (item.flip ? -1.2 : 1.2) + ' 1.2)'
-            "
-          >
-            <g atw-bean-parts [kid]="item.kid"></g>
-          </g>
+        <ellipse class="art-rug-deep" cx="600" cy="406" rx="250" ry="124" />
+        <ellipse class="art-rug" cx="600" cy="400" rx="250" ry="124" />
+        <g class="art-rug-line">
+          <ellipse cx="600" cy="400" rx="170" ry="84" />
+          <ellipse cx="600" cy="400" rx="90" ry="44" />
+          <path d="M350 400H850M600 276V524" />
+        </g>
+        <g class="art-outline" stroke-width="2">
+          <path
+            class="art-land-1"
+            d="M440 340q40 -24 80 -6q10 26 -18 40q-12 30 -40 22q-30 -20 -22 -56z"
+          />
+          <path class="art-land-1" d="M500 420q26 -6 30 20q-4 34 -26 40q-16 -26 -4 -60z" />
+          <path
+            class="art-land-2"
+            d="M590 330q30 -14 50 0q6 20 -14 26q16 40 -10 70q-30 -26 -26 -60q-14 -20 0 -36z"
+          />
+          <path
+            class="art-land-3"
+            d="M660 326q60 -24 110 6q10 30 -30 44q-40 4 -60 -10q-26 -14 -20 -40z"
+          />
+          <path class="art-land-4" d="M730 430q30 -10 46 8q-4 22 -30 22q-24 -8 -16 -30z" />
+        </g>
+        <ellipse class="art-path" cx="600" cy="440" rx="420" ry="210" />
+        @for (
+          item of layout().drawn;
+          track item.type + (item.type === 'desk' ? item.desk : item.kid)
+        ) {
+          @if (item.type === 'desk') {
+            <g [attr.transform]="'translate(' + item.x + ' ' + item.y + ')'">
+              <ellipse class="art-shadow" cx="0" cy="0" rx="36" ry="15" />
+              <path class="art-desk-leg" d="M-29 -28v24M29 -28v24M0 -17v26" />
+              <path class="art-desk-side-1" d="M-34 -32L0 -15L0 -8L-34 -25Z" />
+              <path class="art-desk-side-2" d="M34 -32L0 -15L0 -8L34 -25Z" />
+              <path
+                class="art-desk-top"
+                [class.art-desk-top--lit]="item.lit"
+                d="M-34 -32L0 -49L34 -32L0 -15Z"
+              />
+            </g>
+          } @else {
+            <g
+              [attr.transform]="
+                'translate(' +
+                item.x +
+                ' ' +
+                item.y +
+                ') scale(' +
+                (item.flip ? -1.2 : 1.2) +
+                ' 1.2)'
+              "
+            >
+              <g atw-bean-parts [kid]="item.kid"></g>
+            </g>
+          }
         }
       }
       @for (plaque of layout().plaques; track plaque.country) {
