@@ -1,0 +1,17 @@
+// The design system's two fonts, self-hosted and bundled with the game (never from a CDN).
+// Fredoka for numbers, names and buttons; Nunito for sentences. Licences beside the files.
+@font-face {
+  font-family: 'Fredoka';
+  src: url('./fonts/fredoka-latin-wght-normal.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('./fonts/nunito-latin-wght-normal.woff2') format('woff2');
+  font-weight: 200 1000;
+  font-style: normal;
+  font-display: swap;
+}
