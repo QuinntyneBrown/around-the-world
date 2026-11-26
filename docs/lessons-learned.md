@@ -76,3 +76,58 @@ the lessons that fit.
 - *Build a component the first time a screen needs it* (01, 4): sixteen components and two
   shared parts, each marked in `frontend/projects/components/README.md`.
 - *An ADR for a rule that conflicts with best practice* (01, 5): ADRs 0012 and 0013.
+
+## Journey 03: Choose solo and set up the game
+
+**What slowed it.**
+
+- "Go!" could not reach the game's session: the design put Game Setup outside the solo group
+  that provides `GAME_SESSION`, and handing the setup over in the router's navigation state
+  would have restarted a game on a reload, since the browser keeps that state in its history.
+  Moving the solo Game Setup into the group, with Angular 22.2's
+  `withAutoCleanupInjectors()` to destroy the game on leaving, settled it (ADR 0016).
+- The initial bundle went over its 255 kB warning: the store of the player's choices, which
+  is in `main`, pulled in the whole of Game Setup's rules. Splitting the defaults and the check
+  of a kept setup (`tour/game-setup.ts`) from the screen's rules brought it back to 254.9 kB. A
+  namespace re-export (`export * as`) made it worse, because the build splits by module, not
+  by function.
+- Angular drops the whitespace between two elements, so a choice read "12desks" to the
+  browser and to a screen reader; `&ngsp;` keeps the space.
+- Three states the prompt listed (Solo Or Friends' error, Game Setup's loading and error) are
+  the room's, not a solo game's; the requirements won and they were left to journeys 12 and 14
+  (ADR 0017).
+
+**New lessons.**
+
+1. When a page must act on a service a lazy route group provides, put the page in the group
+   rather than passing data through the router's navigation state.
+2. Keep what `main` needs to read the device in its own small module, apart from the rules a
+   screen uses, and measure the initial bundle against the base commit (a worktree build)
+   before raising a budget.
+3. A design-system block that is a group of toggles (the toggle row, the table grid, the
+   choice grid, the segmented track) is one component on the group's native `<div>`, which
+   takes the options and which are on, and emits the one pressed; the page names the group.
+4. Prove a hand-over nothing on screen shows yet (the setup handed to the solo game) with a
+   unit test of the page against the real session, and break it once by hand.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): it caught the budget warning the
+  moment the setup joined the store.
+- *Check a fake once by hand* (01, 2): the rules were broken by hand (the last table, a tour's
+  minutes) to see the specs written after the code fail for the expected reason.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): twelve components added,
+  three extended (Panel's heading, Portrait's round and stacked look, two icons), each marked
+  in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADRs 0016
+  and 0017 fill the design's gaps.
+- *Mark every library `"sideEffects": false` and read the chunk table* (02, 1): the table
+  showed the rules in `main`, which lesson 2 above fixed.
+- *A link or button block is an attribute component* (02, 2): extended to the groups of
+  toggles (lesson 3 above).
+- *Drive loading states through the fixture's `pictures` and `device`* (02, 3): Solo Or
+  Friends' loading and drawn classmates, and the kept setup, are driven that way.
+- *An unreachable state gets a unit test of the page* (02, 4): used for "Go!"'s hand-over.
+- *Tag one spec per feature `@critical`* (02, 5): the way from Home through "Play solo" and
+  "Go!" to Duel.
