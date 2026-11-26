@@ -35,3 +35,4 @@ requirements and designs leave.
 | [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted |
 | [0027](0027-pausing-leaving-and-recovering.md) | Pausing, leaving and recovering: the held clock, Back during a game, Not Found and Something Went Wrong | Accepted |
 | [0028](0028-drawing-the-classroom.md) | Drawing the classroom: the scenes' format and paths, the stand-in, the countries, one plan for the room, the hop's look and the detail's steps | Accepted |
+| [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |

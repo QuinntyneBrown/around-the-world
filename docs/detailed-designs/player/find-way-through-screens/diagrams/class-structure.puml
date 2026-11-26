@@ -65,12 +65,9 @@ interface PlayerChoices {
   +nickname: Signal<Nickname | null>
   +setup: Signal<GameSetup>
   +soundMuted: Signal<boolean>
+  +setSoundMuted(muted: boolean): void
   +wayOfAnswering: Signal<"voice" | "numberPad">
   +setWayOfAnswering(way: "voice" | "numberPad"): void
-}
-interface Sound {
-  +muted: Signal<boolean>
-  +setMuted(muted: boolean): void
 }
 
 GameSession <|.. SoloGame
@@ -80,8 +77,8 @@ GameScreenNavigator --> GameSession : watches
 inGameGuard ..> GameSession : reads hasGame
 HomePage --> PlayerChoices : reads
 HomePage --> Visit : reads
-HomePage --> Sound : mutes / unmutes
+HomePage --> PlayerChoices : mutes / unmutes
 HomePage ..> SettingsDialog : opens
-SettingsDialog --> Sound : mutes / unmutes
+SettingsDialog --> PlayerChoices : mutes / unmutes
 SettingsDialog --> PlayerChoices : sets the way of answering
 @enduml

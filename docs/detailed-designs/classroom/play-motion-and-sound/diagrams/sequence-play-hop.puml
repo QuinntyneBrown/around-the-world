@@ -16,45 +16,37 @@ skinparam package {
 }
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
-  participant "SoloGame or FriendsGame" as session
-  participant "MomentPlayer" as player
+  participant "SoloGame" as session
+  participant "MomentSounds" as moments
   participant "DuelPage" as duel
   participant "WorldMapPage" as map
 end box
 box "Frontend — domain" #E0F2FE
-  participant "MomentPlan" as plan
   participant "BrowserSound" as sound
 end box
 box "Frontend — world" #E0F2FE
   participant "ThreeClassroomRenderer" as renderer
 end box
 actor -> session : Correct answer; the duel is decided, speech recognition has stopped
-session --> player : Moments: answerCorrect, duelWon
-player -> plan : for(moment, reduced)
-plan --> player : Rows: chime; "You got it!", win cheer and the passport stamp
-player -> sound : play(chime)
+session --> moments : Moment answerCorrect
+moments -> sound : play(chime)
 alt sound is on and the child has touched the page
   sound --> actor : Chime (L2-039 criterion 1)
 else muted, or no touch yet
   sound -> sound : Play nothing (L2-039 criteria 2 and 3)
 end
-player -> duel : Show "= {answer} You got it!"
-player -> renderer : play(kid, winCheer)
-duel --> actor : "You got it!", then the passport stamp lands in about 250 ms in place of the flash card (L2-033 criterion 7, L2-038 criterion 5)
-session --> player : World Map opens; moment travellerHopsOn
+session --> duel : Duel won
+duel -> renderer : show(state): the kid plays winCheer
+duel --> actor : "= {answer} You got it!" for 1 second, then the passport stamp lands in place of the flash card for 1.2 seconds (L2-033 criterion 7, L2-038 criterion 5)
+session --> map : World Map opens on the hop
+session --> moments : Moment countryReached
+moments -> sound : play(jingle)
+map --> actor : "You walk on to {country}!" for 1.6 seconds (L2-034 criteria 3 and 9)
+map -> renderer : show(state): the kid hops from the desk of the duel
 alt full motion
-  player -> renderer : play(kid, hop)
-  renderer --> actor : Kid hops along the dotted path to the next desk
-  renderer --> player : Arrived after about 1 second, no more than 1.5 (L2-038 criterion 1)
+  renderer --> actor : Kid hops along the path to the next desk in 1 second (L2-038 criterion 1)
 else the device asks for reduced motion
-  player -> renderer : show(new positions), no hop animation
-  player -> map : Fade to the new positions
-  map --> actor : Fade of 200 ms from one desk to the next, nothing moves across the screen (L2-038 criterion 4)
+  renderer --> actor : Kid fades out and in at the next desk, 200 ms in all; nothing moves across the screen (L2-038 criterion 4)
 end
-session --> player : Moment countryReached
-player -> map : Show "You walk on to {country}!" (L2-034 criterion 3)
-map --> actor : Message for about 1.6 seconds
-player -> sound : play(jingle)
-player --> session : Message has stayed about 1.6 seconds
-session --> actor : Duel returns (L2-034 criterion 9); the next flash card flips in within 300 ms (L2-038 criterion 2)
+session --> duel : Duel returns; the new flash card flips in within 300 ms, or fades in (L2-038 criteria 2 and 4)
 @enduml

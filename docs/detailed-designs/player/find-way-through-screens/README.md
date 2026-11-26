@@ -163,7 +163,8 @@ Home:
     and get a game name." in its place. The chip and that line belong to `player/pick-kid`
     (`L2-013` criteria 4 and 5).
   - *Corner buttons.* The sound button and the settings button sit over the classroom at the
-    top right. The sound button calls `Sound.setMuted` through the `SOUND` token. It exposes
+    top right. The sound button calls `PlayerChoices.setSoundMuted`, so Home loads no sound
+    code (`docs/adr/0029-motion-and-sound.md`). It exposes
     the mute with `aria-pressed`, and its label says which it will do: "Mute sound" while
     sound is on and "Turn sound on" while it is muted (`L2-032` criterion 3). Sound itself
     belongs to `classroom/play-motion-and-sound`. The settings button is labelled "Settings"
@@ -184,8 +185,8 @@ Home:
   - *Content.* The title "Settings", a close button labelled "Close", two switches, the
     button "Done" and the line "Kept on this device only. No account, ever." Each switch is a
     `Switch` from `components` with the role `switch`, and shows "On" or "Off" in words.
-  - *"Sound".* It reads "Pops, chimes and jingles." and calls `Sound.setMuted`, as the sound
-    button does.
+  - *"Sound".* It reads "Pops, chimes and jingles." and calls `PlayerChoices.setSoundMuted`,
+    as the sound button does. It comes first, above "Answer by shouting".
   - *"Answer by shouting".* It reads "Off means you tap answers on the number pad." and sets
     `PlayerChoices.wayOfAnswering` to `voice` or `numberPad`. When `VoiceAnswer.available` is
     false (`answering/answer-by-voice`), the switch is off and `disabled` and reads "This
