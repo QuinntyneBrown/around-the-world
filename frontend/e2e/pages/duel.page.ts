@@ -41,6 +41,11 @@ export class DuelPage {
   readonly stampLandmark: Locator;
   readonly stampHop: Locator;
   readonly sitPill: Locator;
+  readonly shout: Locator;
+  readonly useNumberPad: Locator;
+  readonly shoutInstead: Locator;
+  readonly switchWay: Locator;
+  readonly voiceFailed: Locator;
 
   constructor(private readonly page: Page) {
     this.stamp = page.locator('.stamp-card');
@@ -48,6 +53,14 @@ export class DuelPage {
     this.stampLandmark = this.stamp.locator('.stamp-card__landmark');
     this.stampHop = this.stamp.locator('.pill');
     this.sitPill = page.locator('.flash-card .text-btn--pill');
+    this.shout = page.locator('.flash-card .shout');
+    this.switchWay = page.locator('.duel__foot').getByRole('button');
+    this.useNumberPad = this.switchWay.filter({ hasText: 'Use number pad' });
+    this.shoutInstead = this.switchWay.filter({ hasText: 'Shout instead' });
+    this.voiceFailed = page
+      .locator('.flash-card')
+      .getByRole('status')
+      .filter({ hasText: 'Bolt stopped hearing' });
     this.heading = page.getByRole('heading', { level: 1 });
     this.announcement = page.locator('.duel__stage > [role="status"]');
     this.flashCard = page.locator('.flash-card');
