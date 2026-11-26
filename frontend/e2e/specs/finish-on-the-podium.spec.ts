@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
+import { HomePage } from '../pages/home.page';
 import { PodiumPage } from '../pages/podium.page';
 import { WorldMapPage } from '../pages/world-map.page';
 
@@ -201,6 +202,77 @@ test.describe('Finishing a tour', () => {
     // And four across on a phone
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await podium.columns()).toBe(4);
+  });
+});
+
+test.describe('Leaving the Podium', () => {
+  /** A tour of 12 desks ended on its time limit, the Podium shown, as in the spec above. */
+  async function onThePodium(page: Page, clock: { pass(ms: number): Promise<void> }) {
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    await winAndHop(page, clock);
+    await clock.pass(MESSAGE_MS);
+    await clock.pass(6 * 60_000);
+    await new DuelPage(page).sitPill.click();
+    await clock.pass(MESSAGE_MS);
+    await expect(page).toHaveURL(/\/podium$/);
+  }
+
+  test('“Play again” starts a new tour with the same kid and setup, at Duel', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given the Podium after a tour of 12 desks
+    await device.keeps(zuriWith(12));
+    await random.always(0);
+    await clock.hold();
+    await onThePodium(page, clock);
+
+    // When the child chooses "Play again"
+    await new PodiumPage(page).playAgain.click();
+
+    // Then Duel opens with the first flash card of a new tour: desk 2 of 12 against Kenji
+    const duel = new DuelPage(page);
+    await expect(page).toHaveURL(/\/duel$/);
+    await expect(duel.heading).toHaveText('Duel at Egypt');
+    expect(await duel.named(duel.traveller)).toEqual(['You', 'Travelling']);
+    expect(await duel.named(duel.deskHolder)).toEqual(['Kenji', 'Holds Egypt']);
+    await expect(duel.answerBox).toHaveText('?');
+
+    // And the new tour starts from the beginning: a hop stamps Japan, as on the first tour
+    await winAndHop(page, clock);
+    await expect(new WorldMapPage(page).where).toHaveText(
+      'You’re travelling · desk 3 of 12 · next stop UK',
+    );
+  });
+
+  test('“Home” opens Home with “Play again”, and the ended game is gone', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given the Podium after a tour of 12 desks
+    await device.keeps(zuriWith(12));
+    await random.always(0);
+    await clock.hold();
+    await onThePodium(page, clock);
+
+    // When the child chooses "Home"
+    await new PodiumPage(page).home.click();
+
+    // Then Home opens and its button reads "Play again"
+    const home = new HomePage(page);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(home.play).toHaveText('Play again');
+
+    // And the game's state is released: going back to the Podium or Duel opens Home
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(home.play).toBeVisible();
   });
 });
 
