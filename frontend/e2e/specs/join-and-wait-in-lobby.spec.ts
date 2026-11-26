@@ -1,8 +1,16 @@
-import { expect, test } from '../fixtures/test';
+import { type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type FakeBackend,
+  type FakeDevice,
+  type FakeRoomHub,
+} from '../fixtures/test';
+import { HomePage } from '../pages/home.page';
 import { LobbyPage } from '../pages/lobby.page';
 import { RoomPage } from '../pages/room.page';
 import { SoloOrFriendsPage } from '../pages/solo-or-friends.page';
-import { joinedRoom, player, problem, roomState } from '../support/rooms';
+import { joinedRoom, madeRoom, player, problem, roomState } from '../support/rooms';
 
 /**
  * Journey 13: join a room and wait in the Lobby (L2-023, L2-024, L2-025 criteria 3 and 5,
@@ -310,4 +318,324 @@ test.describe('A code that cannot be joined', () => {
       await expect(room.join).toBeEnabled();
     });
   }
+});
+
+// The host of the Lobby specs: Nia, "Cosmic Gecko", who made room BOLT.
+const NIA = { version: 1, kid: 'nia', nickname: { adjective: 8, animal: 3 } };
+const NIA_HOST = { ...madeRoom('BOLT', NIA).room.players[0] };
+const NARWHAL = player(1, 'pip', 5, 5);
+const LLAMA = player(2, 'milo', 8, 4);
+const KOALA = player(3, 'kenji', 2, 6);
+
+test.describe('Wait in the Lobby', () => {
+  /** Makes room BOLT as Nia and waits in its Lobby, alone. */
+  async function hostTheLobby(
+    page: Page,
+    device: FakeDevice,
+    backend: FakeBackend,
+    roomHub: FakeRoomHub,
+  ): Promise<LobbyPage> {
+    await device.keeps(NIA);
+    backend.answer('POST', '/api/rooms', madeRoom('BOLT', NIA), 201);
+    roomHub.serves(roomState('BOLT', [NIA_HOST]));
+    const solo = new SoloOrFriendsPage(page);
+    await solo.open();
+    await solo.chooseMakeRoom();
+    const lobby = new LobbyPage(page);
+    await expect(lobby.count).toHaveText('1/8');
+    return lobby;
+  }
+
+  test('@critical a friend who joins appears in the Lobby at once, and a passing message says so', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a host alone in the Lobby
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+    await expect(lobby.startHint).toHaveText('Waiting for at least one friend…');
+    await expect(lobby.toasts).toHaveCount(0);
+
+    // When a friend joins, "Brave Narwhal" as Pip
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL]));
+
+    // Then the Lobby shows them without a reload (L2-024 criterion 2)
+    await expect(lobby.count).toHaveText('2/8');
+    await expect(lobby.player(1).name).toHaveText('Brave Narwhal');
+    await expect(lobby.player(1).kid).toHaveText('as Pip');
+    await expect(lobby.emptyDesks).toHaveCount(6);
+    await expect(lobby.startHint).toHaveText('2 kids ready');
+
+    // And a passing message says so once, in the messages region (L2-024 criterion 6)
+    await expect(lobby.messages).toHaveAttribute('aria-live', 'polite');
+    await expect(lobby.toasts).toHaveCount(1);
+    await expect(lobby.toast(0).title).toHaveText('Brave Narwhal joined');
+    await expect(lobby.toast(0).text).toHaveText('as Pip');
+    await expect(lobby.toast(0).box).toHaveRole('status');
+
+    // And it leaves by itself after 4 seconds
+    await expect(lobby.toasts).toHaveCount(0, { timeout: 6_000 });
+  });
+
+  test('a passing message can be dismissed, and only a join is announced', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a host whose friend just joined
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL]));
+    await expect(lobby.toast(0).title).toHaveText('Brave Narwhal joined');
+
+    // When the host dismisses the message
+    await lobby.toast(0).dismiss.click();
+
+    // Then it is gone
+    await expect(lobby.toasts).toHaveCount(0);
+
+    // When the friend leaves
+    roomHub.changes(roomState('BOLT', [NIA_HOST]));
+
+    // Then the Lobby shows the host alone again, with no message (L2-024 criteria 2 and 6)
+    await expect(lobby.count).toHaveText('1/8');
+    await expect(lobby.emptyDesks).toHaveCount(7);
+    await expect(lobby.startHint).toHaveText('Waiting for at least one friend…');
+    await expect(lobby.toasts).toHaveCount(0);
+  });
+
+  test('three messages at most are shown, the newest at the bottom', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a host in the Lobby
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+
+    // When three friends join one after another, and the host copies the room's link
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL]));
+    await expect(lobby.count).toHaveText('2/8');
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL, LLAMA]));
+    await expect(lobby.count).toHaveText('3/8');
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL, LLAMA, KOALA]));
+    await expect(lobby.count).toHaveText('4/8');
+    await lobby.chooseCopyLink();
+
+    // Then the three newest are shown, the newest at the bottom (L2-024 criterion 6)
+    await expect(lobby.toasts.locator('.toast__title')).toHaveText([
+      'Cosmic Llama joined',
+      'Clever Koala joined',
+      'Link copied',
+    ]);
+  });
+
+  test('"Copy room link" copies the Lobby’s address and says so', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clipboard,
+  }) => {
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+
+    await lobby.chooseCopyLink();
+
+    // L2-024 criterion 4: the link is the Lobby's address, which opens Room with the code
+    await expect(lobby.toast(0).title).toHaveText('Link copied');
+    await expect(lobby.toast(0).text).toHaveText('Send it to a friend to get them in.');
+    expect(await clipboard.copied()).toEqual([new URL('/room/BOLT', page.url()).href]);
+  });
+
+  test('a link that cannot be copied says to say the code out loud, and stays until dismissed', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clipboard,
+  }) => {
+    // Given a host in the Lobby whose browser refuses the clipboard
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+    await clipboard.refuses();
+
+    // When they copy the room's link, and a friend joins at the same moment
+    await lobby.chooseCopyLink();
+    roomHub.changes(roomState('BOLT', [NIA_HOST, NARWHAL]));
+
+    // Then an alert says to say the code out loud instead (L2-024 criterion 4)
+    const failure = lobby.toasts.filter({ hasText: 'Couldn’t copy the link' });
+    await expect(failure).toHaveRole('alert');
+    await expect(failure.locator('.toast__text')).toHaveText(
+      'Say the code out loud instead: B O L T.',
+    );
+
+    // And it is still there once the friend's message has left by itself
+    await expect(lobby.toasts.filter({ hasText: 'Brave Narwhal joined' })).toHaveCount(0, {
+      timeout: 6_000,
+    });
+    await expect(failure).toBeVisible();
+
+    // Until it is dismissed
+    await failure.getByRole('button', { name: 'Dismiss' }).click();
+    await expect(lobby.toasts).toHaveCount(0);
+  });
+
+  test('when the host leaves, the friend who joined earliest is told they are the host now', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given Kenji waiting in the Lobby of Speedy Otter's room, with Brave Narwhal who joined later
+    await device.keeps(KENJI);
+    backend.answer('POST', JOIN, joinedRoom('BOLT', [HOST, ME], ME));
+    roomHub.serves(roomState('BOLT', [HOST, ME, { ...NARWHAL, position: 2 }]));
+    const room = new RoomPage(page);
+    await room.open('BOLT');
+    await room.chooseJoin();
+    const lobby = new LobbyPage(page);
+    await expect(lobby.guestPanel).toContainText('Waiting for Speedy Otter to start…');
+
+    // When the host leaves and the room makes Kenji the host
+    roomHub.changes(
+      roomState('BOLT', [
+        { ...ME, host: true },
+        { ...NARWHAL, position: 2 },
+      ]),
+    );
+
+    // Then Kenji is told so, and sees the host's start control (L2-025 criterion 5)
+    await expect(lobby.toast(0).title).toHaveText('You’re the host now');
+    await expect(lobby.toast(0).text).toHaveText('The host left. You can start the race.');
+    await expect(lobby.player(0).badge).toHaveText('Host');
+    await expect(lobby.player(0).name).toHaveText('Turbo Panda (you)');
+    await expect(lobby.startRace).toBeVisible();
+    await expect(lobby.startHint).toHaveText('2 kids ready');
+    await expect(lobby.guestPanel).toHaveCount(0);
+  });
+
+  test('leaving the Lobby with the browser’s Back tells the room and closes the connection', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    const lobby = await hostTheLobby(page, device, backend, roomHub);
+    await expect(lobby.code).toHaveText('BOLT');
+
+    await page.goBack();
+
+    // L2-048 criterion 2, docs/adr/0032
+    await expect(page).toHaveURL(/\/play$/);
+    await expect.poll(() => roomHub.invoked()).toEqual(['LeaveRoom']);
+    await expect.poll(() => roomHub.openConnections()).toBe(0);
+  });
+});
+
+test.describe('The Lobby’s other states', () => {
+  test('a full room shows 8 players and no empty desk, two of the same kid told apart by their nicknames', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a room of 8 in which two players are Nia
+    const players = [
+      HOST,
+      ME,
+      player(2, 'nia', 8, 4),
+      player(3, 'milo', 7, 3),
+      player(4, 'pip', 5, 5),
+      player(5, 'nia', 6, 7),
+      player(6, 'kenji', 2, 6),
+      player(7, 'zuri', 1, 9),
+    ];
+    await device.keeps(KENJI);
+    backend.answer('POST', JOIN, joinedRoom('BOLT', players, ME));
+    roomHub.serves(roomState('BOLT', players));
+
+    // When Kenji joins it
+    const room = new RoomPage(page);
+    await room.open('BOLT');
+    await room.chooseJoin();
+
+    // Then all 8 are shown and no desk is empty (L2-024 criteria 1 and 3)
+    const lobby = new LobbyPage(page);
+    await expect(lobby.count).toHaveText('8/8');
+    await expect(lobby.count).toHaveAccessibleName('8 of 8 players');
+    await expect(lobby.players).toHaveCount(8);
+    await expect(lobby.emptyDesks).toHaveCount(0);
+    const nias = lobby.players.filter({ hasText: 'as Nia' });
+    await expect(nias.locator('.player-card__name')).toHaveText(['Cosmic Llama', 'Zippy Fox']);
+  });
+
+  test('when the connection is lost for good the Lobby says so, keeps what it showed, and “Try again” gets back in', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a guest in the Lobby
+    await device.keeps(KENJI);
+    backend.answer('POST', JOIN, joinedRoom('BOLT', [HOST, ME], ME));
+    roomHub.serves(roomState('BOLT', [HOST, ME]));
+    const room = new RoomPage(page);
+    await room.open('BOLT');
+    await room.chooseJoin();
+    const lobby = new LobbyPage(page);
+    await expect(lobby.count).toHaveText('2/8');
+
+    // When the connection is lost and cannot be got back
+    roomHub.drop();
+
+    // Then the Lobby says so as an alert in place of the wait, and keeps the room (L2-029 6)
+    await expect(lobby.lostAlert).toHaveRole('alert');
+    await expect(lobby.lostAlert).toContainText('We lost the room');
+    await expect(lobby.lostAlert).toContainText(
+      'The connection dropped and we couldn’t get back in.',
+    );
+    await expect(lobby.guestPanel).toHaveCount(0);
+    await expect(lobby.code).toHaveText('BOLT');
+    await expect(lobby.count).toHaveText('2/8');
+
+    // When they choose "Try again"
+    await lobby.chooseTryAgain();
+
+    // Then they connect afresh with the same token, and wait for the host again
+    await expect(lobby.lostAlert).toHaveCount(0);
+    await expect(lobby.guestPanel).toContainText('You’re in!');
+    expect(roomHub.tokens()).toEqual([
+      joinedRoom('BOLT', [HOST, ME], ME).token,
+      joinedRoom('BOLT', [HOST, ME], ME).token,
+    ]);
+  });
+
+  test('a room that no longer holds the player is lost at once, and “Go home” opens Home', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a join whose room refuses the connection, as for a token that names no player
+    await device.keeps(KENJI);
+    backend.answer('POST', JOIN, joinedRoom('BOLT', [HOST, ME], ME));
+    roomHub.refuses();
+    const room = new RoomPage(page);
+    await room.open('BOLT');
+
+    // When they join
+    await room.chooseJoin();
+
+    // Then the Lobby says the room is lost, showing the room as it was joined
+    const lobby = new LobbyPage(page);
+    await expect(lobby.lostAlert).toContainText('We lost the room');
+    await expect(lobby.code).toHaveText('BOLT');
+
+    // When they choose "Go home"
+    await lobby.chooseGoHome();
+
+    // Then Home opens
+    await expect(new HomePage(page).play).toBeVisible();
+  });
 });

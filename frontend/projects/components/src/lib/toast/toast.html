@@ -1,0 +1,10 @@
+<atw-icon [name]="icon()" />
+<div class="toast__body">
+  <span class="toast__title">{{ heading() }}</span>
+  @if (text(); as line) {
+    <span class="toast__text">{{ line }}</span>
+  }
+</div>
+<button type="button" class="toast__close" aria-label="Dismiss" (click)="dismissed.emit()">
+  <atw-icon name="close" size="sm" />
+</button>
