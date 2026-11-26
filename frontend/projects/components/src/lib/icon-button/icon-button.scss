@@ -1,0 +1,33 @@
+// The icon-btn block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: inline-grid;
+  place-items: center;
+  width: var(--target-comfortable);
+  height: var(--target-comfortable);
+  flex: none;
+  color: var(--color-fg-default);
+  background: var(--color-bg-surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 var(--toy-depth) 0 0 var(--color-toy-base);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+:host(:hover) {
+  background: var(--color-bg-subtle);
+  color: var(--color-fg-default);
+}
+
+:host(:active) {
+  transform: translateY(calc(var(--toy-depth) - var(--toy-depth-pressed)));
+  box-shadow: 0 var(--toy-depth-pressed) 0 0 var(--color-toy-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}

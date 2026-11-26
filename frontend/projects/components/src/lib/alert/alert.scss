@@ -1,0 +1,71 @@
+// The alert block of docs/design-system/assets/components.css, on the host element. A text
+// button inside takes the alert's colour and an underline through its custom properties.
+:host {
+  --alert-bg: var(--color-info-bg);
+  --alert-fg: var(--color-info-fg);
+  --alert-border: var(--color-info-border);
+  --alert-icon: var(--color-info-icon);
+  --text-btn-color: var(--alert-fg);
+  --text-btn-decoration: underline;
+  --text-btn-padding-inline: 0;
+  --text-btn-hover-bg: none;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border: var(--border-width-thick) solid var(--alert-border);
+  border-radius: var(--radius-lg);
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+  text-align: left;
+}
+
+:host(.alert--success) {
+  --alert-bg: var(--color-success-bg);
+  --alert-fg: var(--color-success-fg);
+  --alert-border: var(--color-success-border);
+  --alert-icon: var(--color-success-icon);
+}
+
+:host(.alert--warning) {
+  --alert-bg: var(--color-warning-bg);
+  --alert-fg: var(--color-warning-fg);
+  --alert-border: var(--color-warning-border);
+  --alert-icon: var(--color-warning-icon);
+}
+
+:host(.alert--danger) {
+  --alert-bg: var(--color-danger-bg);
+  --alert-fg: var(--color-danger-fg);
+  --alert-border: var(--color-danger-border);
+  --alert-icon: var(--color-danger-icon);
+}
+
+.alert__icon {
+  display: flex;
+  color: var(--alert-icon);
+  margin-top: 0.1rem;
+}
+
+.alert__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.alert__title {
+  font: var(--text-name);
+}
+
+.alert__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+
+  &:empty {
+    display: none;
+  }
+}

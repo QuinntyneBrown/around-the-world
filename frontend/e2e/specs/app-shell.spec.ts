@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test';
 import { AppShellPage } from '../pages/app-shell.page';
 
 test.describe('The app shell', () => {
-  test('opening / shows the shell titled "Around the World" on the light sky blue background', async ({
+  test('@critical opening / shows the shell titled "Around the World" on the light sky blue background', async ({
     page,
   }) => {
     // Given the game is served

@@ -19,3 +19,11 @@
 .numeric {
   font-variant-numeric: tabular-nums;
 }
+
+.text-sm {
+  font: var(--text-body-sm);
+}
+
+.text-lg {
+  font: var(--text-body-lg);
+}

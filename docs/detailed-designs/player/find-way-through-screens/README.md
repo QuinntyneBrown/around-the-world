@@ -26,7 +26,12 @@ has its route here and is designed by `platform/operate-backend` (`L2-054` crite
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
+Journey 02 built the routes `/`, `/kid` and `/play`, and Home without its corner buttons; the
+rest of the slice is not built yet. Until journey 03 builds Solo Or Friends, `/play` shows that
+screen's loading state with its top bar and Back. The sound button arrives with journey 10, the
+settings button with journey 07, and Home's error state with the 3D classroom in journey 09
+(`docs/adr/0013-pictures-arriving-and-failing.md`). The components below are the ones the
+design introduces. The slice
 runs wholly on the device and has no backend part. The routes of a game with friends lead into
 screens that call `AroundTheWorld.Api`; those calls belong to the `rooms` subsystem.
 
@@ -104,7 +109,8 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
   opens Solo Or Friends with the setup unchanged (`L2-030` criterion 6). The code typed on
   Room is kept for the visit by the `rooms` subsystem.
 - **`Visit`** — in-memory state provided in root: `tourFinished`, set when a Podium is shown.
-  It is never written to the device (`L2-015` criterion 4).
+  It is never written to the device (`L2-015` criterion 4). Its contract and token (`Visit`, `VISIT`) are in
+  `api`; `game` binds the in-memory `VisitState`.
 - **Back** — each screen from Pick Your Kid to Mic Check has a top bar: an icon button
   labelled "Back", a centred title and an empty right slot. The titles are "Pick your kid",
   "Who's playing?" (Solo Or Friends), "Join a room" (Room), "Room" (the Lobby), "Set up your
@@ -145,8 +151,9 @@ Home:
     sound is on and "Turn sound on" while it is muted (`L2-032` criterion 3). Sound itself
     belongs to `classroom/play-motion-and-sound`. The settings button is labelled "Settings"
     and opens `SettingsDialog`.
-  - *Loading.* While the kept kid and the classroom's picture are arriving, skeletons in
-    their shape stand in and a status reads "Getting your kid…". "Play" can be chosen
+  - *Loading.* While the kept kid's picture and the classroom's picture
+    (`img/scene-classroom.jpg`, until journey 09 draws the classroom) are arriving through
+    `PICTURE_LOADER`, skeletons in their shape stand in and a status reads "Getting your kid…". "Play" can be chosen
     meanwhile (`L2-031` criterion 4).
   - *No 3D classroom.* When the classroom cannot be drawn, its still picture stays and a
     status under the button reads "The 3D classroom is having a rest" and "You're seeing a

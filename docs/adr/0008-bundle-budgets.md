@@ -1,6 +1,6 @@
 # 0008. The production budgets of `game`
 
-- **Status:** Accepted
+- **Status:** Accepted; the `initial` row is superseded by ADR 0014
 - **Date:** 2026-11-26
 
 ## Context

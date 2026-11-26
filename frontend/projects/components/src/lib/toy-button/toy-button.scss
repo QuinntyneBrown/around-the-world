@@ -1,0 +1,113 @@
+// The toy-btn block of docs/design-system/assets/components.css, on the host element.
+:host {
+  --toy-face: var(--color-action-play);
+  --toy-base: var(--color-action-play-base);
+  --toy-fg: var(--color-fg-on-action);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-lg);
+  padding: 0 var(--space-6);
+  font: var(--text-button);
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--toy-fg);
+  background: var(--toy-face);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 var(--toy-depth) 0 0 var(--toy-base);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+:host(:hover) {
+  color: var(--toy-fg);
+  filter: brightness(1.06);
+}
+
+:host(:active) {
+  transform: translateY(calc(var(--toy-depth) - var(--toy-depth-pressed)));
+  box-shadow: 0 var(--toy-depth-pressed) 0 0 var(--toy-base);
+}
+
+:host(:disabled),
+:host([aria-disabled='true']) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+:host([aria-busy='true']) {
+  pointer-events: none;
+}
+
+:host(.toy-btn--friends) {
+  --toy-face: var(--color-action-friends);
+  --toy-base: var(--color-action-friends-base);
+}
+
+:host(.toy-btn--solo) {
+  --toy-face: var(--color-action-solo);
+  --toy-base: var(--color-action-solo-base);
+  --toy-fg: var(--color-fg-on-solo);
+}
+
+:host(.toy-btn--go) {
+  --toy-face: var(--color-action-go);
+  --toy-base: var(--color-action-go-base);
+}
+
+:host(.toy-btn--paper) {
+  --toy-face: var(--color-bg-surface);
+  --toy-base: var(--color-toy-base);
+  --toy-fg: var(--color-fg-default);
+  box-shadow:
+    0 var(--toy-depth) 0 0 var(--toy-base),
+    inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+}
+
+:host(.toy-btn--paper:active) {
+  box-shadow:
+    0 var(--toy-depth-pressed) 0 0 var(--toy-base),
+    inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+}
+
+:host(.toy-btn--md) {
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-5);
+  font-size: var(--font-size-lg);
+}
+
+:host(.toy-btn--xl) {
+  min-height: var(--control-height-xl);
+  padding: 0 var(--space-10);
+  font: var(--text-button-lg);
+}
+
+:host(.toy-btn--block) {
+  width: 100%;
+}
+
+// A label that only fits from 576px; the button keeps it as its accessible name below.
+@media (max-width: 35.99rem) {
+  .toy-btn__label--wide {
+    display: none;
+  }
+}
+
+@media (min-width: 36rem) {
+  :host(.toy-btn--xl) {
+    min-height: var(--control-height-2xl);
+    padding: 0 var(--space-12);
+    font-size: var(--font-size-3xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}
