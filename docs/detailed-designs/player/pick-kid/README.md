@@ -21,7 +21,7 @@ entered, so nothing a child writes about themselves exists to be stored or sent.
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
+The slice is built (journey 02); the components below are the ones it introduced. The slice
 runs wholly on the device: it has no backend part and makes no request to `AroundTheWorld.Api`.
 A game with friends later sends the kid's id and the nickname's two list indexes to a room;
 that exchange belongs to the `rooms` subsystem.
@@ -37,7 +37,11 @@ Types and contracts in the `api` library (`@atw/api`):
   Settings dialog, "Sound" and "Answer by shouting" (`L2-032` criterion 4);
   `player/find-way-through-screens` designs the dialog. What `wayOfAnswering` set to
   `numberPad` does to Mic Check on a later visit is `<TO SUPPLY>`; `answering/check-mic` owns
-  Mic Check (`L2-012` criterion 6).
+  Mic Check (`L2-012` criterion 6). Journey 02 keeps `kid` and `nickname`; `setup`
+  (journey 03), `wayOfAnswering` (journey 07) and `soundMuted` (journey 10) join the record as
+  their journeys keep them, and a missing field reads as its default (ADR 0011).
+- **`DEVICE_STORAGE`** — injection token for the browser's `Storage`. Its factory returns
+  `localStorage`, or `null` when reaching it throws.
 - **`PlayerStorage`** (`PLAYER_STORAGE`) — contract with `read(): PlayerRecord` and
   `write(record: PlayerRecord): void`. Neither method throws.
 - **`PlayerChoices`** (`PLAYER_CHOICES`) — contract for the store of the player's current
@@ -58,11 +62,24 @@ Rules in the `domain` library (`@atw/domain`), folder `storage/`:
   cannot read (`L2-015` criterion 2). It checks each field on its own: a `kid` that is not one
   of the five ids is dropped, and a nickname that fails `NicknameGenerator.isValid` is replaced
   with a newly generated one (`L2-014` criterion 4). `write()` stores the five fields and
-  ignores a failure of the storage. The storage mechanism of the browser and the name of its
-  key are `<TO SUPPLY>`.
+  ignores a failure of the storage. The record is one JSON entry in `localStorage` under the
+  key `atw.player`, with a `version` of 1 and the nickname as its two indexes
+  (`docs/adr/0011-player-record-on-the-device.md`).
 - **`StoredPlayerChoices`** — implementation of `PlayerChoices`. It reads `PLAYER_STORAGE` once
   when the game opens and writes the whole `PlayerRecord` each time a choice changes. The whole
   application shares it, so `game`'s `app.config.ts` binds it.
+- **`KIDS`** — the cast in `domain`'s `cast/`: each kid's id, name, tagline, description and
+  picture (`img/kid-{id}.jpg`), in the order they are offered. `kidById(id)` finds one.
+
+Pictures:
+
+- **`PictureLoader`** (`PICTURE_LOADER`, in `api`) — contract with `preload(urls, signal)`,
+  which resolves `loaded` when every picture has arrived and `failed` when one could not. Its
+  implementation `BrowserPictureLoader` lives in `game` and decodes each picture with an
+  `Image`, dropping the source when the signal aborts. Pick Your Kid's loading and error
+  states, and Home's loading state, follow it
+  (`docs/adr/0013-pictures-arriving-and-failing.md`). A storage that cannot be read shows no
+  error state (`L2-015` criterion 2).
 
 Presentation in the `components` library (`@atw/components`):
 
@@ -73,7 +90,17 @@ Presentation in the `components` library (`@atw/components`):
   `aria-pressed` and shown by an outline in the deeper shade of the kid's colour and a tick
   beside the name, so by more than colour alone (`L2-051` criterion 3).
 - **`KidChip`** — shows a kid's picture, a nickname, "as {kid}" and "Change kid" as one link.
-  Home uses it for the kid and the nickname already picked.
+  Home uses it for the kid and the nickname already picked. While the picture arrives it
+  shows skeletons in its shape.
+- **`Portrait`** — a kid's picture on their colour; a skeleton while it loads, and the drawn
+  kid (`Bean`) when it cannot load.
+- **`Nickname`** — "Your game name", the nickname as text, the "New name" button and "No real
+  names here, so everyone stays safe."; a skeleton while the page loads.
+- **`ToyButton`**, **`IconButton`**, **`TextButton`**, **`TopBar`**, **`Screen`**, **`Stack`**,
+  **`Panel`**, **`Alert`**, **`Skeleton`** and **`Icon`** — the design-system blocks the two
+  screens compose. A component that is a link or a button sits on the native element
+  (`a[atw-toy-button]`), so the page keeps the router
+  (`docs/adr/0012-interactive-components-on-native-elements.md`).
 
 Each kid has a tagline and a description, fixed by `L2-013`:
 
