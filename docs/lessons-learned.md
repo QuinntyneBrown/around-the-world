@@ -496,3 +496,84 @@ the lessons that fit.
   nothing listens while paused.
 - *Keep a contract's state where the whole game keeps it* (07, 4): `paused` lives in the
   session, which the guard, Duel and the dialog share.
+
+## Journey 09: Draw the 3D classroom and its cast
+
+**What slowed it.**
+
+- The Blender exports the design names are not in the repository. A script builds a stand-in of
+  both scenes from three.js primitives with `GLTFExporter` under Node (which needs a small
+  `FileReader`), in the same glTF format and at the same paths (ADR 0028). Sharing one geometry
+  per shape took the cast from 450 kB to 77 kB.
+- World Map's labels had to sit over the 3D room. Rather than project each label, the 3D room
+  is laid out on the plan World Map's drawn room already uses: an orthographic camera at 30°
+  and 100 px a metre draws the ring as `RoomLayout`'s ellipse, and frames the same rectangle
+  as the SVG's `viewBox` (`meet`, or `slice` for the zoom).
+- In headless Chromium (SwiftShader) a transparent canvas drew the room's materials white
+  after its shadow map was used; an opaque canvas, coloured from the page's own token, fixed it
+  and is the cheaper canvas to composite anyway. Two more white rooms came from the test set-up,
+  not the game: `Math.random` fixed by a script (three.js makes its ids from it) and a second
+  page in the same browser. Screenshots for a visual check need a fresh browser and the real
+  `Math.random`.
+- The behaviour specs now draw the classroom on every Home, Duel and World Map: the full suite
+  went from 38 s to about 100 s locally, mostly the scenes loaded and shaders compiled again on
+  each screen. CI runs only the `@critical` specs, so it stays well under its 5 minutes.
+
+**New lessons.**
+
+1. Put a browser resource the game must release behind a count the fixture can read (WebGL
+   contexts not yet lost, as the microphone's open tracks), and lose the context on dispose so
+   the count proves the release.
+2. When a new drawing must line up with an existing one, share the existing one's coordinate
+   plan and frame the camera to its `viewBox`, rather than projecting each label.
+3. A library reached only through `import()` needs ESLint's boundaries to count dynamic
+   imports (`boundaries/dependency-nodes`), or nothing stops another library reaching it.
+4. Split a loop from what it draws (`AnimationLoop`) so its pause and its release are unit
+   tested with fake frames, without WebGL.
+5. Keep a page's still picture and the mocks' classes in the page, and add the canvas beside
+   it with a directive, so the fallback is the markup the mocks already draw.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): it showed the initial bundle at
+  271.53 kB with the loader binding (271.38 kB before) and Three.js in its own lazy chunk.
+- *Check a fake once by hand* (01, 2): the loop's pause and the scene's hop were broken by hand
+  and failed their unit tests; `cannotDraw()` and `refuse()` were seen to fail the Home specs
+  before the words existed.
+- *Check an ESLint boundary by hand* (01, 3): `world` importing `domain`, and `domain`
+  importing `world` dynamically, each failed lint (the second only after lesson 3 above).
+- *Build a component the first time a screen needs it* (01, 4): no new component; WorldMap
+  (`labelsOnly`), Alert (Home, World Map) and MapToast (`inside`) reused or extended, each
+  marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0028
+  fills the design's gaps.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): `@atw/world` is
+  `"sideEffects": false`; the table shows Three.js and the renderer in one lazy chunk.
+- *A link or button block is an attribute component* (02, 2): the classroom is a directive on
+  the native `<canvas>`.
+- *Drive states through the fixture* (02, 3): extended with `classroom` (hold back, refuse,
+  cannot draw, open contexts).
+- *An unreachable state gets a unit test of the page* (02, 4): not needed; every state is
+  reached through the fixture, and the animations are proved by unit tests of the domain and
+  the scene.
+- *Tag one spec per feature `@critical`* (02, 5): Home's classroom, and World Map's from above
+  with each screen's release.
+- *Put the page in the group that provides its service* (03, 1): not needed; the renderer's
+  loader is bound in `app.config.ts`, holding no reference to Three.js.
+- *Measure the initial bundle against the base commit* (03, 2): 271.38 kB before, 271.53 kB
+  after; the 272 kB warning was not moved.
+- *Prefer signals and outputs to `effect()`* (04, 2): the directive pushes state from
+  `ngOnChanges` and reports through an output; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): Duel's state for the
+  classroom is a `computed` with a structural `equal`, so the timer's ticks do not reach the
+  renderer; the new specs ran with `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): World Map's room keeps its name
+  over the 3D classroom; the still picture is "A picture of the classroom".
+- *Measure a template feature on the chunk table* (05, 1): no `@defer`, which would have put
+  its runtime in `main`; the directive's dynamic `import()` costs nothing there.
+- *Draw a picture once in `<defs>`* (05, 3): the drawn room's labels are still drawn once and
+  shown in both views.
+- *Start and stop a browser resource with the element that shows it* (07, 2): the renderer
+  lives exactly as long as its canvas.
+- *Give a fake every answer the browser can give* (07, 3): WebGL is the browser's own, and the
+  fixture takes it away or counts it.
