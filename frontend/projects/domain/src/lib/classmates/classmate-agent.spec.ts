@@ -3,7 +3,7 @@ import { FlashCardMaker } from '../questions/flash-card-maker';
 import { fixedRandom, mathRandom, type RandomSource } from '../questions/random-source';
 import { ClassPace, CATCH_UP_MS, FLOOR_MS } from './class-pace';
 import { ClassmateAgent } from './classmate-agent';
-import { type ClassmateProfile, type SkillLevel } from './classmate-profile';
+import { KID_PROFILES, type ClassmateProfile, type SkillLevel } from './classmate-profile';
 
 const TIMES: FlashCard = { kind: 'times', left: 6, right: 4 };
 
@@ -91,5 +91,57 @@ describe('ClassPace (L2-020 criterion 5)', () => {
     [5, CATCH_UP_MS],
   ])('after %i duels lost in a row, a classmate answers no sooner than %i ms', (lost, ms) => {
     expect(ClassPace.notBeforeMs(lost)).toBe(ms);
+  });
+});
+
+describe('ClassmateAgent with a model session (L2-021, ADR 0030)', () => {
+  const card: FlashCard = { kind: 'times', left: 7, right: 8 };
+  const profile: ClassmateProfile = { id: 'kenji', ...KID_PROFILES.kenji };
+
+  function agentDeciding(decision: { answer: number; afterMs: number } | null): ClassmateAgent {
+    const agent = new ClassmateAgent(profile, mathRandom);
+    agent.useSession({ decide: () => Promise.resolve(decision), destroy: () => undefined });
+    return agent;
+  }
+
+  it('has no model decision without a session', async () => {
+    const agent = new ClassmateAgent(profile, mathRandom);
+    expect(agent.hasSession).toBe(false);
+    expect(await agent.decideWithModel(card, new AbortController().signal)).toBeNull();
+  });
+
+  it('takes the model’s answer and time', async () => {
+    const agent = agentDeciding({ answer: 54, afterMs: 1500 });
+    expect(agent.hasSession).toBe(true);
+    expect(await agent.decideWithModel(card, new AbortController().signal)).toEqual({
+      answer: 54,
+      afterMs: 1500,
+    });
+  });
+
+  it.each([
+    [100, FLOOR_MS, FLOOR_MS],
+    [1500, CATCH_UP_MS, CATCH_UP_MS],
+    [2500, CATCH_UP_MS, 2500],
+  ])('holds a time of %i ms at or above %i ms (L2-020 5)', async (afterMs, notBefore, held) => {
+    const agent = agentDeciding({ answer: 56, afterMs });
+    const decision = await agent.decideWithModel(card, new AbortController().signal, notBefore);
+    expect(decision?.afterMs).toBe(held);
+  });
+
+  it('has none when the model gives none, or the signal aborted', async () => {
+    expect(
+      await agentDeciding(null).decideWithModel(card, new AbortController().signal),
+    ).toBeNull();
+    const controller = new AbortController();
+    controller.abort();
+    const agent = agentDeciding({ answer: 56, afterMs: 1500 });
+    expect(await agent.decideWithModel(card, controller.signal)).toBeNull();
+  });
+
+  it('loses its session when it is taken away', () => {
+    const agent = agentDeciding(null);
+    agent.useSession(null);
+    expect(agent.hasSession).toBe(false);
   });
 });

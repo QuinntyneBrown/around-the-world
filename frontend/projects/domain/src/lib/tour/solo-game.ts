@@ -1,6 +1,8 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import {
+  CLASSMATE_MODEL,
   PLAYER_CHOICES,
+  type ClassmateModelSession,
   type DeskState,
   type DuelState,
   type Duellist,
@@ -51,9 +53,21 @@ interface Playing {
   readonly deskHolder: string;
   readonly startedAt: number;
   readonly timers: number[];
+  /** The classmate's answer from its profile, until it is given or the model's replaces it. */
+  profileAnswer: ProfileAnswer | null;
+  /** The prompt to the classmate's model session, while it waits (docs/adr/0030). */
+  asking: AbortController | null;
   /** The hop the duel earned, once applied, for its passport stamp. */
   hop: TourMove | null;
   applied: boolean;
+}
+
+/** A classmate's answer from its profile, waiting on the clock (docs/adr/0030). */
+interface ProfileAnswer {
+  readonly timer: number;
+  /** When the classmate could answer: the card appearing, or its freeze ending. */
+  readonly fromMs: number;
+  readonly notBeforeMs: number;
 }
 
 /**
@@ -63,11 +77,15 @@ interface Playing {
  * `Tour`, deals each flash card of a duel the child is in, gives the child's and the
  * classmate's answers to the same `Duel`, applies each decided duel to the ring, and works out
  * the classmates' duels while the child is seated (docs/adr/0022-moving-round-the-ring.md). It
- * keeps one duel at a time, never a list of those played (L2-048 criterion 5).
+ * keeps one duel at a time, never a list of those played (L2-048 criterion 5). Where the
+ * on-device model is ready it opens a session for each classmate after the first card, without
+ * waiting, keeps them for the tour and destroys them when it ends or is left (L2-021,
+ * docs/adr/0030-classmates-with-the-on-device-model.md).
  */
 @Injectable()
 export class SoloGame implements GameSession {
   private readonly choices = inject(PLAYER_CHOICES);
+  private readonly model = inject(CLASSMATE_MODEL);
   private readonly started = signal<GameSetup | null>(null);
   private readonly state = signal<DuelState | null>(null);
   private readonly tourState = signal<TourState | null>(null);
@@ -87,6 +105,10 @@ export class SoloGame implements GameSession {
   private agents: Map<string, ClassmateAgent> | null = null;
   /** The agents' class, once its chunk has arrived, to make a new class's agents with. */
   private agentType: typeof ClassmateAgent | null = null;
+  /** The classmates' model sessions of this tour, by classmate (at most 23, ADR 0030). */
+  private readonly sessions = new Map<string, ClassmateModelSession>();
+  /** Counts the tours whose sessions were asked for, so a late session of an old one is let go. */
+  private sessionsFor = 0;
   private playing: Playing | null = null;
   /** The wait between duels: a message, or a classmates' duel being played. */
   private waiting: number | null = null;
@@ -131,6 +153,7 @@ export class SoloGame implements GameSession {
     this.makeAgents();
     if (this.agents && this.playing) this.classmateDecides(this.playing, this.playing.startedAt);
     this.ticking = setInterval(() => this.tick(), TICK_MS);
+    this.openSessions();
   }
 
   private loadAgents(): void {
@@ -155,12 +178,57 @@ export class SoloGame implements GameSession {
     this.playing = null;
     this.state.set(null);
     this.ended.set(null);
+    this.dropSessions();
     this.begin(setup);
     this.makeAgents();
+    this.openSessions();
+  }
+
+  /**
+   * Opens a model session for each classmate, one after another in desk order, once the first
+   * card is showing and only when the model is already downloaded (L2-021 criteria 1, 4 and 5).
+   * Nothing waits for it: until a classmate's session arrives it plays from its profile. The
+   * first session that cannot be opened stops the opening (docs/adr/0030).
+   */
+  private openSessions(): void {
+    const tour = ++this.sessionsFor;
+    const profiles = [...this.profiles.values()];
+    const current = () => !this.destroyed && this.sessionsFor === tour;
+    void (async () => {
+      try {
+        if (!(await this.model.isReady())) return;
+      } catch {
+        return;
+      }
+      for (const profile of profiles) {
+        if (!current()) return;
+        let session: ClassmateModelSession;
+        try {
+          session = await this.model.openSession(profile);
+        } catch {
+          return;
+        }
+        if (!current()) return session.destroy();
+        this.sessions.set(profile.id, session);
+        this.agents?.get(profile.id)?.useSession(session);
+        // A session that arrives during its classmate's duel is asked about the card at once.
+        const playing = this.playing;
+        if (playing && this.rivalOf(playing) === profile.id) this.askModel(playing);
+      }
+    })();
+  }
+
+  /** Destroys every model session of the tour (L2-021 criterion 6). */
+  private dropSessions(): void {
+    this.sessionsFor++;
+    for (const session of this.sessions.values()) session.destroy();
+    this.sessions.clear();
+    for (const agent of this.agents?.values() ?? []) agent.useSession(null);
   }
 
   /** Drops an ended tour, its clock and its result, so a new one can start from Game Setup. */
   private dropEnded(): void {
+    this.dropSessions();
     if (this.ticking !== null) clearInterval(this.ticking);
     this.ticking = null;
     this.clock.clear();
@@ -227,7 +295,11 @@ export class SoloGame implements GameSession {
     const Agent = this.agentType;
     if (!Agent) return;
     this.agents = new Map(
-      [...this.profiles.values()].map((profile) => [profile.id, new Agent(profile, mathRandom)]),
+      [...this.profiles.values()].map((profile) => {
+        const agent = new Agent(profile, mathRandom);
+        agent.useSession(this.sessions.get(profile.id) ?? null);
+        return [profile.id, agent];
+      }),
     );
   }
 
@@ -303,6 +375,8 @@ export class SoloGame implements GameSession {
       deskHolder,
       startedAt: this.clock.now(),
       timers: [],
+      profileAnswer: null,
+      asking: null,
       hop: null,
       applied: false,
     };
@@ -329,17 +403,59 @@ export class SoloGame implements GameSession {
     return winner !== null && winner !== this.sideOfYou(playing);
   }
 
-  /** Asks the classmate for its answer to the card, given from the time it can answer. */
+  /**
+   * Asks the classmate for its answer to the card, given from the time it can answer: its
+   * profile fixes the answer and the time first, then its model session, if it has one, may
+   * replace them before that time (L2-021 criterion 3, docs/adr/0030).
+   */
   private classmateDecides(playing: Playing, fromMs: number): void {
     const agent = this.agents?.get(this.rivalOf(playing));
     if (!agent || playing.duel.outcome !== 'open') return;
-    const decision = agent.decide(playing.duel.card, ClassPace.notBeforeMs(this.lostInARow));
+    const notBeforeMs = ClassPace.notBeforeMs(this.lostInARow);
+    const decision = agent.decide(playing.duel.card, notBeforeMs);
     const atMs = Math.max(fromMs + decision.afterMs, this.clock.now());
-    playing.timers.push(
-      this.clock.after(atMs - this.clock.now(), () =>
-        this.classmateAnswers(playing, decision.answer),
-      ),
-    );
+    const timer = this.clock.after(atMs - this.clock.now(), () => {
+      // The profile's time came first: the model's answer is no longer wanted.
+      this.stopAsking(playing);
+      playing.profileAnswer = null;
+      this.classmateAnswers(playing, decision.answer);
+    });
+    playing.timers.push(timer);
+    playing.profileAnswer = { timer, fromMs, notBeforeMs };
+    this.askModel(playing);
+  }
+
+  /**
+   * Asks the classmate's model session about the card. A valid decision that arrives before the
+   * profile's time replaces it; anything else leaves the profile's answer to stand. The card
+   * never waits for the model.
+   */
+  private askModel(playing: Playing): void {
+    const pending = playing.profileAnswer;
+    const agent = this.agents?.get(this.rivalOf(playing));
+    if (!pending || !agent?.hasSession || playing.asking) return;
+    const asking = new AbortController();
+    playing.asking = asking;
+    void agent
+      .decideWithModel(playing.duel.card, asking.signal, pending.notBeforeMs)
+      .then((decision) => {
+        if (playing.asking === asking) playing.asking = null;
+        if (!decision || asking.signal.aborted || playing.profileAnswer !== pending) return;
+        if (this.playing !== playing || playing.duel.outcome !== 'open') return;
+        this.clock.cancel(pending.timer);
+        playing.profileAnswer = null;
+        const now = this.clock.now();
+        const atMs = Math.max(pending.fromMs + decision.afterMs, now);
+        playing.timers.push(
+          this.clock.after(atMs - now, () => this.classmateAnswers(playing, decision.answer)),
+        );
+      });
+  }
+
+  /** Aborts the prompt to the classmate's model session, if one waits. */
+  private stopAsking(playing: Playing): void {
+    playing.asking?.abort();
+    playing.asking = null;
   }
 
   private classmateAnswers(playing: Playing, value: number): void {
@@ -423,6 +539,8 @@ export class SoloGame implements GameSession {
     if (!rules || !ending) return;
     this.clock.cancel(this.waiting);
     this.waiting = null;
+    // The tour is over: its model sessions go (L2-021 criterion 6).
+    this.dropSessions();
     const shown = (id: string) => this.players.get(id)?.kid !== 'classmate';
     this.ended.set({
       ...rules.result(ending, YOU, shown),
@@ -478,6 +596,8 @@ export class SoloGame implements GameSession {
 
   private cancel(playing: Playing): void {
     for (const timer of playing.timers.splice(0)) this.clock.cancel(timer);
+    playing.profileAnswer = null;
+    this.stopAsking(playing);
   }
 
   private tick(): void {
@@ -583,6 +703,8 @@ export class SoloGame implements GameSession {
   }
 
   private stop(): void {
+    if (this.playing) this.cancel(this.playing);
+    this.dropSessions();
     this.destroyed = true;
     if (this.ticking !== null) clearInterval(this.ticking);
     this.ticking = null;

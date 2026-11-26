@@ -1,6 +1,12 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { PLAYER_CHOICES, type GameSetup, type KidId, type PlayerChoices } from '@atw/api';
+import {
+  CLASSMATE_MODEL,
+  PLAYER_CHOICES,
+  type GameSetup,
+  type KidId,
+  type PlayerChoices,
+} from '@atw/api';
 import { FlashCardMaker } from '../questions/flash-card-maker';
 import { MESSAGE_MS, RIGHT_MS, SoloGame, STAMP_MS, TICK_MS, TIME_UP_MS } from './solo-game';
 
@@ -16,7 +22,12 @@ describe('SoloGame', () => {
   function soloGame(kid: KidId = 'zuri'): SoloGame {
     const choices = { kid: signal<KidId | null>(kid) } as unknown as PlayerChoices;
     TestBed.configureTestingModule({
-      providers: [SoloGame, { provide: PLAYER_CHOICES, useValue: choices }],
+      providers: [
+        SoloGame,
+        { provide: PLAYER_CHOICES, useValue: choices },
+        // No on-device model: the classmates play from their profiles (solo-game-model.spec.ts).
+        { provide: CLASSMATE_MODEL, useValue: { isReady: () => Promise.resolve(false) } },
+      ],
     });
     return TestBed.inject(SoloGame);
   }

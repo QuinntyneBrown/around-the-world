@@ -2,11 +2,12 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import {
+  CLASSMATE_MODEL,
   GAME_SESSION,
-  PLAYER_CHOICES,
-  WAY_OF_ANSWERING,
   type GameSetup,
+  PLAYER_CHOICES,
   type PlayerChoices,
+  WAY_OF_ANSWERING,
 } from '@atw/api';
 import { GameSetupRules, SoloGame } from '@atw/domain';
 import { GameSetupPage } from './game-setup';
@@ -37,6 +38,8 @@ describe('GameSetupPage', () => {
         provideRouter([{ path: 'duel', component: DuelStandIn }]),
         { provide: PLAYER_CHOICES, useValue: choices },
         { provide: GAME_SESSION, useClass: SoloGame },
+        // No on-device model: the classmates play from their profiles (docs/adr/0030).
+        { provide: CLASSMATE_MODEL, useValue: { isReady: () => Promise.resolve(false) } },
         // Mic Check is not needed, so "Go!" opens Duel (its behaviour specs cover Mic Check).
         { provide: WAY_OF_ANSWERING, useValue: { micCheckNeeded: signal(false) } },
       ],
