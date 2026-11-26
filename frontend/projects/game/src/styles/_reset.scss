@@ -90,3 +90,9 @@ a:hover {
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+// The skip link moves the focus to the screen's main part, which is a landmark and not a control:
+// the next Tab shows the ring on its first control instead.
+main[tabindex='-1']:focus {
+  outline: none;
+}
