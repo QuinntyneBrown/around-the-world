@@ -14,9 +14,8 @@ skinparam class {
 title Class structure — Draw the classroom
 
 interface ClassroomRenderer {
-  +mount(canvas: HTMLCanvasElement, view: ClassroomView): Promise<void>
-  +show(state: ClassroomState): void
-  +play(kid: KidId, animation: KidAnimation): Promise<void>
+  +mount(canvas: HTMLCanvasElement): Promise<void>
+  +show(state: ClassroomState, view: ClassroomView): void
   +dispose(): void
 }
 enum KidAnimation {
@@ -32,55 +31,69 @@ enum ClassroomView {
   fromAboveZoomed
 }
 class ClassroomState {
-  +desks: DeskState[]
-  +traveller: KidId
-  +travellerBesideDesk: number
-  +player: KidId
+  +desks: ClassroomDesk[]
+  +figures: ClassroomFigure[]
+  +focusDesk: number | null
 }
-class DeskState {
+class ClassroomDesk {
+  +desk: number
   +country: string
-  +holder: KidId | "classmate" | null
+  +lit: boolean
+}
+class ClassroomFigure {
+  +id: string
+  +kid: KidId | "classmate"
+  +desk: number
+  +travelling: boolean
+  +you: boolean
+  +animation: KidAnimation
+  +from: ClassroomSpot | null
 }
 class ThreeClassroomRenderer {
   -renderer: WebGLRenderer
   -frame: number
-  +mount(canvas, view): Promise<void>
-  +show(state: ClassroomState): void
-  +play(kid: KidId, animation: KidAnimation): Promise<void>
+  +mount(canvas): Promise<void>
+  +show(state, view): void
   +dispose(): void
 }
 class ClassroomScene {
-  +load(): Promise<void>
-  +layOut(state: ClassroomState): void
-  +setDetail(level: number): void
+  +show(state: ClassroomState): void
+  +update(seconds, still, facing): void
+  +applyStep(step: QualityStep): void
   +dispose(): void
 }
 class KidCharacter {
-  +kid: KidId | null
-  +colour: Color
-  +withBolt: boolean
-  +play(animation: KidAnimation): Promise<void>
+  +kid: KidId | "classmate"
+  +place(point): void
+  +hopTo(point): void
+  +play(animation: KidAnimation): void
   +dispose(): void
 }
 class QualityScaler {
-  -belowSince: number | null
-  -level: number
-  +frame(now: number): void
-  +onStepDown: (level: number) => void
+  -elapsed: number
+  -frames: number
+  +step: QualityStep
+  +frame(ms: number): boolean
 }
-class ClassroomBackdrop {
-  +state: ClassroomState
-  +view: ClassroomView
-  +status: Signal<"loading" | "drawn" | "still">
+class ClassroomCanvas <<directive>> {
+  +state: ClassroomState | null
+  +view: "behind" | "fromAbove"
+  +status: output<"drawn" | "still">
+}
+class ClassroomStates <<domain>> {
+  +atRest(): ClassroomState
+  +ofTour(tour, duel?): ClassroomState
 }
 
 ClassroomRenderer <|.. ThreeClassroomRenderer
-ClassroomBackdrop --> ClassroomRenderer : loads, mounts, disposes
+ClassroomCanvas --> ClassroomRenderer : loads, mounts, disposes
 ThreeClassroomRenderer *-- ClassroomScene
 ThreeClassroomRenderer *-- QualityScaler
-ClassroomScene *-- "1..*" KidCharacter
-ClassroomState *-- "6, 12 or 24" DeskState
+ClassroomScene *-- "0..*" KidCharacter
+ClassroomState *-- "6, 12 or 24" ClassroomDesk
+ClassroomState *-- "0..*" ClassroomFigure
+ClassroomStates ..> ClassroomState : makes
 ClassroomRenderer ..> ClassroomState
 KidCharacter ..> KidAnimation : plays
-ClassroomBackdrop --> ClassroomView
+ClassroomCanvas --> ClassroomView
 @enduml

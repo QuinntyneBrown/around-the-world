@@ -17,7 +17,7 @@ skinparam package {
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
   participant "HomePage, DuelPage or WorldMapPage" as screen
-  participant "ClassroomBackdrop" as backdrop
+  participant "ClassroomCanvas (canvas[atwClassroom])" as backdrop
 end box
 box "Frontend — world" #E0F2FE
   participant "ThreeClassroomRenderer" as renderer
@@ -26,33 +26,34 @@ box "Frontend — world" #E0F2FE
 end box
 participant "Game's own origin" as origin
 actor -> screen : Open Home, Duel or World Map (L2-036 criterion 6)
-screen -> backdrop : Place with ClassroomState and the view: behind, or from above
-backdrop -> origin : Request the still picture
-origin --> backdrop : Still picture
-backdrop --> actor : Still picture on Home and Duel, skeleton and "Drawing the classroom…" on World Map; the interface is usable (L2-036 criterion 2)
+screen --> actor : Still picture on Home and Duel, the drawn room on World Map; the interface is usable (L2-036 criterion 2)
+screen -> backdrop : Place the canvas with ClassroomStates (at rest, or of the tour) and the view: behind, or from above
 backdrop -> origin : Import the world chunk through CLASSROOM_RENDERER
 alt the device draws the 3D classroom
   origin --> backdrop : ThreeClassroomRenderer
-  backdrop -> renderer : mount(canvas, view)
-  renderer -> scene : load()
-  scene -> origin : Request scenes, same origin (L2-036 criterion 5)
-  origin --> scene : Ring of desks, landmarks
+  backdrop -> renderer : mount(canvas)
+  renderer -> origin : Request classroom/classroom.glb and classroom/cast.glb, same origin (L2-036 criterion 5)
+  origin --> renderer : The room's parts, the landmarks and the cast
+  renderer -> scene : Build the floor, the rug and the path
   scene -> kid : Create each kid with colour and animations, Bolt with Milo; beans on World Map, further classmates plain (L2-037)
   kid --> scene : Kids in idle
   scene --> renderer : Scene ready
   renderer -> renderer : Start the animation loop
   renderer --> backdrop : Mounted
-  backdrop -> renderer : show(state)
-  backdrop --> actor : 3D classroom fades in (L2-036 criterion 1)
+  backdrop -> renderer : show(state, view)
+  backdrop --> screen : drawn
+  screen --> actor : 3D classroom fades in over the picture; World Map keeps only its labels (L2-036 criterion 1)
 else no WebGL, or the chunk or a scene fails to load
-  renderer --> backdrop : Rejected
-  backdrop --> screen : status = still
+  renderer --> backdrop : Rejected: noWebGL or sceneFailed
+  backdrop -> renderer : dispose()
+  backdrop --> screen : still
   screen --> actor : Still picture stands in; Home and World Map say so in words; game playable (L2-036 criterion 3)
 end
 actor -> screen : Leave the screen
 screen -> backdrop : Destroy
 backdrop -> renderer : dispose()
-renderer -> scene : Stop the loop; dispose geometries, materials, textures (L2-048 criterion 3)
+renderer -> renderer : Stop the loop and its listeners
+renderer -> scene : Dispose the kids and the materials made (L2-048 criterion 3)
 scene --> renderer : Disposed
-renderer --> backdrop : Renderer disposed
+renderer -> renderer : Dispose both scenes, the renderer and its render targets; lose the WebGL context
 @enduml

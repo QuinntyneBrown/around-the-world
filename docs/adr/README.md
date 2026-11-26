@@ -34,3 +34,4 @@ requirements and designs leave.
 | [0025](0025-answering-by-voice.md) | Answering by voice: what is heard, on the device, when Mic Check shows and what a failure does | Accepted |
 | [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted |
 | [0027](0027-pausing-leaving-and-recovering.md) | Pausing, leaving and recovering: the held clock, Back during a game, Not Found and Something Went Wrong | Accepted |
+| [0028](0028-drawing-the-classroom.md) | Drawing the classroom: the scenes' format and paths, the stand-in, the countries, one plan for the room, the hop's look and the detail's steps | Accepted |
