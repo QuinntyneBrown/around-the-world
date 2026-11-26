@@ -24,6 +24,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorCodeWriter>();
 builder.Services.AddRoomRateLimits(builder.Configuration);
 builder.Services.AddHostedService<IdleRoomSweeper>();
+builder.Services.AddHostedService<RoomTimers>();
 
 // The room's one real-time channel: WebSockets only, messages of at most 1 KB, no detail of the
 // server in an error, and the caller known from the token its connection presented

@@ -50,7 +50,7 @@ public sealed class LeaveRoomCommandHandler(
 
             if (!empty)
             {
-                await notifier.RoomChangedAsync(room.Id, RoomStateDto.Of(room), cancellationToken);
+                await RoomChanges.AnnounceAsync(notifier, room, clock.GetUtcNow(), cancellationToken);
             }
 
             return;

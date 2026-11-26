@@ -42,6 +42,56 @@ internal sealed record RoomPlayerBody(Guid Id, string Kid, NicknameBody Nickname
 
 internal sealed record NicknameBody(int Adjective, int Animal);
 
+internal sealed record CardBody(string Kind, int Left, int Right)
+{
+    public int Answer() => Kind switch
+    {
+        "times" => Left * Right,
+        "plus" => Left + Right,
+        "minus" => Left - Right,
+        _ => Left / Right,
+    };
+}
+
+internal sealed record GamePlayerBody(string Id, string Kid, NicknameBody? Nickname, int Distance, IReadOnlyList<int> Stamps);
+
+internal sealed record GameDuelBody(
+    int Number,
+    int Desk,
+    string Traveller,
+    string DeskHolder,
+    CardBody Card,
+    int TimeLeftMs,
+    int TravellerFrozenMs,
+    int DeskHolderFrozenMs,
+    int? TravellerWrong,
+    int? DeskHolderWrong,
+    string Outcome,
+    string? Winner,
+    int? Answer,
+    int SinceDecidedMs);
+
+internal sealed record TourMoveBody(string Kind, string Traveller, int From, int To, bool PassedEmptyDesk, string? SatDown);
+
+/// <summary>The game as the room hub sends it (<c>GameChanged</c>, docs/adr/0033).</summary>
+internal sealed record GameStateBody(
+    int TourLength,
+    int SecondsToAnswer,
+    string Phase,
+    int FirstCardInMs,
+    IReadOnlyList<GamePlayerBody> Players,
+    IReadOnlyList<string?> Desks,
+    string Traveller,
+    int TravellerDesk,
+    IReadOnlyList<string> Standings,
+    GameDuelBody? Duel,
+    TourMoveBody? LastMove,
+    string? Ending,
+    string? Winner)
+{
+    public GamePlayerBody Player(Guid id) => Players.Single(player => player.Id == id.ToString());
+}
+
 /// <summary>Reads a refusal: a ProblemDetails with a <c>code</c> and no detail of the server.</summary>
 internal static class Problems
 {

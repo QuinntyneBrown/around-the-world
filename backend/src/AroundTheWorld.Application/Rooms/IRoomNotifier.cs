@@ -18,4 +18,13 @@ public interface IRoomNotifier
 
     /// <summary>Sends the room's new state to every connection attached to it.</summary>
     Task RoomChangedAsync(Guid roomId, RoomStateDto room, CancellationToken cancellationToken);
+
+    /// <summary>Sends the game as it stands to one connection (docs/adr/0033).</summary>
+    Task SendGameAsync(string connectionId, GameStateDto game, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sends the game's new state to every connection attached to the room, in the step that saves
+    /// it: every player sees the same game (L2-026 criterion 5, L2-027 criterion 1).
+    /// </summary>
+    Task GameChangedAsync(Guid roomId, GameStateDto game, CancellationToken cancellationToken);
 }

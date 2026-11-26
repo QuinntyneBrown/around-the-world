@@ -1,5 +1,6 @@
 using AroundTheWorld.Application.Common;
 using AroundTheWorld.Application.Rooms;
+using AroundTheWorld.Domain.Tours;
 using AroundTheWorld.Infrastructure.Persistence;
 using AroundTheWorld.Infrastructure.Rooms;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString(RoomStoreConnection)));
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
         services.AddSingleton<IRoomCodeGenerator, RoomCodeGenerator>();
+        services.AddSingleton<IRandomSource, SystemRandomSource>();
         services.AddSingleton(TimeProvider.System);
         return services;
     }
