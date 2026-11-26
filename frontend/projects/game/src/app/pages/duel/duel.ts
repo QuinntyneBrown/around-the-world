@@ -36,8 +36,8 @@ export class DuelPage {
     digits: '',
   });
   /**
-   * The digits entered on the number pad: empty for a new card and when a freeze begins or
-   * ends (L2-010 criterion 7); while frozen the card shows the wrong answer instead.
+   * The digits entered on the number pad: empty for a new card and once an answer is given, so
+   * empty when a freeze ends (L2-010 criterion 7); while frozen the card shows the wrong answer.
    */
   protected readonly entry = computed(() => {
     const typed = this.typed();
@@ -78,7 +78,9 @@ export class DuelPage {
     this.typed.set({ card: duel?.card, frozen: duel?.frozen, digits });
   }
 
+  /** Gives the answer; the entry empties, and while frozen the card shows the wrong answer. */
   protected answer(value: number): void {
+    this.type('');
     this.session.answer(value);
   }
 

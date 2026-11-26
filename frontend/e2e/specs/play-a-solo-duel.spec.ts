@@ -150,4 +150,128 @@ test.describe('A solo duel', () => {
     // Then the answer is given, and the child wins
     await expect(duel.result).toHaveText(`= ${answer} You got it!`);
   });
+
+  test('a classmate who answers correctly first wins, gently', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a classmate who always answers right at its fastest, and the clock held
+    await device.keeps(ZURI);
+    await random.always(0);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+
+    // When the child has not answered and 5 of the card's 6 seconds pass
+    await clock.pass(5000);
+
+    // Then Kenji wins: the card says who answered first, with no red and no buzzer
+    await expect(duel.result).toHaveText(`Kenji said ${answer} first. So close!`);
+    await expect(duel.announcement).toHaveText(`Kenji said ${answer} first. You sit at Egypt.`);
+    await expect(duel.flashCard).not.toHaveClass(/flash-card--frozen/);
+    await expect(duel.numberPad).toHaveCount(0);
+
+    // And a correct answer from the child afterwards changes nothing
+    await duel.typeKeys(String(answer), 'Enter');
+    await expect(duel.result).toHaveText(`Kenji said ${answer} first. So close!`);
+  });
+
+  test('a wrong answer freezes the child for one second, then the entry is empty', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a child on Duel, the clock held
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+    const wrong = answer + 2;
+
+    // When the child gives a wrong answer
+    await duel.answerWithPad(wrong);
+
+    // Then the card names it and says the child is frozen, outlined, and the pad is disabled
+    await expect(duel.result).toHaveText(`Not ${wrong}! Frozen for a sec…`);
+    await expect(duel.announcement).toHaveText(`Not ${wrong}. Frozen for one second.`);
+    await expect(duel.flashCard).toHaveClass(/flash-card--frozen/);
+    await expect(duel.answerBox).toHaveText(String(wrong));
+    await expect(duel.go).toBeDisabled();
+
+    // And nothing the child types is entered while frozen
+    await duel.typeKeys(String(answer), 'Enter');
+    await expect(duel.result).toHaveText(`Not ${wrong}! Frozen for a sec…`);
+
+    // When one second passes on the clock
+    await clock.pass(1000);
+
+    // Then the child can answer the same card again, with an empty entry
+    await expect(duel.go).toBeEnabled();
+    await expect(duel.answerBox).toHaveText('?');
+    await expect(duel.result).toHaveCount(0);
+    await duel.answerWithPad(answer);
+    await expect(duel.result).toHaveText(`= ${answer} You got it!`);
+  });
+
+  test('a card nobody answers in time shows its answer, then a new card for the same two', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a classmate who always answers wrong, Lightning cards, and the clock held
+    await device.keeps({
+      ...ZURI,
+      setup: {
+        kinds: ['times'],
+        tables: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+        tourLength: 12,
+        cardSpeed: 'lightning',
+      },
+    });
+    await random.always(0.999);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const first = await duel.card();
+    await expect(duel.timerBar).toHaveAttribute('aria-valuetext', '3 seconds left');
+
+    // When 2 seconds pass, the timer bar drains
+    await clock.pass(2000);
+    await expect(duel.timerBar).toHaveAttribute('aria-valuetext', '1 second left');
+
+    // When the card's 3 seconds have passed with no correct answer
+    await clock.pass(1000);
+
+    // Then the card says time is up and gives its answer, and nobody wins
+    await expect(duel.result).toHaveText(
+      `Time’s up! It was ${first.answer}. Here comes a new card…`,
+    );
+    await expect(duel.announcement).toHaveText(
+      `Time is up. It was ${first.answer}. A new card is coming.`,
+    );
+
+    // When 2 more seconds pass
+    await clock.pass(2000);
+
+    // Then the same two players duel over a new card, with nobody frozen
+    await expect(duel.answerBox).toHaveText('?');
+    const next = await duel.card();
+    expect(`${next.left} ${next.sign} ${next.right}`).not.toBe(
+      `${first.left} ${first.sign} ${first.right}`,
+    );
+    expect(await duel.named(duel.deskHolder)).toEqual(['Kenji', 'Holds Egypt']);
+    await expect(duel.go).toBeEnabled();
+    await expect(duel.timerBar).toHaveAttribute('aria-valuetext', '3 seconds left');
+  });
 });
