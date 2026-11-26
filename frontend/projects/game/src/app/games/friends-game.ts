@@ -12,9 +12,14 @@ import {
   type RoomLink,
   type RoomSession,
   type RoomState,
+  type ShownSticker,
+  type StickerId,
+  type StickerMessage,
+  isStickerId,
 } from '@atw/api';
 import { GameClock, NicknameGenerator, TICK_MS } from '@atw/domain';
 import { FriendsView, type Seen } from './friends-view';
+import { StickerBuffer, type ReceivedSticker } from './sticker-buffer';
 
 /**
  * The room the device's player is in, and its game, kept up to date over the room's connection
@@ -51,6 +56,9 @@ export class FriendsGame implements RoomSession, GameSession {
   private readonly momentListeners = new Set<(moment: GameMoment) => void>();
   /** The cards whose moments have been reported, so each is reported once. */
   private reported = { won: 0, stamped: 0 };
+  /** The stickers received, at most three (docs/adr/0035). */
+  private readonly receivedStickers = signal<readonly ReceivedSticker[]>([]);
+  private stickerKey = 0;
   private ticking: ReturnType<typeof setInterval> | null = null;
   private gone = false;
 
@@ -89,6 +97,11 @@ export class FriendsGame implements RoomSession, GameSession {
     const seen = this.seen();
     return seen ? FriendsView.result(seen, this.nameOf) : null;
   });
+
+  /** The stickers showing, each for 2 seconds of the game's clock (L2-028 criteria 3 and 7). */
+  readonly stickers = computed<readonly ShownSticker[]>(() =>
+    StickerBuffer.showing(this.receivedStickers(), this.nowMs()).map(({ shown }) => shown),
+  );
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -141,6 +154,12 @@ export class FriendsGame implements RoomSession, GameSession {
     const duel = this.duel();
     if (!duel || duel.role === 'watching' || duel.outcome !== 'open' || duel.frozen) return;
     this.connection.answer(value).catch(() => undefined);
+  }
+
+  /** Sends a sticker as its id, while the device's player watches the duel (L2-028 3). */
+  sendSticker(sticker: StickerId): void {
+    if (this.duel()?.role !== 'watching') return;
+    this.connection.sendSticker(sticker).catch(() => undefined);
   }
 
   /**
@@ -200,6 +219,9 @@ export class FriendsGame implements RoomSession, GameSession {
         gameChanged: (game) => {
           if (!this.gone) this.receive(game);
         },
+        stickerShown: (sticker) => {
+          if (!this.gone) this.showSticker(sticker);
+        },
         lost: () => {
           if (!this.gone) this.state.set('lost');
         },
@@ -224,10 +246,25 @@ export class FriendsGame implements RoomSession, GameSession {
     this.follow();
   }
 
+  /**
+   * A sticker the room sent, shown with the sender's kid and name, "You" for the device's own
+   * player; one from a player not in the room, or with no game held, is not shown (ADR 0035).
+   */
+  private showSticker({ sticker, from }: StickerMessage): void {
+    const sender = this.received()?.players.find((player) => player.id === from);
+    if (!this.last() || !sender || !isStickerId(sticker)) return;
+    const name = from === this.entry.playerId ? 'You' : this.nameOf(sender.nickname);
+    const atMs = this.clock.now();
+    this.nowMs.set(atMs);
+    const shown: ShownSticker = { key: ++this.stickerKey, sticker, kid: sender.kid, from: name };
+    this.receivedStickers.update((buffer) => StickerBuffer.add(buffer, { shown, atMs }));
+  }
+
   private dropGame(): void {
     this.stopTicking();
     this.last.set(null);
     this.pillAt.set(null);
+    this.receivedStickers.set([]);
     this.atMicCheck.set(false);
     this.show('lobby');
   }

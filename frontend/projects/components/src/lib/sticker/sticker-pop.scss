@@ -1,0 +1,47 @@
+// The sticker-pop block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--kid-tag-bg);
+  color: var(--kid-tag-fg);
+  box-shadow: var(--shadow-3);
+  font: var(--text-h3);
+  rotate: -4deg;
+  animation: pop-in var(--duration-base) var(--ease-spring);
+}
+
+:host(:nth-child(even)) {
+  rotate: 3deg;
+}
+
+.sticker-pop__from {
+  display: block;
+  font: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  :host(:nth-child(even)) {
+    rotate: none;
+    // The quick fade keeps its 200 ms under reduced motion (ADR 0029).
+    animation: fade-in var(--duration-fade) var(--ease-standard);
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

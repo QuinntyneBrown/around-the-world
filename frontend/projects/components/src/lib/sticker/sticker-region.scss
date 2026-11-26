@@ -1,0 +1,12 @@
+// The sticker-region block of docs/design-system/assets/components.css, on the host element.
+:host {
+  position: absolute;
+  z-index: var(--z-toast);
+  right: var(--space-4);
+  bottom: 8.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+  pointer-events: none;
+}

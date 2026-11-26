@@ -1,0 +1,20 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+
+/**
+ * Sticker region (docs/design-system/components/sticker.html, the `sticker-region` block): where
+ * the stickers received stack at the right edge of Duel, above its footer, newest at the bottom,
+ * clear of the flash card (L2-028 criterion 7). It is a polite live region and takes no pointer
+ * input; its `StickerPop`s go inside it.
+ */
+@Component({
+  selector: 'div[atw-sticker-region]',
+  templateUrl: './sticker-region.html',
+  styleUrl: './sticker-region.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'sticker-region',
+    role: 'status',
+    'aria-live': 'polite',
+  },
+})
+export class StickerRegion {}

@@ -4,6 +4,7 @@ import { type GameSetup } from './game-setup';
 import { type GameState } from './game-state';
 import { type RoomConnection, type RoomEvents } from './room-connection';
 import { ApiError, type RoomState } from './rooms';
+import { type StickerId, type StickerMessage } from './sticker';
 
 /** Where the room hub is, on the game's own origin (docs/adr/0031-making-a-room.md). */
 export const ROOM_HUB_PATH = '/hubs/room';
@@ -35,6 +36,7 @@ export class SignalRRoomConnection implements RoomConnection {
       .build();
     hub.on('RoomChanged', (room: RoomState) => events.changed(room));
     hub.on('GameChanged', (game: GameState) => events.gameChanged(game));
+    hub.on('StickerShown', (sticker: StickerMessage) => events.stickerShown(sticker));
     hub.onclose(() => {
       if (this.hub === hub) events.lost();
     });
@@ -45,6 +47,7 @@ export class SignalRRoomConnection implements RoomConnection {
       if (this.hub === hub) this.hub = null;
       hub.off('RoomChanged');
       hub.off('GameChanged');
+      hub.off('StickerShown');
       throw failure;
     }
   }
@@ -60,6 +63,10 @@ export class SignalRRoomConnection implements RoomConnection {
 
   answer(value: number): Promise<void> {
     return this.invoke('SubmitAnswer', value);
+  }
+
+  sendSticker(sticker: StickerId): Promise<void> {
+    return this.invoke('SendSticker', sticker);
   }
 
   playAgain(): Promise<void> {
@@ -92,6 +99,7 @@ export class SignalRRoomConnection implements RoomConnection {
     this.hub = null;
     hub.off('RoomChanged');
     hub.off('GameChanged');
+    hub.off('StickerShown');
     try {
       await hub.stop();
     } catch {
