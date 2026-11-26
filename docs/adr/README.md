@@ -43,3 +43,4 @@ requirements and designs leave.
 | [0034](0034-playing-with-friends-on-the-device.md) | Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium | Accepted; where a player not in the duel watches it amended by 0035 |
 | [0035](0035-watching-a-duel-and-stickers.md) | Watching a duel and stickers: where a watching player is, the six ids, the picture, the bound and the rate | Accepted |
 | [0036](0036-coming-back-after-a-lost-connection.md) | Coming back after a lost connection: the 30 seconds, the retries, the removed player's desk, the banners and the overlay | Accepted |
+| [0037](0037-running-the-backend-deployed.md) | Running the backend deployed: Azure SignalR Service, the hosting platform, telemetry, health, the limits and the failures | Accepted |

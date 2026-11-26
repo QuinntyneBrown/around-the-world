@@ -153,9 +153,9 @@ number from 0 to 9, and only `NicknameGenerator` on the device turns the indexes
 - **E2E fixture** — the shared Playwright fixture fails a spec on any request off localhost, so
   a change that adds a third-party request fails its own acceptance test.
 
-Whether the Azure SignalR Service endpoint, to which a player's connection goes in a deployed
-system (`L2-052` criterion 1), counts as a third-party origin under `L2-041` criterion 2 is
-`<TO SUPPLY>`. This design treats it as part of the deployed system.
+The Azure SignalR Service endpoint, to which a player's connection goes in a deployed system
+(`L2-052` criterion 1), is part of the deployed backend and not a third-party origin under
+`L2-041` criterion 2 (`docs/adr/0037-running-the-backend-deployed.md`).
 
 The slice changes no screen's layout. What it states about a screen follows the mocks
 `docs/mocks/pages/room/` (states `default`, `empty`, `ready`), `docs/mocks/pages/home/` (state
