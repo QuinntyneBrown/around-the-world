@@ -27,6 +27,8 @@ export class DuelPage {
   readonly traveller: Locator;
   readonly deskHolder: Locator;
   readonly timerBar: Locator;
+  /** The timer bar while a dialog over Duel hides the screen from assistive technology. */
+  readonly timerBarBehindDialog: Locator;
   readonly ring: Locator;
   readonly ringLabel: Locator;
   readonly ringRacers: Locator;
@@ -46,8 +48,10 @@ export class DuelPage {
   readonly shoutInstead: Locator;
   readonly switchWay: Locator;
   readonly voiceFailed: Locator;
+  readonly pause: Locator;
 
   constructor(private readonly page: Page) {
+    this.pause = page.locator('.duel__hud').getByRole('button', { name: 'Pause' });
     this.stamp = page.locator('.stamp-card');
     this.stampCountry = this.stamp.locator('.stamp-card__country');
     this.stampLandmark = this.stamp.locator('.stamp-card__landmark');
@@ -70,6 +74,10 @@ export class DuelPage {
     this.traveller = page.locator('.duelist').first();
     this.deskHolder = page.locator('.duelist--flip');
     this.timerBar = page.getByRole('progressbar', { name: 'Time to answer' });
+    this.timerBarBehindDialog = page.getByRole('progressbar', {
+      name: 'Time to answer',
+      includeHidden: true,
+    });
     this.ring = page.locator('.world-ring');
     this.ringLabel = this.ring.locator('.world-ring__label');
     this.ringRacers = this.ring.locator('.world-ring__racer');

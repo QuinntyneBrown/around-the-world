@@ -73,6 +73,7 @@ export class SoloGame implements GameSession {
   private readonly ended = signal<TourResult | null>(null);
   private readonly current = signal<GameScreen | null>(null);
   private readonly listeners = new Set<(screen: GameScreen) => void>();
+  private readonly held = signal(false);
   private readonly clock = new GameClock(() => Date.now());
   private ticking: ReturnType<typeof setInterval> | null = null;
   private destroyed = false;
@@ -93,6 +94,8 @@ export class SoloGame implements GameSession {
   /** How the tour ended, once a decided duel has ended it (L2-006). */
   private ending: TourEnding | null = null;
 
+  readonly kind = 'solo' as const;
+  readonly paused = this.held.asReadonly();
   readonly setup = this.started.asReadonly();
   readonly hasGame = computed(() => this.started() !== null);
   readonly screen = this.current.asReadonly();
@@ -105,7 +108,11 @@ export class SoloGame implements GameSession {
   }
 
   start(setup: GameSetup, options: { readonly micCheck?: boolean } = {}): void {
-    if (this.ticking !== null) return;
+    if (this.ticking !== null) {
+      // Back from the Podium opens Game Setup, where "Go!" starts a new game (ADR 0027).
+      if (this.phase !== 'over') return;
+      this.dropEnded();
+    }
     const loadAgents = this.started() === null;
     this.started.set(setup);
     // With Mic Check the first card waits until the child leaves it (L2-012 criterion 8).
@@ -150,6 +157,41 @@ export class SoloGame implements GameSession {
     this.makeAgents();
   }
 
+  /** Drops an ended tour, its clock and its result, so a new one can start from Game Setup. */
+  private dropEnded(): void {
+    if (this.ticking !== null) clearInterval(this.ticking);
+    this.ticking = null;
+    this.clock.clear();
+    this.waiting = null;
+    this.playing = null;
+    this.state.set(null);
+    this.ended.set(null);
+    this.current.set(null);
+  }
+
+  /**
+   * Pause: the game's clock stops, so the card's time, a freeze, the classmate's answer, the
+   * waits between screens and the tour's time limit all wait (L2-033 criterion 4, ADR 0027).
+   */
+  pause(): void {
+    if (this.destroyed || this.held()) return;
+    this.clock.pause();
+    this.held.set(true);
+  }
+
+  /** "Keep playing": the same flash card goes on with the same time left. */
+  resume(): void {
+    if (!this.held()) return;
+    this.clock.resume();
+    this.held.set(false);
+  }
+
+  /** "Go home": a solo game is left at once; leaving the solo group then destroys it. */
+  leave(): Promise<void> {
+    this.stop();
+    return Promise.resolve();
+  }
+
   /** Builds the class and the tour, and deals the first card (L2-007). */
   private begin(setup: GameSetup): void {
     const picked = this.choices.kid() ?? 'zuri';
@@ -188,6 +230,8 @@ export class SoloGame implements GameSession {
   }
 
   answer(value: number): void {
+    // An answer given while paused does not count (L2-033 criterion 4).
+    if (this.held()) return;
     // Every classmate's answer due by now counts first (docs/adr/0020, ties).
     this.clock.tick();
     const playing = this.playing;
