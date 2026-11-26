@@ -9,6 +9,13 @@
   margin-top: var(--space-6);
 }
 
+// "Everyone goes back to room {code}." under the buttons (docs/mocks/pages/podium/friends.html).
+.podium-page__hint {
+  margin-top: var(--space-3);
+  color: var(--color-fg-muted);
+  text-align: center;
+}
+
 .podium-page__play {
   min-height: var(--control-height-xl);
   border-radius: var(--radius-md);

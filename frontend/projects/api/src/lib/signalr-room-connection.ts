@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import type { HubConnection } from '@microsoft/signalr';
 import { type GameSetup } from './game-setup';
+import { type GameState } from './game-state';
 import { type RoomConnection, type RoomEvents } from './room-connection';
 import { ApiError, type RoomState } from './rooms';
 
@@ -33,6 +34,7 @@ export class SignalRRoomConnection implements RoomConnection {
       .configureLogging(signalR.LogLevel.None)
       .build();
     hub.on('RoomChanged', (room: RoomState) => events.changed(room));
+    hub.on('GameChanged', (game: GameState) => events.gameChanged(game));
     hub.onclose(() => {
       if (this.hub === hub) events.lost();
     });
@@ -42,6 +44,7 @@ export class SignalRRoomConnection implements RoomConnection {
     } catch (failure) {
       if (this.hub === hub) this.hub = null;
       hub.off('RoomChanged');
+      hub.off('GameChanged');
       throw failure;
     }
   }
@@ -49,6 +52,18 @@ export class SignalRRoomConnection implements RoomConnection {
   saveSetup(setup: GameSetup): Promise<void> {
     const { kinds, tables, tourLength, cardSpeed } = setup;
     return this.invoke('SaveSetup', { kinds, tables, tourLength, cardSpeed });
+  }
+
+  start(): Promise<void> {
+    return this.invoke('StartGame');
+  }
+
+  answer(value: number): Promise<void> {
+    return this.invoke('SubmitAnswer', value);
+  }
+
+  playAgain(): Promise<void> {
+    return this.invoke('PlayAgain');
   }
 
   async leave(): Promise<void> {
@@ -76,6 +91,7 @@ export class SignalRRoomConnection implements RoomConnection {
     if (!hub) return;
     this.hub = null;
     hub.off('RoomChanged');
+    hub.off('GameChanged');
     try {
       await hub.stop();
     } catch {

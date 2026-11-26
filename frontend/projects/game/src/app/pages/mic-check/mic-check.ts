@@ -80,6 +80,8 @@ export class MicCheckPage {
   private readonly way = inject(WAY_OF_ANSWERING);
   private destroyed = false;
 
+  /** Back to Game Setup in a solo game; a race with friends has started, so none (ADR 0034). */
+  protected readonly canGoBack = this.session.kind === 'solo';
   protected readonly milo = kidById('milo');
   protected readonly step = signal<MicCheckStep>('asking');
   protected readonly words = computed(() => WORDS[this.step()]);

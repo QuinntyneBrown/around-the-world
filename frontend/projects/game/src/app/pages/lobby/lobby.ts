@@ -1,6 +1,13 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PLAYER_CHOICES, ROOM_SESSION, type RoomState } from '@atw/api';
 import {
@@ -14,6 +21,7 @@ import {
   Screen,
   ScreenBody,
   Skeleton,
+  Spinner,
   Stack,
   Summary,
   TextButton,
@@ -36,7 +44,8 @@ const CAPACITY = 8;
  * reads the room from `ROOM_SESSION`, kept up to date over the room's connection: placeholders
  * stand in until the room first arrives (L2-031 criterion 4), and "We lost the room" takes the
  * start control's place when the connection cannot be got back (L2-029 criterion 6). The host
- * waits for a friend; any other player waits for the host (docs/adr/0032). Passing messages say
+ * waits for a friend, can change the setup and starts the race, busy until the game arrives;
+ * any other player waits for the host (docs/adr/0032, docs/adr/0034). Passing messages say
  * who joined and that the device's player is the host now, derived from two successive states
  * of the room, and whether "Copy room link" copied the link (L2-024 criteria 4 and 6).
  */
@@ -54,6 +63,7 @@ const CAPACITY = 8;
     Screen,
     ScreenBody,
     Skeleton,
+    Spinner,
     Stack,
     Summary,
     TextButton,
@@ -103,6 +113,8 @@ export class LobbyPage {
   protected readonly capacity = CAPACITY;
   protected readonly alone = computed(() => this.players().length < 2);
   protected readonly isHost = computed(() => this.players().some((p) => p.you && p.host));
+  /** While the host's start is on its way to the room (mock `starting`, docs/adr/0034). */
+  protected readonly starting = signal(false);
   protected readonly hostNickname = computed(
     () => this.players().find((player) => player.host)?.nickname ?? '',
   );
@@ -155,6 +167,20 @@ export class LobbyPage {
   protected async leave(): Promise<void> {
     await this.session.leave();
     await this.router.navigateByUrl('/play');
+  }
+
+  /**
+   * "Start the race": the room starts the game for everyone, and the game's first state opens
+   * Mic Check or Duel; a refusal or a failure makes the button usable again (L2-025 2).
+   */
+  protected async start(): Promise<void> {
+    if (this.starting()) return;
+    this.starting.set(true);
+    try {
+      await this.session.startRace();
+    } catch {
+      this.starting.set(false);
+    }
   }
 
   /** "Try again" after the room was lost: connect afresh with the same token (docs/adr/0032). */

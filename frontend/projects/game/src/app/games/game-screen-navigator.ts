@@ -1,6 +1,6 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { GAME_SESSION, type GameScreen } from '@atw/api';
+import { GAME_SESSION, ROOM_SESSION, type GameScreen } from '@atw/api';
 
 /** The route of each game screen built so far (docs/mocks/manifest.json). */
 const PATHS: Partial<Record<GameScreen, string>> = {
@@ -19,6 +19,8 @@ const PATHS: Partial<Record<GameScreen, string>> = {
 @Injectable()
 export class GameScreenNavigator {
   private readonly router = inject(Router);
+  /** The room, in a game with friends, whose Lobby "Play again" returns to (docs/adr/0034). */
+  private readonly room = inject(ROOM_SESSION, { optional: true });
 
   constructor() {
     const stop = inject(GAME_SESSION).watchScreen((screen) => this.open(screen));
@@ -26,7 +28,7 @@ export class GameScreenNavigator {
   }
 
   private open(screen: GameScreen): void {
-    const path = PATHS[screen];
+    const path = screen === 'lobby' && this.room ? `/room/${this.room.entry.code}` : PATHS[screen];
     if (!path || this.router.url === path) return;
     const fromGameScreen = Object.values(PATHS).includes(this.router.url);
     void this.router.navigateByUrl(path, { replaceUrl: fromGameScreen });

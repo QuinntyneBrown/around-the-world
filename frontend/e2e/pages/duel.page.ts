@@ -53,6 +53,8 @@ export class DuelPage {
   readonly switchWay: Locator;
   readonly voiceFailed: Locator;
   readonly pause: Locator;
+  /** Leave, in place of Pause in a game with friends (L2-033 criterion 4). */
+  readonly leave: Locator;
   readonly scene: Locator;
   readonly scrim: Locator;
   readonly classroom: Locator;
@@ -64,6 +66,7 @@ export class DuelPage {
     this.classroom = page.locator('canvas.duel__canvas');
     this.classroomDrawn = page.locator('canvas.duel__canvas--drawn');
     this.pause = page.locator('.duel__hud').getByRole('button', { name: 'Pause' });
+    this.leave = page.locator('.duel__hud').getByRole('button', { name: 'Leave the game' });
     this.stamp = page.locator('.stamp-card');
     this.stampCountry = this.stamp.locator('.stamp-card__country');
     this.stampLandmark = this.stamp.locator('.stamp-card__landmark');

@@ -20,6 +20,11 @@ export interface RoomSession {
    * once the room has it; rejects when it is refused or cannot be sent (criterion 7).
    */
   saveSetup(setup: GameSetup): Promise<void>;
+  /**
+   * The host's "Start the race" (L2-025 criterion 2). Resolves once the room has started; rejects
+   * when it is refused or cannot be sent.
+   */
+  startRace(): Promise<void>;
   /** Connects afresh with the same token after the room was lost ("Try again"). */
   retry(): void;
   /**

@@ -3,8 +3,8 @@ import { type GameSetup } from './game-setup';
 import { type KidId } from './kid';
 import { type Nickname } from './nickname';
 
-/** Whether a room's players are waiting in the Lobby or playing. */
-export type RoomStatus = 'waiting' | 'playing';
+/** Whether a room's players are waiting in the Lobby, playing, or on the Podium (ADR 0033). */
+export type RoomStatus = 'waiting' | 'playing' | 'over';
 
 /** One player in a room as every player sees them: no connection token (L2-043). */
 export interface RoomPlayer {
