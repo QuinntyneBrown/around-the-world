@@ -105,8 +105,9 @@ In the `world` library (`@atw/world`), which depends on `api` only:
     the kid before and after the hop and leave the movement between to this design
     (`docs/mocks/README.md`, departure 10). The kid moves in a straight line to the new spot
     while rising and falling once, 0.45 m high, in 1 second: along the path for a hop, down to
-    the seat for a sit (`docs/adr/0028`). Under reduced motion the move ends at once until
-    `classroom/play-motion-and-sound` gives it its quick fade.
+    the seat for a sit (`docs/adr/0028`). Under reduced motion the kid fades out where it stands
+    and in at the new spot, 200 ms in all, on its own copy of each material
+    (`classroom/play-motion-and-sound`, `docs/adr/0029`).
   - *Further classmate.* On World Map a further classmate is a plain bean-bodied character
     in a calmer colour, with no accessory and no name tag (`L2-037` criterion 6).
 - **`QualityScaler`** — measures the frame rate of the loop. When the classroom draws below
