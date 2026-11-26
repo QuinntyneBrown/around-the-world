@@ -21,6 +21,12 @@ import { countryOfDesk, landmarkOfDesk, MESSAGE_MS, RIGHT_MS, STAMP_MS } from '@
 export const LOSER_MAP_MS = RIGHT_MS + STAMP_MS;
 
 /**
+ * How long "Everyone else has left." shows on Duel before the Podium opens (L2-029 criterion 5,
+ * docs/adr/0036).
+ */
+export const EVERYONE_LEFT_MS = 3000;
+
+/**
  * The game as the device last received it, and what the device's player did since: the state,
  * how long ago it arrived, the player's own id, and how long after the decision they chose the
  * quiet pill, if they did.
@@ -88,6 +94,9 @@ export const FriendsView = {
    */
   screen(seen: Seen): GameScreen {
     const { state, you } = seen;
+    if (state.phase === 'over' && state.ending === 'everyoneLeft') {
+      return FriendsView.sinceDecided(seen) < EVERYONE_LEFT_MS ? 'duel' : 'podium';
+    }
     if (state.phase === 'starting') return FriendsView.inDuel(state, you) ? 'duel' : 'world-map';
     if (state.phase !== 'decided' && state.phase !== 'over') return 'duel';
     const since = FriendsView.sinceDecided(seen);
@@ -96,9 +105,13 @@ export const FriendsView = {
     return state.phase === 'over' && since >= mapAt + MESSAGE_MS ? 'podium' : 'world-map';
   },
 
-  /** The players as the screens name and draw them, classmates included. */
-  players(state: GameState, you: string, nameOf: NameOf): TourPlayer[] {
-    return state.players.map((player) => ({
+  /**
+   * The players as the screens name and draw them, classmates included; a player removed after
+   * 30 seconds away is left out of the ring, but named in a duel and on the Podium (ADR 0036).
+   */
+  players(state: GameState, you: string, nameOf: NameOf, withRemoved = true): TourPlayer[] {
+    const players = withRemoved ? state.players : state.players.filter(({ removed }) => !removed);
+    return players.map((player) => ({
       id: player.id,
       name:
         player.id === you
@@ -153,7 +166,7 @@ export const FriendsView = {
       outcome: duel.outcome,
       winner: duel.winner,
       answer: open ? null : duel.answer,
-      ring: ring(state, players),
+      ring: ring(state, FriendsView.players(state, you, nameOf, false)),
       hop: stamp && move ? { ...move } : null,
     };
   },
@@ -161,7 +174,7 @@ export const FriendsView = {
   /** The tour as World Map shows it (L2-034): the standings count the players only. */
   tour(seen: Seen, nameOf: NameOf): TourState {
     const { state, you } = seen;
-    const players = FriendsView.players(state, you, nameOf);
+    const players = FriendsView.players(state, you, nameOf, false);
     const desks: DeskState[] = state.desks.map((holder, index) => ({
       desk: index + 1,
       country: countryOfDesk(index + 1),
@@ -183,7 +196,7 @@ export const FriendsView = {
       players,
       traveller: state.traveller,
       travellerDesk: state.travellerDesk,
-      standings: placesOf(state),
+      standings: placesOf(state, false),
       lastMove: decided && state.lastMove ? { ...state.lastMove } : null,
       stamps: state.players.find((player) => player.id === you)?.stamps ?? [],
       phase,
@@ -216,12 +229,16 @@ export const FriendsView = {
   },
 };
 
-/** The players by distance, numbered among themselves: a classmate has no place (ADR 0034). */
-function placesOf(state: GameState) {
+/**
+ * The players by distance, numbered among themselves: a classmate has no place (ADR 0034), and a
+ * removed player none during the tour, though their distance still counts on the Podium (ADR 0036).
+ */
+function placesOf(state: GameState, withRemoved = true) {
   const kidOf = new Map(state.players.map((player) => [player.id, player]));
   return state.standings
     .map((id) => kidOf.get(id))
     .filter((player) => player !== undefined && player.kid !== 'classmate')
+    .filter((player) => withRemoved || !player!.removed)
     .map((player, index) => ({ place: index + 1, player: player!.id, distance: player!.distance }));
 }
 

@@ -79,6 +79,7 @@ export interface GamePlayerFixture {
   nickname: { adjective: number; animal: number } | null;
   distance: number;
   stamps: number[];
+  removed: boolean;
 }
 
 /** A duel of a game, as the room hub sends it: the card without its answer while open. */
@@ -120,7 +121,9 @@ export interface GameOptions {
   distances?: Record<string, number>;
   stamps?: Record<string, number[]>;
   standings?: string[];
-  ending?: 'allTheWayRound' | 'timeLimit' | null;
+  /** The players removed after 30 seconds away (docs/adr/0036). */
+  removed?: string[];
+  ending?: 'allTheWayRound' | 'timeLimit' | 'everyoneLeft' | null;
   winner?: string | null;
 }
 
@@ -145,6 +148,7 @@ export function gameState(options: GameOptions) {
       nickname: p.nickname,
       distance: options.distances?.[p.id] ?? (index === 0 ? 1 : 0),
       stamps: options.stamps?.[p.id] ?? (index === 0 ? [1] : []),
+      removed: options.removed?.includes(p.id) ?? false,
     })),
     ...classmates.map((id) => ({
       id,
@@ -152,6 +156,7 @@ export function gameState(options: GameOptions) {
       nickname: null,
       distance: options.distances?.[id] ?? 0,
       stamps: options.stamps?.[id] ?? [],
+      removed: false,
     })),
   ];
   const traveller = options.traveller ?? ids[0];

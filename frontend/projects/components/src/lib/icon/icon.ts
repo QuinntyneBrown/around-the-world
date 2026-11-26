@@ -29,6 +29,7 @@ export type IconName =
   | 'sliders'
   | 'solo'
   | 'sound'
+  | 'wifi'
   | 'wifi-off';
 
 /**

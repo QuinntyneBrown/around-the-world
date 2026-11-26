@@ -17,7 +17,9 @@ import {
   type StickerId,
   type VoiceError,
 } from '@atw/api';
+import { RouterLink } from '@angular/router';
 import {
+  ConnectionBanner,
   DuelHud,
   FlashCard,
   IconButton,
@@ -27,11 +29,13 @@ import {
   Screen,
   Shout,
   StampCard,
+  StatusOverlay,
   StickerBar,
   StickerPop,
   StickerRegion,
   TextButton,
   TimerBar,
+  ToyButton,
   WorldRing,
   type DuelHudPlayer,
   type PadKey,
@@ -59,26 +63,32 @@ import { DuelWords } from './duel-words';
  * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md). The 3D classroom is
  * drawn behind the scrim once it arrives, the duellists thinking, then cheering or "so close";
  * the still picture stays on a device that cannot draw it (docs/adr/0028). A key of the number
- * pad pops, and each new flash card flips in (docs/adr/0029-motion-and-sound.md).
+ * pad pops, and each new flash card flips in (docs/adr/0029-motion-and-sound.md). In a game with
+ * friends a lost connection shows "Reconnecting…", or the lost game with "Home", over the inert
+ * screen, and the connection's banner runs across the top (docs/adr/0036).
  */
 @Component({
   selector: 'atw-duel-page',
   imports: [
     ClassroomCanvas,
+    ConnectionBanner,
     DuelHud,
     FlashCard,
     IconButton,
     Listening,
     NumberPad,
     Pill,
+    RouterLink,
     Screen,
     Shout,
     StampCard,
+    StatusOverlay,
     StickerBar,
     StickerPop,
     StickerRegion,
     TextButton,
     TimerBar,
+    ToyButton,
     WorldRing,
   ],
   templateUrl: './duel.html',
@@ -97,6 +107,18 @@ export class DuelPage {
   private readonly failedDuel = signal<string | null>(null);
 
   protected readonly duel = this.session.duel;
+  /** The connection to the room, always live in a solo game (L2-029). */
+  protected readonly connection = this.session.connection;
+  protected readonly live = computed(() => this.connection() === 'live');
+  /** The connection's banner across the top (L2-029 criteria 2, 4, 5 and 7). */
+  protected readonly notice = this.session.notice;
+  /** The country of the device's player's spot: their desk, or the desk they travel beside. */
+  protected readonly spot = computed(() => {
+    const tour = this.session.tour();
+    const you = tour?.players.find((player) => player.you)?.id;
+    const seat = tour?.desks.find((desk) => desk.holder === you);
+    return seat?.country ?? this.duel()?.country ?? tour?.desks[tour.travellerDesk - 1]?.country;
+  });
   /** The classroom behind the card: the tour's ring, the duellists doing what the moment asks. */
   protected readonly classroom = computed(
     () => {
@@ -133,7 +155,8 @@ export class DuelPage {
       duel?.outcome === 'open' &&
       duel.role !== 'watching' &&
       !this.stamp() &&
-      !this.session.paused()
+      !this.session.paused() &&
+      this.live()
     );
   });
   /** The six stickers a watching player can send (L2-028 criteria 2 and 6). */

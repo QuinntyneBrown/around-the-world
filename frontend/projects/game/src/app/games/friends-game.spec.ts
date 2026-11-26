@@ -28,8 +28,22 @@ const GAME: GameState = {
   phase: 'duel',
   firstCardInMs: 0,
   players: [
-    { id: 'me', kid: 'zuri', nickname: { adjective: 0, animal: 0 }, distance: 1, stamps: [1] },
-    { id: 'them', kid: 'nia', nickname: { adjective: 8, animal: 4 }, distance: 0, stamps: [] },
+    {
+      id: 'me',
+      kid: 'zuri',
+      nickname: { adjective: 0, animal: 0 },
+      distance: 1,
+      stamps: [1],
+      removed: false,
+    },
+    {
+      id: 'them',
+      kid: 'nia',
+      nickname: { adjective: 8, animal: 4 },
+      distance: 0,
+      stamps: [],
+      removed: false,
+    },
   ],
   desks: [null, 'them', 'c3', 'c4', 'c5', 'c6'],
   traveller: 'me',
@@ -76,8 +90,12 @@ class FakeConnection implements RoomConnection {
     this.calls.push('start');
   }
 
+  /** The reply to an answer, held while `slow` until the test lets it through. */
+  slow: Promise<void> | null = null;
+
   async answer(value: number): Promise<void> {
     this.calls.push(`answer ${value}`);
+    if (this.slow) await this.slow;
   }
 
   async sendSticker(sticker: number): Promise<void> {
@@ -141,7 +159,7 @@ describe('FriendsGame', () => {
     expect(friends.link()).toBe('connecting');
     await settle();
     expect(friends.link()).toBe('lost');
-    expect(connection.calls).toEqual(['connect token', 'connect token']);
+    expect(connection.calls).toEqual(['connect token', 'close', 'connect token']);
   });
 
   it('on leave tells the room, closes the connection and drops the room from the visit', async () => {
@@ -287,5 +305,128 @@ describe('FriendsGame', () => {
     expect(screens).toEqual(['duel', 'lobby']);
     expect(friends.hasGame()).toBe(false);
     friends.leave();
+  });
+
+  describe('when the connection is lost (docs/adr/0036)', () => {
+    beforeEach(() => vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] }));
+    afterEach(() => vi.useRealTimers());
+
+    it('tries again for 30 seconds on the game’s clock, sends nothing meanwhile, then closes the connection and the game is gone', async () => {
+      const { friends, connection } = game();
+      const screens: string[] = [];
+      friends.watchScreen((screen) => screens.push(screen));
+      await settle();
+      connection.events!.changed(ROOM);
+      connection.events!.gameChanged(GAME);
+
+      connection.events!.reconnecting();
+      friends.answer(24);
+      vi.advanceTimersByTime(29_900);
+      expect(friends.connection()).toBe('reconnecting');
+      expect(friends.link()).toBe('reconnecting');
+      vi.advanceTimersByTime(100);
+
+      expect(friends.connection()).toBe('gone');
+      expect(connection.calls).toEqual(['connect token', 'close']);
+      expect(screens.at(-1)).toBe('duel');
+      friends.leave();
+    });
+
+    it('is back once a room state follows the reconnection: "You’re back!" shows for 4 seconds', async () => {
+      const { friends, connection } = game();
+      await settle();
+      connection.events!.changed(ROOM);
+      connection.events!.gameChanged(GAME);
+      connection.events!.reconnecting();
+      vi.advanceTimersByTime(20_000);
+
+      connection.events!.reconnected();
+      expect(friends.connection()).toBe('reconnecting');
+      connection.events!.changed(ROOM);
+      connection.events!.gameChanged(GAME);
+
+      expect(friends.connection()).toBe('live');
+      expect(friends.notice()).toEqual({ kind: 'back' });
+      vi.advanceTimersByTime(4_000);
+      expect(friends.notice()).toBeNull();
+      vi.advanceTimersByTime(30_000);
+      expect(friends.connection()).toBe('live');
+      friends.leave();
+    });
+
+    it('in the Lobby, with no game, also gives up after 30 seconds', async () => {
+      const { friends, connection } = game();
+      await settle();
+      connection.events!.changed(ROOM);
+
+      connection.events!.reconnecting();
+      vi.advanceTimersByTime(30_000);
+
+      expect(friends.link()).toBe('lost');
+      expect(connection.calls).toEqual(['connect token', 'close']);
+      friends.leave();
+    });
+
+    it('names a player removed since the last state for 4 seconds, before "You’re back!"', async () => {
+      const { friends, connection } = game();
+      await settle();
+      connection.events!.changed(ROOM);
+      connection.events!.gameChanged(GAME);
+      connection.events!.reconnecting();
+      connection.events!.changed(ROOM);
+
+      const them = GAME.players[1];
+      connection.events!.gameChanged({
+        ...GAME,
+        players: [GAME.players[0], { ...them, removed: true }],
+      });
+
+      expect(friends.notice()).toEqual({ kind: 'droppedOut', nickname: 'Cosmic Llama' });
+      vi.advanceTimersByTime(4_000);
+      expect(friends.notice()).toBeNull();
+      friends.leave();
+    });
+
+    it('says everyone else has left for 3 seconds, then opens the Podium', async () => {
+      const { friends, connection } = game();
+      const screens: string[] = [];
+      friends.watchScreen((screen) => screens.push(screen));
+      await settle();
+      connection.events!.gameChanged(GAME);
+
+      connection.events!.gameChanged({
+        ...GAME,
+        phase: 'over',
+        ending: 'everyoneLeft',
+        players: [GAME.players[0], { ...GAME.players[1], removed: true }],
+        duel: { ...GAME.duel!, outcome: 'timedOut', answer: 24 },
+      });
+
+      expect(friends.notice()).toEqual({ kind: 'everyoneLeft' });
+      expect(screens.at(-1)).toBe('duel');
+      vi.advanceTimersByTime(3_000);
+      expect(screens.at(-1)).toBe('podium');
+      expect(friends.result()?.ending).toBe('everyoneLeft');
+      friends.leave();
+    });
+
+    it('is wobbly while an answer has had no reply for 2 seconds, until it has one', async () => {
+      const { friends, connection } = game();
+      await settle();
+      connection.events!.gameChanged(GAME);
+      let through = () => undefined as void;
+      connection.slow = new Promise<void>((resolve) => (through = resolve));
+
+      friends.answer(24);
+      vi.advanceTimersByTime(1_900);
+      expect(friends.notice()).toBeNull();
+      vi.advanceTimersByTime(100);
+      expect(friends.notice()).toEqual({ kind: 'wobbly' });
+
+      through();
+      await settle();
+      expect(friends.notice()).toBeNull();
+      friends.leave();
+    });
   });
 });

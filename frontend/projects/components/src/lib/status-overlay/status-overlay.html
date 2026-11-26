@@ -1,0 +1,6 @@
+<div class="status-overlay__card">
+  <atw-icon [name]="icon()" size="xl" />
+  <p class="status-overlay__title">{{ heading() }}</p>
+  <p class="status-overlay__text">{{ text() }}</p>
+  <ng-content select="[slot=action]" />
+</div>

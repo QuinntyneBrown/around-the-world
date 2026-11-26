@@ -1,0 +1,5 @@
+// The banner is Alert's own block; this host adds no box of its own, so the banner sits in the
+// screen's layout as the mocks draw it.
+:host {
+  display: contents;
+}

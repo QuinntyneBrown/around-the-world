@@ -1,6 +1,12 @@
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { CLASSROOM_RENDERER, GAME_SESSION, type GameSession, type TourState } from '@atw/api';
+import {
+  CLASSROOM_RENDERER,
+  GAME_SESSION,
+  type GameConnection,
+  type GameSession,
+  type TourState,
+} from '@atw/api';
 import { WorldMapPage } from './world-map';
 
 /**
@@ -25,6 +31,8 @@ describe('WorldMapPage', () => {
       watchScreen: () => () => undefined,
       watchMoments: () => () => undefined,
       stickers: signal([]),
+      connection: signal<GameConnection>('live'),
+      notice: signal(null),
       sendSticker: () => undefined,
       kind: 'solo',
       paused: signal(false),

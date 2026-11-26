@@ -65,6 +65,13 @@ export class DuelPage {
   /** Where the stickers received show, at the edge of the screen (L2-028 criterion 7). */
   readonly stickerRegion: Locator;
   readonly stickerPops: Locator;
+  /** "Reconnecting…" or "We lost the game", over the whole screen (L2-029 criteria 1 and 4). */
+  readonly overlay: Locator;
+  readonly overlayTitle: Locator;
+  readonly overlayText: Locator;
+  readonly overlayHome: Locator;
+  /** The connection's banner across the top of the screen (L2-029). */
+  readonly banner: Locator;
 
   constructor(private readonly page: Page) {
     this.scene = page.locator('img.duel__scene');
@@ -90,6 +97,11 @@ export class DuelPage {
     this.stickers = this.stickerBar.getByRole('button');
     this.stickerRegion = page.locator('.sticker-region');
     this.stickerPops = this.stickerRegion.locator('.sticker-pop');
+    this.overlay = page.locator('.status-overlay');
+    this.overlayTitle = this.overlay.locator('.status-overlay__title');
+    this.overlayText = this.overlay.locator('.status-overlay__text');
+    this.overlayHome = this.overlay.getByRole('link', { name: 'Home' });
+    this.banner = page.locator('.alert.banner');
     this.heading = page.getByRole('heading', { level: 1 });
     this.announcement = page.locator('.duel__stage > [role="status"]');
     this.flashCard = page.locator('.flash-card');
@@ -154,6 +166,20 @@ export class DuelPage {
       if (!apart) return true;
     }
     return false;
+  }
+
+  /** Whether the connection's banner overlaps the flash card (L2-029 criterion 7). */
+  async bannerCoversTheCard(): Promise<boolean> {
+    await this.settled();
+    const card = await this.flashCard.boundingBox();
+    const banner = await this.banner.boundingBox();
+    if (!card || !banner) throw new Error('The flash card or the banner is not shown');
+    return !(
+      banner.x >= card.x + card.width ||
+      banner.x + banner.width <= card.x ||
+      banner.y >= card.y + card.height ||
+      banner.y + banner.height <= card.y
+    );
   }
 
   /** A duellist's name and role, as the duel strip shows them. */
