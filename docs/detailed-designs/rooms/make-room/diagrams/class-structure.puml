@@ -72,7 +72,7 @@ class SoloOrFriendsPage <<frontend, game>> {
 }
 
 SoloOrFriendsPage ..> RoomsApi : calls through ROOMS_API
-RoomsApi ..> RoomsController : POST /rooms
+RoomsApi ..> RoomsController : POST /api/rooms
 RoomsController ..> MakeRoomCommand : sends
 MakeRoomCommandValidator ..> MakeRoomCommand : validates
 MakeRoomCommandHandler ..> MakeRoomCommand : handles
