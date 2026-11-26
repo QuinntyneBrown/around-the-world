@@ -10,7 +10,8 @@ answers first wins**: the winner hops to the next desk. Hop all the way round th
 win. Play alone against the computer's classmates, or with friends in real time.
 
 It is a responsive web application: an Angular frontend with a 3D classroom drawn in Three.js,
-and a .NET backend that runs a game with friends over SignalR.
+and a .NET backend that runs a game with friends over SignalR, scaled out through Azure SignalR
+Service.
 
 ## Contents
 
@@ -52,7 +53,10 @@ and a .NET backend that runs a game with friends over SignalR.
 | **Milo** | Green | Shy and quietly brilliant, with his robot Bolt |
 | **Pip** | Purple | The dreamer, who flies a paper plane to each new desk |
 
-In a solo game, the kids you do not pick are your classmates, played by the computer.
+In a solo game, the kids you do not pick are among your classmates, played by the computer.
+Each classmate is an agent with its own skill, characteristics and preferred kinds of maths; in
+Chrome they are driven by Gemini Nano, the browser's on-device model, and play from their
+profiles alone where it is missing.
 
 ### The screens
 
@@ -98,14 +102,14 @@ source of truth for the code.
 
 Around the World is designed and not yet built. The repository holds the agent instructions
 ([`AGENTS.md`](AGENTS.md)), the skills that drive the work (`.claude/skills/`, `.agents/skills/`)
+the requirements ([`docs/specs/L1.md`](docs/specs/L1.md), [`docs/specs/L2.md`](docs/specs/L2.md))
 and the community files. What comes next, in order:
 
-1. The requirements in `docs/specs/`, from the prototype and the game plan.
-2. The mocks in `docs/mocks/`, transcribed from the prototype, and the design system extracted
+1. The mocks in `docs/mocks/`, transcribed from the prototype, and the design system extracted
    from them.
-3. The detailed designs, the journeys and their slices.
-4. The scaffold: the Angular workspace, the .NET solution, the test harness and CI.
-5. The game, one slice at a time, each with its failing acceptance test first.
+2. The detailed designs, the journeys and their slices.
+3. The scaffold: the Angular workspace, the .NET solution, the test harness and CI.
+4. The game, one slice at a time, each with its failing acceptance test first.
 
 ## How it works
 

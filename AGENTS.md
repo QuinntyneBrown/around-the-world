@@ -6,6 +6,10 @@
 > and you win. A child plays alone against the computer's classmates or with friends in real
 > time, and is playing within 20 seconds of opening it.
 
+It is the game played at school: a child goes from desk to desk, the teacher flashes a maths
+problem, and whoever answers fastest moves on to the next desk. Here it is fun, colourful and
+entertaining, with 3D characters and a 3D classroom animated in Blender.
+
 **Direction.** One question decides everything: who answers first? Everything else stays out of
 its way.
 
@@ -18,8 +22,12 @@ its way.
   fallback, used when the browser has no speech recognition or the microphone is refused.
 - **The cast.** Five children to pick from, each with one colour: Zuri (yellow), Kenji (blue),
   Nia (red), Milo (green, with his robot Bolt) and Pip (purple). On the World Map each is a
-  small bean-bodied character. In a solo game the children nobody picked are the classmates,
-  played by the computer.
+  small bean-bodied character. In a solo game the children nobody picked are among the
+  classmates, played by the computer.
+- **The classmates are a diverse class.** Each classmate is an agent with its own skill level,
+  characteristics and preferred kinds of maths. In Chrome they are driven by Gemini Nano, the
+  browser's on-device model, on the device; where it is missing the classmates play from their
+  profiles alone and the game is the same.
 - **Solo or friends.** A solo game needs nothing but the device's own player. A game with
   friends is a room of up to 8, joined with a 4-letter code read aloud across the room.
 - **The game is set up once.** The kinds of maths (times tables from 2 to 12, and +, −, ÷), the
@@ -81,10 +89,14 @@ finish) are the cast, not rules.
 
 - **The frontend is the game.** `frontend/` is an Angular workspace and holds every screen, the
   3D classroom, the voice answer and its number pad, and a solo game, which is played on the
-  device.
+  device against classmates who are agents. It is built for current Chrome and uses its newest
+  capabilities (the built-in Gemini Nano model, speech recognition) where they are present,
+  never as something the game cannot start without.
 - **The backend is the room.** `backend/` is a .NET service for what one browser cannot do
   alone: rooms and their codes, the lobby, and a game with friends in real time over SignalR,
-  where the server decides who answered first. It holds no account and no personal data.
+  where the server decides who answered first. SignalR is its one real-time channel
+  (WebSockets), scaled out in a deployed system through Azure SignalR Service. It holds no
+  account and no personal data.
 - Before building a feature, read its requirement (`docs/specs/`, `docs/journeys.md`), its
   detailed design (`docs/detailed-designs/`) and its mocks (`docs/mocks/`, the source of truth
   for the UI; `docs/design-system/` is extracted from them).
@@ -114,7 +126,7 @@ with best practice, say so and propose the correction; do not work around it sil
 
 A multi-project workspace under `frontend/projects/`. The baseline is three libraries, `api`
 (contracts, types, injection tokens, and the HTTP and SignalR clients for the backend), `domain`
-(the game and its rules: `questions/`, `tour/`, `voice/`, `storage/`) and `components`
+(the game and its rules: `questions/`, `tour/`, `classmates/`, `voice/`, `storage/`) and `components`
 (presentation), and one application, `game`. A `world` library (the 3D classroom's renderer,
 Three.js, imported dynamically) joins them when the classroom is first drawn.
 
@@ -134,6 +146,12 @@ better than one that keeps growing. A further application needs its own ADR.
   ends) live in `domain`'s `tour/` only, and making a flash card in `questions/`. Nothing
   outside `voice/` touches the microphone or speech recognition. Every feature runs end to end
   with a simulated voice and with the number pad.
+- A classmate's profile and its agent live in `domain`'s `classmates/`, and nothing outside it
+  touches the browser's on-device model. The model decides only a classmate's answer and when
+  it comes, read as a number and a time: it never decides a rule, and nothing it writes is
+  shown to a child. A flash card never waits for the model, the game never waits for the model
+  to download, and every feature runs end to end with classmates who play from their profiles
+  alone.
 - Prettier and angular-eslint own formatting and lint; CI fails on either.
 - Current Angular: standalone components, signals for state, `OnPush` everywhere, zoneless.
 - **Responsive at every width.** Every screen works from the narrowest phone to the widest
@@ -208,9 +226,9 @@ hubs).
 
 ## E2E (Playwright)
 
-- **No real microphone, backend or database, and no network beyond localhost.** A fixture
-  installs a fake speech recognizer that says what the spec tells it to and a fake microphone
-  permission; API and hub requests are answered by fixtures; the 3D classroom's assets are
+- **No real microphone, on-device model, backend or database, and no network beyond
+  localhost.** A fixture installs a fake speech recognizer that says what the spec tells it to,
+  a fake microphone permission and a fake on-device model that answers as the spec tells it to; API and hub requests are answered by fixtures; the 3D classroom's assets are
   served from localhost. An unexpected microphone call, an unanswered request, a request off
   localhost or a page error fails the spec.
 - Page Object Model: one page object per screen or dialog owns the selectors. Never put a
@@ -237,7 +255,7 @@ the first. A change that grows the initial bundle or leaks memory is not done, w
 achieves.
 
 - **Load only what is needed now.** Every route uses `loadComponent`/`loadChildren`; heavy or
-  below-the-fold UI uses `@defer`; large libraries (Three.js, the classroom's renderer, speech recognition helpers) and
+  below-the-fold UI uses `@defer`; large libraries (Three.js, the classroom's renderer, speech recognition helpers, the classmates' agents) and
   whole feature libraries are imported dynamically, never from the initial chunk. Keep the
   initial bundle small and the `angular.json` budgets tight; raising a budget needs a reason in
   the change.
@@ -245,7 +263,7 @@ achieves.
   down when its owner is destroyed: subscriptions (`takeUntilDestroyed`/`DestroyRef`), timers,
   intervals and `requestAnimationFrame` loops,
   event listeners, SignalR connections and their handlers, speech recognition sessions and
-  microphone streams, observers, `AbortController`s, object URLs, audio elements, and every
+  microphone streams, on-device model sessions (`destroy()`), observers, `AbortController`s, object URLs, audio elements, and every
   Three.js geometry, material, texture, render target and renderer (`dispose()`).
 - **Bound what grows.** Live data held during a game (the duels played, the stickers received, the positions
   of every player) uses a fixed-size or windowed buffer, or is paged and dropped
