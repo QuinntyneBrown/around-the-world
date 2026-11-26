@@ -61,5 +61,5 @@ jobs:
         run: dotnet format --verify-no-changes
       - name: Build
         run: dotnet build --configuration Release
-      - name: Acceptance tests
-        run: dotnet test --configuration Release --no-build
+      - name: Acceptance tests (the unit tests run locally, docs/adr/0031)
+        run: dotnet test tests/AroundTheWorld.Api.Tests --configuration Release --no-build

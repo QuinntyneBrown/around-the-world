@@ -91,7 +91,7 @@ Backend:
   with status 503 and the code `no_free_code`, which Solo Or Friends shows as its generic message
   (ADR 0031).
 - **`IRoomCodeGenerator`** and **`RoomCodeGenerator`** — port in Application and its
-  implementation in `AroundTheWorld.Infrastructure`. `Next()` draws 4 capital letters from A to Z
+  implementation in `AroundTheWorld.Infrastructure`. `Draw()` draws 4 capital letters from A to Z
   at random and draws again while the letters spell a blocked word (`L2-022` criterion 2). Each letter is drawn with .NET's
   cryptographic `RandomNumberGenerator`. The list of blocked words is a fixed set of rude or
   unkind 4-letter words in `AroundTheWorld.Infrastructure` (`Rooms/BlockedWords.cs`), compared

@@ -1,13 +1,23 @@
+using System.Text.Json.Serialization;
+using AroundTheWorld.Api.Errors;
+using AroundTheWorld.Api.Rooms;
 using AroundTheWorld.Application;
 using AroundTheWorld.Infrastructure;
 using AroundTheWorld.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict);
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+    options.InvalidModelStateResponseFactory = ErrorCodeWriter.InvalidRequest);
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ErrorCodeWriter>();
+builder.Services.AddRoomRateLimits(builder.Configuration);
 
 var app = builder.Build();
 
@@ -21,7 +31,10 @@ if (args.Contains("migrate", StringComparer.Ordinal))
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.MapControllers();
+app.UseRouting();
+app.UseRateLimiter();
+app.UseBodySizeLimit();
+app.MapControllers().RequireOpenToAnyoneLimits();
 
 await app.RunAsync();
 
