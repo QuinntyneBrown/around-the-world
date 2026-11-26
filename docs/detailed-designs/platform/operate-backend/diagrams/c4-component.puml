@@ -7,24 +7,24 @@ System_Ext(signalr, "Azure SignalR Service", "Real-time channel in a deployed sy
 System_Ext(otel, "Telemetry backend", "OTLP endpoint")
 Container_Boundary(game, "game and its libraries") {
   Component(roomsapi, "RoomsApi / RoomConnection", "api clients", "Turn a ProblemDetails, a hub error or no response into an ApiError with a code")
-  Component(words, "messageForCode", "Pure helper in game", "Words for a refused request and its code; one generic message otherwise")
+  Component(words, "joinRefusal / roomRefusal", "Pure helpers in game", "The state, and so the words, for a refused request's code; the screen's generic message otherwise")
   Component(sof, "SoloOrFriendsPage", "Page", "Play solo starts SoloGame with no request")
   Component(handler, "GameErrorHandler", "Angular ErrorHandler", "Catches a failure of the game itself")
   Component(sww, "SomethingWentWrongPage", "Page", "Says so in plain words; offers Try again and Home")
 }
 Container_Boundary(api, "AroundTheWorld.Api") {
-  Component(program, "Program", "Composition root", "Adds SignalR; adds Azure SignalR Service only when its connection string is set")
+  Component(program, "Program / RealTime", "Composition root", "Adds SignalR; adds Azure SignalR Service only when its connection string is set; CORS, known proxies, telemetry")
   Component(ctrl, "RoomsController", "Controller", "Make and join a room")
   Component(hub, "RoomHub", "SignalR hub", "WebSockets only; one MediatR request per method")
   Component(health, "HealthController", "Controller", "Live and ready")
-  Component(problems, "ProblemDetailsWriter / HubErrorFilter", "Api", "Turn a refusal into a ProblemDetails or a hub error holding only a code")
+  Component(problems, "ErrorCodeWriter / CurrentPlayerFilter", "Api", "Turn a refusal into a ProblemDetails or a hub error holding only a code; any other failure into server_error")
 }
 Container_Boundary(app, "AroundTheWorld.Application and Infrastructure") {
   Component(telemetry, "TelemetryBehavior", "MediatR pipeline behaviour", "One span and one duration measurement per request, tagged with request name and outcome code")
-  Component(handlers, "Handlers", "MediatR", "Return a result or a refusal with an ErrorCode")
+  Component(handlers, "Handlers", "MediatR", "Return a result or refuse with a RefusedException holding one code")
   Component(notifier, "HubRoomNotifier", "Infrastructure, IRoomNotifier", "Pushes room events to a room's group")
   Component(scrub, "TelemetryScrubber", "OpenTelemetry processor", "Drops path values, query strings and addresses from every span and log")
-  Component(probes, "IReadinessProbe implementations", "Infrastructure", "Room store reachable; Azure SignalR Service connected")
+  Component(probes, "IReadinessProbe implementations", "Infrastructure and Api", "Room store reachable; Azure SignalR Service's health API answers")
   ComponentDb(store, "Room store", "EF Core", "Shared by every instance")
 }
 Rel(roomsapi, ctrl, "Calls", "JSON/HTTPS")

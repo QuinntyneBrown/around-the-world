@@ -161,7 +161,9 @@ criterion 5 requires a fixed limit and states no number.
 | The last desk of a 24-desk tour draws within 10% of the first desk's frame rate | The bounded buffers, the disposal of each hop's transient objects and `QualityScaler` keep per-frame work constant. |
 
 Whether the 50 ms target holds depends on the room store's engine, Azure SQL Database
-(`docs/adr/0009-health-and-migrations.md`), and is measured in journey 17. The
+(`docs/adr/0009-health-and-migrations.md`), and is measured from the histogram
+`atw.request.duration` by the load test that confirms the service tier
+(`docs/adr/0037-running-the-backend-deployed.md`). The
 device and network profile that stand for "a mid-range phone on a 4G connection" in a
 measurement are `<TO SUPPLY>`.
 

@@ -82,8 +82,8 @@ Everything received is validated (`L2-044`):
   ([`rooms/watch-duel-and-send-sticker`](../watch-duel-and-send-sticker/README.md)).
 - **1 KB limit** — `RoomHub` is configured to receive messages of at most 1 KB, and
   `RoomsController` to accept bodies of at most 1 KB; a larger one is refused before any handler
-  runs (`L2-044` criterion 2). Where the limit is applied when Azure SignalR Service relays the
-  message is decided by journey 17 (`platform/operate-backend`); `RoomsController` limits each body to
+  runs (`L2-044` criterion 2). When Azure SignalR Service relays a message the service's own
+  limit applies, and every hub argument is a number or a setup its validator bounds (ADR 0037); `RoomsController` limits each body to
   1 KB with `[RequestSizeLimit(1024)]` (ADR 0031).
 - **`RefusedException`** and **`ErrorCodeWriter`** — a refusal carries a `code` and a status.
   `ErrorCodeWriter` writes it as ProblemDetails with a `code` extension for an HTTP request and
@@ -92,8 +92,8 @@ Everything received is validated (`L2-044`):
   off (`L2-044` criterion 3). On the device, `RoomsApi` and `RoomConnection` turn each into an
   `ApiError`, and the page shows a message for its `code` (`L2-054` criteria 1 and 2).
 - **CORS policy** — allows the frontend's origin and no other, for the controller and the hub
-  (`L2-044` criterion 4). The origin is a deployment setting documented by
-  `platform/operate-backend` (`L2-052` criterion 4).
+  (`L2-044` criterion 4). The origin is the deployment setting `Frontend:Origin`, documented in
+  `docs/operations/settings.md` (`L2-052` criterion 4, ADR 0037).
 
 What is open to anyone is rate limited (`L2-045`):
 
@@ -108,7 +108,8 @@ What is open to anyone is rate limited (`L2-045`):
   in a minute **(to confirm)**, from the settings `RateLimits:MakeRoom:PermitLimit` and
   `RateLimits:MakeRoom:WindowSeconds` (ADR 0031); over it, Solo Or Friends tells the child to wait and disables "Make a room"
   (`L2-022` criterion 4). The limits are deployment settings (`L2-052` criterion 4). The address is the connection's remote address; behind a deployed system's proxy it is read
-  from the forwarded headers of the known proxy, which journey 17 configures (ADR 0031).
+  from the forwarded headers of the known proxies only, the settings
+  `ForwardedHeaders:KnownProxies` and `ForwardedHeaders:KnownNetworks` (ADR 0037).
 - **`HubRateLimitFilter`** — SignalR hub filter in `AroundTheWorld.Api`. It counts messages for
   each connection on `TimeProvider`. It drops `SubmitAnswer` messages beyond 5 a second
   (`L2-045` criterion 3) and `SendSticker` messages beyond 1 a second (`L2-028` criterion 5),
@@ -116,8 +117,8 @@ What is open to anyone is rate limited (`L2-045`):
   `RateLimits:Stickers:PerSecond` (ADR 0037). It keeps a connection's counts in the
   connection's own items, so they end with the connection.
 - **HTTPS and WSS only** — the API serves no plain HTTP endpoint, and `RoomConnection` uses the
-  WebSockets transport over WSS (`L2-045` criterion 4). Where TLS ends in a deployed system is
-  decided by journey 17 (`platform/operate-backend`).
+  WebSockets transport over WSS (`L2-045` criterion 4). TLS ends at the hosting platform's ingress,
+  which serves HTTPS and WSS only; the API listens on plain HTTP behind it (ADR 0037).
 
 The backend holds no personal data (`L2-046`):
 
