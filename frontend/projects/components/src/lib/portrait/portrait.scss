@@ -28,6 +28,17 @@
   width: 2.75rem;
 }
 
+.portrait--round {
+  border-radius: var(--radius-full);
+}
+
+// In a stack, each portrait overlaps the one before it on a ring of the surface colour; the
+// stack's own padding makes room for the first (docs/design-system/components/portrait.html).
+:host-context(.portrait-stack) .portrait {
+  box-shadow: 0 0 0 var(--border-width-heavy) var(--color-bg-surface);
+  margin-left: calc(-1 * var(--space-3));
+}
+
 .portrait--fill {
   width: 100%;
 }

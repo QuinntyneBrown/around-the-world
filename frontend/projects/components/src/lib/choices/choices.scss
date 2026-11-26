@@ -1,0 +1,69 @@
+// The choice-grid and choice blocks of docs/design-system/assets/components.css.
+:host {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: var(--space-3) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  color: var(--color-fg-default);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
+
+  // Chosen: its colour, and a dot at the top right, so colour is never the only mark.
+  &[aria-pressed='true'] {
+    background: var(--color-action-friends);
+    color: var(--color-fg-on-action);
+    box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-action-friends-base);
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: var(--space-2);
+      height: var(--space-2);
+      border-radius: var(--radius-full);
+      background: currentColor;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+.choice__value {
+  font: var(--text-h2);
+}
+
+.choice__unit {
+  font: var(--text-label);
+  color: var(--color-fg-muted);
+}
+
+.choice[aria-pressed='true'] .choice__unit {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice {
+    transition: none;
+  }
+}

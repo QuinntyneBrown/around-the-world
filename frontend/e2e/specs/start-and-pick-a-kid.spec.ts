@@ -111,10 +111,9 @@ test.describe('Picking a kid', () => {
     // When the child confirms
     await pick.confirmKid();
 
-    // Then Solo Or Friends opens, still arriving until journey 03 builds it
+    // Then Solo Or Friends opens
     const solo = new SoloOrFriendsPage(page);
     await expect(solo.heading).toHaveText('Who’s playing?');
-    await expect(solo.status).toHaveText('Getting ready…');
     await expect(page).toHaveURL(/\/play$/);
 
     // And the device keeps the kid and the nickname, as list indexes, and nothing else

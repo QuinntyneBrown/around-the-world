@@ -1,0 +1,56 @@
+// The segmented block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  margin-top: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+}
+
+.segmented__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--target-min);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-fg-default);
+  font: var(--text-name);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
+
+  &[aria-pressed='true'] {
+    background: var(--color-selected-bg);
+    color: var(--color-selected-fg);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+// The tick shows only on the chosen option.
+.segmented__tick {
+  --icon-size: 1rem;
+  display: none;
+}
+
+.segmented__option[aria-pressed='true'] .segmented__tick {
+  display: contents;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented__option {
+    transition: none;
+  }
+}

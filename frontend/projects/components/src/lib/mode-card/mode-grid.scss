@@ -1,0 +1,12 @@
+// The mode-grid block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 48rem) {
+  :host {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+}

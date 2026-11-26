@@ -9,7 +9,8 @@ export type PortraitState = 'loaded' | 'loading' | 'failed';
 
 /**
  * Portrait (docs/design-system/components/portrait.html): a kid's picture on their colour.
- * Beside the kid's name it is decorative (`alt` empty); alone, `alt` is the kid's name.
+ * Beside the kid's name it is decorative (`alt` empty); alone, `alt` is the kid's name. Inside
+ * a `PortraitStack` it overlaps the one before it.
  */
 @Component({
   selector: 'atw-portrait',
@@ -26,4 +27,6 @@ export class Portrait {
   readonly alt = input('');
   readonly size = input<PortraitSize>('default');
   readonly state = input<PortraitState>('loaded');
+  /** A round portrait, as in a stack of classmates. */
+  readonly round = input(false);
 }

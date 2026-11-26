@@ -2,19 +2,65 @@
   <header atw-top-bar heading="Who’s playing?">
     <a atw-icon-button slot="back" icon="back" routerLink="/kid" aria-label="Back"></a>
   </header>
-  <main atw-screen-body [center]="true" aria-busy="true">
-    <p class="visually-hidden" role="status">Getting ready…</p>
-    <div class="mode-grid">
-      @for (way of [1, 2]; track way) {
-        <div atw-panel aria-hidden="true">
-          <div atw-stack>
-            <atw-skeleton shape="title" />
-            <atw-skeleton shape="text" />
-            <atw-skeleton shape="text" [short]="true" />
-            <atw-skeleton shape="block" class="mode-grid__action" />
+  @if (pictures() === 'loading') {
+    <main atw-screen-body [center]="true" aria-busy="true">
+      <p class="visually-hidden" role="status">Getting ready…</p>
+      <div atw-mode-grid>
+        <atw-mode-card [loading]="true" />
+        <atw-mode-card [loading]="true" />
+      </div>
+    </main>
+  } @else {
+    <main atw-screen-body [center]="true">
+      <div atw-mode-grid>
+        <atw-mode-card
+          mode="solo"
+          heading="Just me"
+          text="Race the class. Your classmates are played by the computer."
+        >
+          <div atw-portrait-stack slot="art">
+            @for (kid of classmates(); track kid.id) {
+              <atw-portrait
+                [kid]="kid.id"
+                [src]="kid.picture"
+                [alt]="kid.name"
+                [round]="true"
+                [state]="pictures()"
+              />
+            }
           </div>
-        </div>
-      }
-    </div>
-  </main>
+          <a atw-toy-button slot="actions" variant="solo" [block]="true" routerLink="/setup"
+            >Play solo</a
+          >
+        </atw-mode-card>
+        <atw-mode-card
+          mode="friends"
+          heading="With friends"
+          text="Play live with up to 8 friends. Share a 4-letter code to get them in."
+        >
+          <atw-code-letters slot="art" letters="BOLT" />
+          <button
+            atw-toy-button
+            slot="actions"
+            type="button"
+            variant="friends"
+            [block]="true"
+            disabled
+          >
+            Make a room
+          </button>
+          <button
+            atw-toy-button
+            slot="actions"
+            type="button"
+            variant="paper"
+            [block]="true"
+            disabled
+          >
+            Join a room
+          </button>
+        </atw-mode-card>
+      </div>
+    </main>
+  }
 </atw-screen>

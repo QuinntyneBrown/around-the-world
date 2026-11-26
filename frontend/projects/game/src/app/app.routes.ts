@@ -24,4 +24,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/solo-or-friends/solo-or-friends').then((m) => m.SoloOrFriendsPage),
   },
+  {
+    // The solo group: Game Setup and the game screens (docs/adr/0016-solo-game-route-group.md).
+    path: '',
+    loadChildren: () => import('./games/solo-game.routes').then((m) => m.SOLO_GAME_ROUTES),
+  },
 ];

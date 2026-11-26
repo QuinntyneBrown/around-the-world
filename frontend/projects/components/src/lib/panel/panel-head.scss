@@ -1,0 +1,15 @@
+// The panel__head element of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+:host(.panel__head--spaced) {
+  margin-top: var(--space-6);
+}
+
+.panel__title--sm {
+  font: var(--text-h4);
+}

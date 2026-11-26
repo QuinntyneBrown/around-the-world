@@ -1,0 +1,84 @@
+<atw-screen>
+  <header atw-top-bar heading="Set up your game">
+    <a atw-icon-button slot="back" icon="back" routerLink="/play" aria-label="Back"></a>
+  </header>
+  <main atw-screen-body columns="wide-first">
+    <section atw-panel heading="Which maths?" headingId="maths-title">
+      <div
+        atw-toggle-chips
+        aria-label="Kinds of maths"
+        [options]="kinds"
+        [pressed]="setup().kinds"
+        (toggled)="toggleKind($event)"
+      ></div>
+      @if (refused() === 'last-kind') {
+        <p class="hint" role="status">
+          <strong>Keep at least one kind of maths on.</strong> Turn another on first.
+        </p>
+      }
+      <div atw-panel-head heading="Times tables" headingId="tables-title" [spaced]="true">
+        @if (tablesEnabled()) {
+          <div atw-cluster [tight]="true">
+            <button atw-text-button type="button" (click)="easy()">Easy</button>
+            <button atw-text-button type="button" (click)="all()">All</button>
+          </div>
+        }
+      </div>
+      <div
+        atw-table-keys
+        aria-labelledby="tables-title"
+        [attr.aria-describedby]="tablesEnabled() ? null : 'tables-off'"
+        [tables]="tables"
+        [pressed]="setup().tables"
+        [disabled]="!tablesEnabled()"
+        (toggled)="toggleTable($event)"
+      ></div>
+      @if (!tablesEnabled()) {
+        <p class="hint" id="tables-off">Turn on Times to pick tables.</p>
+      }
+      @if (refused() === 'last-table') {
+        <p class="hint" role="status">
+          <strong>Keep at least one times table on.</strong> Turn another on first.
+        </p>
+      }
+    </section>
+    <div atw-stack gap="lg">
+      <section atw-panel heading="How far round?" headingId="tour-title">
+        <div
+          atw-choices
+          aria-labelledby="tour-title"
+          [options]="tourLengths"
+          [chosen]="setup().tourLength"
+          (choose)="chooseTourLength($event)"
+        ></div>
+        <p class="hint game-setup__tour-hint" aria-live="polite">
+          <strong>{{ tour().name }}</strong> · about {{ tour().minutes }} minutes
+        </p>
+      </section>
+      <section atw-panel heading="Card speed" headingId="speed-title">
+        <div
+          atw-segmented
+          aria-labelledby="speed-title"
+          [options]="cardSpeeds"
+          [chosen]="setup().cardSpeed"
+          (choose)="chooseCardSpeed($event)"
+        ></div>
+        <p class="hint game-setup__speed-hint" aria-live="polite">
+          {{ secondsPerCard() }} seconds per card{{
+            setup().cardSpeed === 'lightning' ? '. Good luck!' : ''
+          }}
+        </p>
+      </section>
+      <button
+        atw-toy-button
+        type="button"
+        size="xl"
+        [block]="true"
+        class="game-setup__go"
+        (click)="go()"
+      >
+        Go!
+      </button>
+    </div>
+  </main>
+</atw-screen>

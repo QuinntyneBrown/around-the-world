@@ -1,0 +1,12 @@
+@for (table of tables(); track table) {
+  <button
+    type="button"
+    class="table-key"
+    [attr.aria-pressed]="!disabled() && pressed().includes(table)"
+    [attr.aria-label]="table + ' times table'"
+    [disabled]="disabled()"
+    (click)="toggled.emit(table)"
+  >
+    ×{{ table }}
+  </button>
+}

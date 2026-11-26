@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { PICTURE_LOADER, PLAYER_CHOICES, VISIT, type PlayerChoices } from '@atw/api';
-import { NicknameGenerator } from '@atw/domain';
+import { GameSetupRules, NicknameGenerator } from '@atw/domain';
 import { VisitState } from '../../visit/visit-state';
 import { HomePage } from './home';
 
@@ -15,7 +15,9 @@ describe('HomePage', () => {
     const choices: PlayerChoices = {
       kid: signal('zuri'),
       nickname: signal({ adjective: 0, animal: 0 }),
+      setup: signal(GameSetupRules.defaults()),
       confirmKid: () => undefined,
+      changeSetup: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [
