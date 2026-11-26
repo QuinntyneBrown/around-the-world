@@ -249,4 +249,52 @@ test.describe('Send a sticker', () => {
       .poll(() => duel.shownStickers())
       .toEqual([{ kid: 'nia', words: 'Wow!', from: 'Cosmic Llama' }]);
   });
+
+  for (const [form, viewport] of [
+    ['a small phone', { width: 360, height: 640 }],
+    ['a phone', { width: 390, height: 844 }],
+    ['a tablet', { width: 768, height: 1024 }],
+    ['a desktop', { width: 1440, height: 900 }],
+  ] as const) {
+    test(`on ${form}, stickers arriving close together stack newest at the bottom, three at most, clear of the flash card`, async ({
+      page,
+      device,
+      backend,
+      roomHub,
+      clock,
+    }) => {
+      // Given Brave Narwhal watching the host and Cosmic Llama duel
+      await page.setViewportSize(viewport);
+      await clock.hold();
+      await pipInLobby(page, device, backend, roomHub);
+      roomHub.game(game());
+      const duel = new DuelPage(page);
+      await expect(duel.result).toHaveText('Watching… your turn is next');
+
+      // When four stickers arrive close together
+      roomHub.sticker(1, PIP.id);
+      roomHub.sticker(3, NIA.id);
+      await clock.pass(300);
+      roomHub.sticker(5, HOST.id);
+      roomHub.sticker(6, NIA.id);
+
+      // Then three show, newest at the bottom, and the oldest has left (L2-028 criterion 7)
+      await expect
+        .poll(() => duel.shownStickers())
+        .toEqual([
+          { kid: 'nia', words: 'Nice one', from: 'Cosmic Llama' },
+          { kid: 'zuri', words: 'Whoosh!', from: 'Speedy Otter' },
+          { kid: 'nia', words: 'Beep boop!', from: 'Cosmic Llama' },
+        ]);
+
+      // And none covers the flash card
+      expect(await duel.stickersCoverTheCard()).toBe(false);
+
+      // And the stickers to send still take a press while stickers show (L2-028 criterion 2)
+      await duel.sendSticker('Go!');
+      await expect
+        .poll(() => roomHub.invocations().at(-1))
+        .toEqual({ target: 'SendSticker', args: [1] });
+    });
+  }
 });

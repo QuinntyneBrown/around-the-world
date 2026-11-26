@@ -43,6 +43,16 @@ while a game is held (ADR 0034), so no timer is made for a sticker and a spec mo
 fixture's `clock` (`L2-048` criterion 5). A sticker is shown only on Duel; it is not kept for a
 screen that opens later.
 
+**Where stickers stand.** The mocks put the stickers 8.5 rem above the bottom of Duel. Under 992 px
+the watching player's sticker bar wraps into two or three rows and the flash card, the largest
+thing on the screen, leaves no room above the bar, so three stickers stacked there covered the
+card (the behaviour spec measured it at 360, 390 and 768 px). On a watching player's Duel the
+region (`sticker-region--watching`) therefore stands at the bottom of the screen, passing over the
+bar, which still takes every press since the region takes no pointer input; from 992 px, where
+the bar is one row, it stands above it as drawn. On a phone a sticker is compact (the name's type,
+not a heading's). The mocks `duel/watching` and `sticker/stacked` and the design system carry the
+modifier.
+
 **The server.** `RoomHub.SendSticker(int sticker)` sends one `SendStickerCommand`, a room player's
 request (the room is the one the connection's token names, `L2-043`). Its handler ends in silence,
 with no error, when the id is not one of the six, the room has no game being played, or the

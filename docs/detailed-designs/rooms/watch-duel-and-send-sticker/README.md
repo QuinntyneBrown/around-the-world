@@ -65,7 +65,9 @@ Frontend:
   elsewhere (`L2-028` criterion 3, ADR 0035). A sticker pops in over 200 ms, stays 2 seconds and
   goes; with reduced motion it fades in and is not tilted. Stickers that arrive close together
   stack with the newest at the bottom, at most three at once, and none covers the flash card
-  (`L2-028` criterion 7). The region is a polite live region and takes no pointer input. A player
+  (`L2-028` criterion 7). On a watching player's Duel under 992 px the region passes over the
+  sticker bar, which still takes every press, since the flash card leaves no room above it
+  (ADR 0035). The region is a polite live region and takes no pointer input. A player
   in the duel sees received stickers in the same region.
 - **`StickerBar`** — presentation component in `components` (`div[atw-sticker-bar]`); it renders
   the mocks' `sticker-bar` block, a group named "Send a sticker". It shows the stickers it is

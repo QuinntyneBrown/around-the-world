@@ -82,6 +82,25 @@ public sealed class StickerTests(ApiFixture api) : IClassFixture<ApiFixture>
         Assert.Empty(hostHub.Stickers());
     }
 
+    [Fact]
+    public async Task Given_a_watching_player_when_they_send_stickers_faster_than_one_a_second_then_the_server_drops_the_extra_ones()
+    {
+        await using var race = await RaceAsync();
+
+        // When Pip sends three stickers at once, then one 999 ms later, then one a second after the first
+        await race.PipHub.Connection.InvokeAsync("SendSticker", 1, Cancel);
+        await race.PipHub.Connection.InvokeAsync("SendSticker", 2, Cancel);
+        await race.PipHub.Connection.InvokeAsync("SendSticker", 3, Cancel);
+        await api.PassAsync(TimeSpan.FromMilliseconds(999));
+        await race.PipHub.Connection.InvokeAsync("SendSticker", 4, Cancel);
+        await api.PassAsync(TimeSpan.FromMilliseconds(1));
+        await race.PipHub.Connection.InvokeAsync("SendSticker", 5, Cancel);
+
+        // Then the room is sent the first and the last only, with no error (L2-028 criterion 5)
+        await race.HostHub.WaitForStickerAsync("5 from Pip", sticker => sticker.Sticker == 5);
+        Assert.Equal([new StickerShownBody(1, race.Pip), new StickerShownBody(5, race.Pip)], race.HostHub.Stickers());
+    }
+
     /// <summary>A host, a friend and Pip in a started race, all connected, with the first card dealt.</summary>
     private async Task<Race> RaceAsync()
     {
