@@ -5,6 +5,8 @@ import { GameSetupPage } from '../pages/game-setup.page';
 import { HomePage } from '../pages/home.page';
 import { MicCheckPage } from '../pages/mic-check.page';
 import { PauseDialog } from '../pages/pause.dialog';
+import { PodiumPage } from '../pages/podium.page';
+import { WorldMapPage } from '../pages/world-map.page';
 
 /**
  * Journey 08: pause, leave and find the way back (L2-030, L2-033 criterion 4, L2-054
@@ -177,4 +179,131 @@ test.describe('Pause', () => {
     await expect(duel.shout).toBeVisible();
     await expect.poll(() => voice.listening()).toBe(1);
   });
+});
+
+test.describe('Back during a game', () => {
+  test('the browser’s Back on Duel pauses the game, and the duel stays', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a classmate who always answers right at its fastest, and a child on Duel
+    await device.keeps(ZURI);
+    await random.always(0);
+    await clock.hold();
+    const duel = await onDuel(page);
+    const card = await duel.card();
+
+    // When the child chooses the browser's Back
+    await page.goBack();
+
+    // Then the game pauses as Pause does, and Duel stays (L2-030 criterion 10)
+    const paused = new PauseDialog(page);
+    await expect(paused.dialog).toBeVisible();
+    await expect(paused.text).toHaveText('The clock is stopped. Your desk at Egypt is waiting.');
+    await expect(page).toHaveURL(/\/duel$/);
+    await clock.pass(60_000);
+    await expect(duel.result).toHaveCount(0);
+
+    // When the child chooses "Keep playing"
+    await paused.keepPlaying.click();
+
+    // Then the same card goes on, and the browser's Back pauses it again
+    await expect(paused.dialog).toHaveCount(0);
+    expect(await duel.card()).toEqual(card);
+    await page.goBack();
+    await expect(paused.dialog).toBeVisible();
+    await expect(page).toHaveURL(/\/duel$/);
+  });
+
+  test('the browser’s Back on World Map pauses the game, and the map waits', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a child who lost to Kenji and sits down at Egypt, on World Map
+    await device.keeps(ZURI);
+    await random.always(0);
+    await clock.hold();
+    const duel = await onDuel(page);
+    await clock.pass(5000);
+    await duel.sitPill.click();
+    const map = new WorldMapPage(page);
+    await expect(map.message).toHaveText('So close! You sit down at Egypt');
+
+    // When the child chooses the browser's Back
+    await page.goBack();
+
+    // Then the game pauses, and World Map stays however long it is paused
+    const paused = new PauseDialog(page);
+    await expect(paused.dialog).toBeVisible();
+    await expect(paused.text).toHaveText('The clock is stopped. Your desk at Egypt is waiting.');
+    await clock.pass(60_000);
+    await expect(page).toHaveURL(/\/map$/);
+
+    // When the child chooses "Go home"
+    await paused.goHome.click();
+
+    // Then Home opens, and the game is gone
+    await expect(page).toHaveURL(/\/$/);
+    await map.open();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('the browser’s Back on the Podium opens Game Setup, where “Go!” starts a new game', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given the Podium after a tour that ran out of time
+    await device.keeps(ZURI);
+    await random.always(0);
+    await clock.hold();
+    const duel = await onDuel(page);
+    await clock.pass(5000);
+    await clock.pass(6 * 60_000);
+    await duel.sitPill.click();
+    await expect(page).toHaveURL(/\/map$/);
+    await clock.pass(1600);
+    const podium = new PodiumPage(page);
+    await expect(page).toHaveURL(/\/podium$/);
+    await expect(podium.playAgain).toBeVisible();
+
+    // When the child chooses the browser's Back
+    await page.goBack();
+
+    // Then Game Setup opens, with no dialog
+    const setup = new GameSetupPage(page);
+    await expect(page).toHaveURL(/\/setup$/);
+    await expect(setup.go).toBeVisible();
+    await expect(new PauseDialog(page).dialog).toHaveCount(0);
+
+    // When the child chooses "Go!"
+    await setup.chooseGo();
+
+    // Then a new game starts at Duel, at the first desk's duel with a card open
+    await expect(page).toHaveURL(/\/duel$/);
+    await expect(duel.heading).toHaveText('Duel at Egypt');
+    await expect(duel.answerBox).toHaveText('?');
+    await expect(duel.result).toHaveCount(0);
+  });
+
+  for (const [screen, open] of [
+    ['World Map', (page: Page) => new WorldMapPage(page).open()],
+    ['the Podium', (page: Page) => new PodiumPage(page).open()],
+    ['Mic Check', (page: Page) => new MicCheckPage(page).open()],
+  ] as const) {
+    test(`a web address of ${screen} opens Home when no game has started`, async ({ page }) => {
+      // Given no game has started
+      // When the child opens the screen's web address
+      await open(page);
+
+      // Then Home opens (L2-030 criterion 7)
+      await expect(page).toHaveURL(/\/$/);
+      await expect(new HomePage(page).play).toBeVisible();
+    });
+  }
 });

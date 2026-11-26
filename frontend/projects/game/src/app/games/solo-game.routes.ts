@@ -5,6 +5,7 @@ import { KeptWayOfAnswering, LazyVoiceAnswer, SoloGame } from '@atw/domain';
 import { GameScreenNavigator } from './game-screen-navigator';
 import { inGameGuard } from './in-game.guard';
 import { micCheckGuard } from './mic-check.guard';
+import { pauseOnBackGuard } from './pause-on-back.guard';
 
 /**
  * The solo group (docs/adr/0016-solo-game-route-group.md): the solo Game Setup and the game
@@ -39,12 +40,14 @@ export const SOLO_GAME_ROUTES: Routes = [
         path: 'duel',
         title: 'Duel · Around the World',
         canActivate: [inGameGuard],
+        canDeactivate: [pauseOnBackGuard],
         loadComponent: () => import('../pages/duel/duel').then((m) => m.DuelPage),
       },
       {
         path: 'map',
         title: 'World map · Around the World',
         canActivate: [inGameGuard],
+        canDeactivate: [pauseOnBackGuard],
         loadComponent: () => import('../pages/world-map/world-map').then((m) => m.WorldMapPage),
       },
       {
