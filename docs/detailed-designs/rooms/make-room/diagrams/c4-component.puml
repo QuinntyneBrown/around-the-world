@@ -7,7 +7,7 @@ Container_Boundary(game, "game and its libraries") {
   Component(page, "SoloOrFriendsPage", "Angular page, game", "Offers Make a room; shows the busy, refused, rate-limited and offline states in words")
   Component(storage, "PlayerStorage", "Contract, api", "Gives the kid and the nickname kept on the device")
   Component(client, "RoomsApi", "HTTP client, api", "Sends the request and returns a RoomEntry or an ApiError")
-  Component(session, "FriendsGame", "Game service, game", "Keeps the code, the connection token and the RoomState in memory")
+  Component(session, "Visit", "Service, game", "Keeps the RoomEntry (code, connection token, RoomState) in memory for this visit")
 }
 Container_Boundary(api, "AroundTheWorld.Api and its projects") {
   Component(ctrl, "RoomsController", "ASP.NET Core controller", "Open to anyone, rate limited, sends one request")
@@ -20,7 +20,7 @@ Container_Boundary(api, "AroundTheWorld.Api and its projects") {
 Rel(page, storage, "Reads kid and nickname")
 Rel(page, client, "Calls makeRoom")
 Rel(page, session, "Hands the RoomEntry to")
-Rel(client, ctrl, "POST /rooms", "JSON/HTTPS")
+Rel(client, ctrl, "POST /api/rooms", "JSON/HTTPS")
 Rel(ctrl, handler, "Sends MakeRoomCommand")
 Rel(validator, handler, "Runs before")
 Rel(handler, codes, "Asks for a code")
