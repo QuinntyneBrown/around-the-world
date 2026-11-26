@@ -14,57 +14,66 @@ skinparam class {
 title Class structure — End a tour
 
 class Tour {
-  +timeLimitMs: number
-  +isOver(atMs: number): boolean
-  +result(own: PlayerId): TourResult
+  +tourLength: number
+  +{static} start(tourLength, traveller, seated, endsAtMs): Tour
+  +applyDuel(winner: DuelSide, atMs: number): TourMove
+  +ending(atMs: number): TourEnding | null
+  +result(ending: TourEnding, own: string, shown: (player) => boolean): TourResult
 }
 class Standings {
-  +record(player: PlayerId, distance: number, atMs: number): void
-  +entries(): StandingEntry[]
+  +reach(player: string, distance: number, atMs: number): void
+  +ordered(): {player, distance}[]
 }
-class StandingEntry {
-  +player: PlayerId
-  +distance: number
-  +reachedAtMs: number
+class StandingsEntry {
   +place: number
-  +isOwn: boolean
+  +player: string
+  +distance: number
 }
 class TourResult {
   +ending: TourEnding
-  +winner: PlayerId
-  +places: StandingEntry[]
-  +ownPlace: number
-  +ownPassport: PassportPage[]
-  +countriesReached: number
   +tourLength: number
+  +winner: string
+  +winnerDistance: number
+  +places: StandingsEntry[]
+  +players: TourPlayer[]
+  +yourPlace: number
+  +passport: PassportPage[]
+  +countriesReached: number
 }
 enum TourEnding {
   allTheWayRound
   timeLimit
 }
 class PassportPage {
-  +country: CountryId
+  +desk: number
+  +country: string
   +stamped: boolean
 }
 class Passport {
-  +stamps(): Stamp[]
-  +pages(desks: DeskState[]): PassportPage[]
+  +stamp(desk: number): void
+  +stamps: number[]
+  +pages(countries: string[]): PassportPage[]
 }
 interface GameSession {
-  +tour: Signal<TourState>
+  +tour: Signal<TourState | null>
   +result: Signal<TourResult | null>
+  +continue(): void
   +playAgain(): void
-  +leave(): void
 }
 class SoloGame {
-  -onDuelDecided(winner: PlayerId): void
+  -showMove(move: TourMove): void
+  -finish(): void
   +playAgain(): void
-  +leave(): void
 }
 class PodiumPage {
   -session: GameSession
-  +onPlayAgain(): void
-  +onHome(): void
+  -visit: Visit
+  #playAgain(): void
+}
+class PodiumWords {
+  +headline(result): string
+  +cheer(result): string
+  +places(result): PodiumPlace[]
 }
 
 SoloGame ..|> GameSession
@@ -72,10 +81,10 @@ SoloGame *-- Tour
 Tour *-- Standings
 Tour *-- Passport
 Tour ..> TourResult : builds
-Standings *-- StandingEntry
 TourResult --> TourEnding
-TourResult *-- StandingEntry : places
+TourResult *-- StandingsEntry : places
 TourResult *-- PassportPage
 Passport ..> PassportPage : builds
 PodiumPage ..> GameSession : injects GAME_SESSION
+PodiumPage ..> PodiumWords
 @enduml
