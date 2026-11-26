@@ -16,6 +16,8 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | `RateLimits:JoinRoom:WindowSeconds` | `RateLimits__JoinRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 13 |
 | `RateLimits:Health:PermitLimit` | `RateLimits__Health__PermitLimit` | How many requests one address may make to `/health/live` and `/health/ready` together in a window; 60 when absent ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
 | `RateLimits:Health:WindowSeconds` | `RateLimits__Health__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 17 |
+| `RateLimits:Answers:PerSecond` | `RateLimits__Answers__PerSecond` | How many answers one hub connection may send in a second; the rest are dropped. 5 when absent (`L2-045` criterion 3, [ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
+| `RateLimits:Stickers:PerSecond` | `RateLimits__Stickers__PerSecond` | How many stickers one hub connection may send in a second; the rest are dropped. 1 when absent (`L2-028` criterion 5, [ADR 0035](../adr/0035-watching-a-duel-and-stickers.md)). | Journey 17 |
 
 The settings that `docs/detailed-designs/platform/operate-backend/` names for later journeys
 (`Azure:SignalR:ConnectionString`, `Frontend:Origin`, the other rate limits and

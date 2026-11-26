@@ -112,7 +112,9 @@ What is open to anyone is rate limited (`L2-045`):
 - **`HubRateLimitFilter`** — SignalR hub filter in `AroundTheWorld.Api`. It counts messages for
   each connection on `TimeProvider`. It drops `SubmitAnswer` messages beyond 5 a second
   (`L2-045` criterion 3) and `SendSticker` messages beyond 1 a second (`L2-028` criterion 5),
-  without an error. It forgets a connection's counts when the connection ends.
+  without an error, from the settings `RateLimits:Answers:PerSecond` and
+  `RateLimits:Stickers:PerSecond` (ADR 0037). It keeps a connection's counts in the
+  connection's own items, so they end with the connection.
 - **HTTPS and WSS only** — the API serves no plain HTTP endpoint, and `RoomConnection` uses the
   WebSockets transport over WSS (`L2-045` criterion 4). Where TLS ends in a deployed system is
   decided by journey 17 (`platform/operate-backend`).

@@ -61,6 +61,9 @@ public class ApiFixture : WebApplicationFactory<Program>
     /// </summary>
     public Task HandledAtAsync(string request, DateTimeOffset at) => _requests.WaitForAtAsync(request, at, TimeSpan.FromSeconds(10));
 
+    /// <summary>How many requests of that name from the connection that presented the token have been handled so far.</summary>
+    public int HandledCount(string request, string token) => _requests.Count(request, token);
+
     /// <summary>Moves the clock on and waits until the games have caught up with it.</summary>
     public async Task PassAsync(TimeSpan time)
     {
@@ -281,6 +284,14 @@ internal sealed class RequestLog
 
     public Task WaitForAtAsync(string name, DateTimeOffset at, TimeSpan timeout) =>
         WaitAsync(() => _handled.Any(handled => handled.Name == name && handled.At >= at), $"{name} at {at:O}", timeout);
+
+    public int Count(string name, string token)
+    {
+        lock (_gate)
+        {
+            return _handled.Count(handled => handled.Name == name && handled.Token == token);
+        }
+    }
 
     public void Handled(string name, DateTimeOffset? at, string? token)
     {
