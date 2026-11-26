@@ -148,7 +148,7 @@ game's resources stay.
   tour measures Duel's frame rate at the 20th duel against the first (`L2-049` criterion 4).
   Like the visual and accessibility sweeps, they run only when a person asks
   (`npm run build && npm run e2e:measure`), never in `verify.mjs` or CI. Journey 18 measured
-  5.5% for Home and 2.4% for Duel and World Map.
+  4.9 to 5.5% for Home and 2.4 to 3.0% for Duel and World Map over two runs.
 
 **Fixed limits (`L2-048` criterion 5).**
 
