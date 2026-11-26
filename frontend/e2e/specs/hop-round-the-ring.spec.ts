@@ -216,3 +216,110 @@ test.describe('Hopping round the ring', () => {
     );
   });
 });
+
+test.describe('World Map at every width', () => {
+  const SIZES = [
+    { name: 'phone', width: 390, height: 844, view: 'zoom' },
+    { name: 'tablet', width: 820, height: 1180, view: 'room' },
+    { name: 'laptop', width: 1366, height: 768, view: 'room' },
+    { name: 'large desktop', width: 1920, height: 1080, view: 'room' },
+  ] as const;
+
+  for (const size of SIZES) {
+    test(`on a ${size.name} World Map shows the ${size.view === 'zoom' ? 'child’s kid close up' : 'whole room'}, and fits`, async ({
+      page,
+      device,
+      clock,
+    }) => {
+      // Given a child on World Map after a hop, on a screen of this size
+      await page.setViewportSize({ width: size.width, height: size.height });
+      await device.keeps(ZURI);
+      await clock.hold();
+      const setup = new GameSetupPage(page);
+      await setup.open();
+      await setup.chooseGo();
+      const duel = new DuelPage(page);
+      await duel.answerWithPad((await duel.card()).answer);
+      await clock.pass(1000);
+      await clock.pass(1200);
+      const map = new WorldMapPage(page);
+      await expect(map.message).toHaveText('You walk on to Japan!');
+
+      // Then the room zooms to the child's kid below 768px, and shows whole from 768px up
+      expect(await map.view()).toBe(size.view);
+      const shown = size.view === 'zoom' ? map.zoom : map.room;
+      await expect(shown).toHaveAccessibleName(
+        'The classroom from above: a ring of 12 desks. You’re travelling, desk 3 of 12, next stop UK.',
+      );
+
+      // And the five kids carry name tags, "You" for the child, and a classmate none
+      expect((await map.tags()).sort()).toEqual(['Kenji', 'Milo', 'Nia', 'Pip', 'You']);
+
+      // And the standings list the five kids, the child marked "You" by more than colour
+      await expect(map.standingsItems).toHaveCount(5);
+      await expect(map.yourEntry.locator('.standings__name')).toHaveText('You');
+      await expect(map.yourEntry.locator('.standings__score')).toHaveAccessibleName(
+        '2 of 12 desks',
+      );
+
+      // And the screen does not scroll
+      expect(await map.scrolls()).toBe(false);
+    });
+  }
+
+  test('a tour of 6 desks labels every desk, the first and the next stop each in their own way', async ({
+    page,
+    device,
+    clock,
+  }) => {
+    // Given a tour of 6 desks
+    await device.keeps({
+      ...ZURI,
+      setup: { kinds: ['times'], tables: [2, 3, 4, 5], tourLength: 6, cardSpeed: 'normal' },
+    });
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+
+    // When the child wins the first duel and World Map shows the hop
+    await duel.answerWithPad((await duel.card()).answer);
+    await clock.pass(2200);
+    const map = new WorldMapPage(page);
+    await expect(map.where).toHaveText('You’re travelling · desk 3 of 6 · next stop UK');
+
+    // Then every desk is labelled with its country
+    expect(await map.plaques()).toEqual(['France', 'Egypt', 'Japan', 'UK', 'Italy', 'USA']);
+    expect(await map.markedPlaques()).toEqual({ start: 'France', next: 'UK' });
+  });
+
+  test('a tour of 24 desks labels only the first desk, here, the next stop and the child’s own', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    // Given a tour of 24 desks, and Kenji at desk 2 answering right and fast
+    await device.keeps({
+      ...ZURI,
+      setup: { kinds: ['times'], tables: [2, 3, 4, 5], tourLength: 24, cardSpeed: 'normal' },
+    });
+    await random.always(0);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+
+    // When Kenji wins and the child sits down at Egypt
+    await clock.pass(5000);
+    await duel.sitPill.click();
+    const map = new WorldMapPage(page);
+    await expect(map.where).toHaveText('You’re sitting at Egypt · Kenji is travelling');
+
+    // Then only France, the child's Egypt, Kenji's Japan and the next stop, UK, are labelled
+    expect(await map.plaques()).toEqual(['France', 'Egypt', 'Japan', 'UK']);
+    expect(await map.markedPlaques()).toEqual({ start: 'France', next: 'UK' });
+  });
+});
