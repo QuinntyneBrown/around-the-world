@@ -1097,3 +1097,65 @@ the lessons that fit.
   on a phone, a tablet and a desktop.
 - *Let a short-lived thing live on the game's clock* (15, 4): the banners are times on the clock
   that already ticks, not timers of their own.
+
+## Journey 17: Run the backend in a deployed system
+
+**What slowed it.**
+
+- Azure SignalR Service never sees a client's query string or headers at the hub: the hub sees
+  only the claims its negotiation put in the service's access token. `CurrentPlayerFilter` read
+  the token from `access_token`, which would have known nobody once deployed, and the device
+  skipped the negotiation the service needs (ADR 0032). The token became a claim of an
+  authentication scheme, and the device negotiates; the self-served tests guard the claim (a
+  wrong claim type failed 52 of them), and a negotiation through the SDK showed the claim in the
+  service's token.
+- The server SDK refuses a negotiation while the instance has no connection to the service, but
+  counts a new endpoint online until its first try fails, so the same test answered a redirect
+  in one run and a 500 in the next. The test now accepts either, and checks each fully.
+- Its count of its connections to the service is internal, so readiness asks the service's
+  public health API instead, through a named `HttpClient` the test answers in memory.
+- An activity source is seen by every tracer in a process: the telemetry test caught another
+  test server's `SubmitAnswerCommand` span about one run in three. It runs in an xUnit
+  collection with parallelization off.
+- The test server gives a request no remote address, so the forwarded headers were proved
+  behind an `IStartupFilter` that sets the ingress's address first.
+- `WebApplication` adds `UseAuthentication` by itself when a scheme is registered, so taking the
+  explicit call out by hand failed nothing; the claim was broken instead.
+
+**New lessons.**
+
+1. A managed relay (Azure SignalR Service) changes what a hub can read about its caller: carry
+   identity as claims from the negotiation, never as the request's query or headers, and do not
+   let the client skip the negotiation.
+2. When a vendor SDK's state is not public, probe the vendor's public health API through a
+   named `HttpClient` the test can answer in memory, rather than reflect on internals.
+3. Prove telemetry holds nothing about a child by exporting it in memory after the scrubber and
+   searching every span, metric point and log record for the values the test sent; break each
+   scrubber by hand once, and run that test alone, since activity sources are process-wide.
+4. A test of a background state an SDK reaches in its own time must accept each state the
+   product allows and assert each fully, not pin the one that happened to show first.
+5. Prove forwarded headers with a known and an unknown proxy, each in its own fixture: the rate
+   limit is what shows whose address was counted.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the new spec ran against the build;
+  `main` stayed at 252.46 kB and the initial total at 273.28 kB.
+- *Check a fake once by hand* (01, 2): each scrubber, the claim and the answers' limit were
+  broken by hand and failed their tests.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no screen changed.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0037 records the decisions
+  and supersedes ADR 0032's skipped negotiation; ADR 0009's proposed `AGENTS.md` exception for
+  the live endpoint stands.
+- *Tag one spec per feature `@critical`* (02, 5): a host's device follows the instance to the
+  service and opens the Lobby.
+- *Give the production limits a fixture of their own* (12, 3): the health limit is lifted in
+  `ApiFixture` and kept in `ThrottledApiFixture` and the ingress fixtures.
+- *Await a background job through a pipeline behaviour* (12, 4): the answers' limit counts the
+  requests handled by token through the same request log.
+- *Fake a real-time channel at its protocol* (13, 4): the fixture answers SignalR's negotiation,
+  and the service's redirect and second negotiation, as the instance and the service would.
+- *Let a test fixture record every request handled* (16, 3): `HandledCount` reads the same log.
+- *Keep a per-connection limit in the connection's own items* (15, 2): the answers' limit is a
+  ring of 5 times there, and the stickers' a ring of 1.

@@ -28,12 +28,12 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 14 | [Play a game with friends in real time](prompts/14-play-with-friends.md) | Host sets up and starts; the server decides every duel for everyone. | 8 | 100% |
 | 15 | [Watch a duel and send a sticker](prompts/15-watch-and-send-stickers.md) | Watching players see each duel live and send one of six stickers. | 3 | 100% |
 | 16 | [Come back after a lost connection](prompts/16-return-after-lost-connection.md) | Connection banner, reconnecting duel, and rejoining the same spot. | 4 | 100% |
-| 17 | [Run the backend in a deployed system](prompts/17-run-the-backend.md) | Azure SignalR scale-out, OpenTelemetry without child data, health and migrations. | 3 | 0% |
+| 17 | [Run the backend in a deployed system](prompts/17-run-the-backend.md) | Azure SignalR scale-out, OpenTelemetry without child data, health and migrations. | 3 | 100% |
 | 18 | [Open fast and stay smooth on any device](prompts/18-play-fast-on-any-device.md) | Tight bundle budgets, lazy loading, released memory, playing within 20 seconds. | 4 | 0% |
 | 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 0% |
 | 20 | [Prove the game is safe for children](prompts/20-keep-children-safe.md) | Audit that nothing a child types or says leaves the device. | 3 | 0% |
 
-**Total effort:** 86 days. **Overall % complete:** 84% (72 of 86 days).
+**Total effort:** 86 days. **Overall % complete:** 87% (75 of 86 days).
 
 ## Where each journey comes from
 
