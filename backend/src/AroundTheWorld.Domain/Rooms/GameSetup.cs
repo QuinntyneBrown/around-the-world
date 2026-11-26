@@ -36,6 +36,23 @@ public sealed class GameSetup
 
     public CardSpeed CardSpeed { get; private set; }
 
+    /// <summary>A setup of values Game Setup offers, as the host saved it (L2-018 criterion 2).</summary>
+    public static GameSetup Of(IEnumerable<MathsKind> kinds, IEnumerable<int> tables, int tourLength, CardSpeed cardSpeed) => new()
+    {
+        Kinds = [.. kinds],
+        Tables = [.. tables],
+        TourLength = tourLength,
+        CardSpeed = cardSpeed,
+    };
+
+    /// <summary>A flash card's time to answer, set by the card speed (L2-005).</summary>
+    public TimeSpan CardTime => CardSpeed switch
+    {
+        CardSpeed.Chill => TimeSpan.FromSeconds(10),
+        CardSpeed.Lightning => TimeSpan.FromSeconds(3),
+        _ => TimeSpan.FromSeconds(6),
+    };
+
     /// <summary>Times on, tables 2 to 10, a tour of 12 desks and Normal (L2-016 1, L2-017 1).</summary>
     public static GameSetup Default() => new()
     {

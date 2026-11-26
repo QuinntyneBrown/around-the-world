@@ -130,7 +130,7 @@ Backend:
   `LeaveRoomCommand`. No hub request carries a room's code or id: the room is the one the
   connection's token names ([`rooms/guard-room`](../guard-room/README.md)).
 - **`StartGameCommandHandler`** — loads the caller's room and calls `Room.Start`. It saves the
-  room and announces `GameStarted` through `IRoomNotifier` to every player (`L2-025`
+  room and announces `GameChanged` (the game as it starts, ADR 0033) through `IRoomNotifier` to every player (`L2-025`
   criterion 2).
 - **`LeaveRoomCommandHandler`** — loads the caller's room and calls `Room.Leave`. When the room
   is then empty the handler deletes it; otherwise it saves and announces `RoomChanged` (`L2-025`
@@ -143,12 +143,12 @@ Backend:
   removes the player and, when that player was the host, marks the remaining player with the
   earliest `JoinedAt` as the host.
 - **`IRoomNotifier`** and **`HubRoomNotifier`** — port in Application and its implementation over
-  the hub. `RoomChanged` and `GameStarted` are sent to the room's group in the same step that
+  the hub. `RoomChanged` and `GameChanged` (the game as it starts, ADR 0033) are sent to the room's group in the same step that
   saves the change. No Lobby polls; this push is what meets the 1 second of `L2-024`
   criterion 2.
 - **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`).
 
-On `GameStarted` each device shows Mic Check to a player who needs it, on that player's own
+On `GameChanged` (the game as it starts, ADR 0033) each device shows Mic Check to a player who needs it, on that player's own
 device, and then Duel (`L2-012` criterion 9, `L2-030` criterion 3). The host's device does the
 same.
 
@@ -162,13 +162,15 @@ says the room is lost; "Try again" when the room no longer holds the player is r
 alert returns; and the backend does not remove a waiting player whose connection is lost until
 journey 16 decides the 30 seconds of `L2-029` for the Lobby too.
 
-One point is undecided:
-
-- Whether the first flash card waits for each player's Mic Check is `<TO SUPPLY>`
-  ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)).
+Decided by journey 14 (`docs/adr/0033-deciding-a-game-on-the-server.md`,
+`docs/adr/0034-playing-with-friends-on-the-device.md`): the host's "Change" opens Game Setup and
+"Start the race", enabled once a friend is in, sends `StartGame` and is busy ("Starting…") until
+the game arrives (mock `starting`); the server sends the game as `GameChanged` in place of
+`GameChanged` (the game as it starts, ADR 0033), and deals the first flash card 3 seconds after the start without waiting for any
+player's Mic Check **(to confirm)**.
 
 The screen follows the mocks `docs/mocks/pages/lobby/` (states `default`, `empty`, `guest`,
-`full`, `edited`, `loading`, `error`) and `docs/mocks/notifications/lobby-toast/` (states `info`,
+`full`, `edited`, `loading`, `error`, `starting`) and `docs/mocks/notifications/lobby-toast/` (states `info`,
 `success`, `warning`, `danger`, `stacked`).
 
 ## Requirements
@@ -227,7 +229,7 @@ room. The last part shows the alert "We lost the room" when the connection canno
 ### Behaviour — the host starts the game
 
 "Start the race" is disabled while the host is alone. With two players, `Room.Start` sets the
-room playing and `GameStarted` reaches every player. A start sent by a player who is not the host
+room playing and `GameChanged` (the game as it starts, ADR 0033) reaches every player. A start sent by a player who is not the host
 is refused with `not_host` and changes nothing. After the start each device shows Mic Check when
 its player needs it, then Duel. Until the start the host's Lobby reads "{n} kids ready".
 

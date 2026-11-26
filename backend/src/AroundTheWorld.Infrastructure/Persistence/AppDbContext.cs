@@ -29,6 +29,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             room.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
             room.HasIndex(r => r.LastActivityAt);
             room.Property(r => r.Version).IsConcurrencyToken();
+            room.Property(r => r.Game)
+                .HasConversion(GameColumn.Converter, GameColumn.Comparer)
+                .HasColumnName("Game");
+            room.HasIndex(r => r.GameDueAt);
             room.OwnsOne(r => r.Setup, setup =>
             {
                 setup.Property(s => s.Kinds);

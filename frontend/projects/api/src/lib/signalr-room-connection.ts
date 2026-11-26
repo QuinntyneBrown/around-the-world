@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import type { HubConnection } from '@microsoft/signalr';
+import { type GameSetup } from './game-setup';
+import { type GameState } from './game-state';
 import { type RoomConnection, type RoomEvents } from './room-connection';
-import { type RoomState } from './rooms';
+import { ApiError, type RoomState } from './rooms';
 
 /** Where the room hub is, on the game's own origin (docs/adr/0031-making-a-room.md). */
 export const ROOM_HUB_PATH = '/hubs/room';
@@ -32,6 +34,7 @@ export class SignalRRoomConnection implements RoomConnection {
       .configureLogging(signalR.LogLevel.None)
       .build();
     hub.on('RoomChanged', (room: RoomState) => events.changed(room));
+    hub.on('GameChanged', (game: GameState) => events.gameChanged(game));
     hub.onclose(() => {
       if (this.hub === hub) events.lost();
     });
@@ -41,8 +44,26 @@ export class SignalRRoomConnection implements RoomConnection {
     } catch (failure) {
       if (this.hub === hub) this.hub = null;
       hub.off('RoomChanged');
+      hub.off('GameChanged');
       throw failure;
     }
+  }
+
+  saveSetup(setup: GameSetup): Promise<void> {
+    const { kinds, tables, tourLength, cardSpeed } = setup;
+    return this.invoke('SaveSetup', { kinds, tables, tourLength, cardSpeed });
+  }
+
+  start(): Promise<void> {
+    return this.invoke('StartGame');
+  }
+
+  answer(value: number): Promise<void> {
+    return this.invoke('SubmitAnswer', value);
+  }
+
+  playAgain(): Promise<void> {
+    return this.invoke('PlayAgain');
   }
 
   async leave(): Promise<void> {
@@ -50,11 +71,27 @@ export class SignalRRoomConnection implements RoomConnection {
     await this.hub.invoke('LeaveRoom');
   }
 
+  /**
+   * Invokes a hub method, rejecting with an `ApiError` whose `code` is the hub error's, the last
+   * word of its message (ADR 0032), or `backend_unreachable` with no connection.
+   */
+  private async invoke(method: string, ...args: unknown[]): Promise<void> {
+    if (!this.hub) throw new ApiError('backend_unreachable', 0);
+    try {
+      await this.hub.invoke(method, ...args);
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : '';
+      const code = /HubException: ([a-z_]+)$/.exec(message)?.[1];
+      throw new ApiError(code ?? 'backend_unreachable', 0);
+    }
+  }
+
   async close(): Promise<void> {
     const hub = this.hub;
     if (!hub) return;
     this.hub = null;
     hub.off('RoomChanged');
+    hub.off('GameChanged');
     try {
       await hub.stop();
     } catch {

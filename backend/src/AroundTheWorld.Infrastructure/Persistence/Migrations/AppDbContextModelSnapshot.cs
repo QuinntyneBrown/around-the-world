@@ -35,6 +35,13 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                         .HasColumnType("char(4)")
                         .IsFixedLength();
 
+                    b.Property<string>("Game")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Game");
+
+                    b.Property<DateTimeOffset?>("GameDueAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("LastActivityAt")
                         .HasColumnType("datetimeoffset");
 
@@ -52,6 +59,8 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
+                    b.HasIndex("GameDueAt");
+
                     b.HasIndex("LastActivityAt");
 
                     b.ToTable("Rooms");
@@ -60,7 +69,6 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("AroundTheWorld.Domain.Rooms.RoomPlayer", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsHost")

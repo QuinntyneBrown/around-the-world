@@ -3,11 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import {
   ROOM_CONNECTION,
   VISIT,
+  type GameSetup,
+  type GameState,
   type RoomConnection,
   type RoomEntry,
   type RoomEvents,
   type RoomState,
 } from '@atw/api';
+import { NicknameGenerator } from '@atw/domain';
 import { FriendsGame } from './friends-game';
 
 const ROOM: RoomState = {
@@ -17,6 +20,41 @@ const ROOM: RoomState = {
   players: [],
 };
 const ENTRY: RoomEntry = { code: 'BOLT', token: 'token', playerId: 'me', room: ROOM };
+
+/** The device's player travelling against "them" at desk 2, over an open card. */
+const GAME: GameState = {
+  tourLength: 6,
+  secondsToAnswer: 6,
+  phase: 'duel',
+  firstCardInMs: 0,
+  players: [
+    { id: 'me', kid: 'zuri', nickname: { adjective: 0, animal: 0 }, distance: 1, stamps: [1] },
+    { id: 'them', kid: 'nia', nickname: { adjective: 8, animal: 4 }, distance: 0, stamps: [] },
+  ],
+  desks: [null, 'them', 'c3', 'c4', 'c5', 'c6'],
+  traveller: 'me',
+  travellerDesk: 2,
+  standings: ['me', 'them'],
+  duel: {
+    number: 1,
+    desk: 2,
+    traveller: 'me',
+    deskHolder: 'them',
+    card: { kind: 'times', left: 6, right: 4 },
+    timeLeftMs: 6000,
+    travellerFrozenMs: 0,
+    deskHolderFrozenMs: 0,
+    travellerWrong: null,
+    deskHolderWrong: null,
+    outcome: 'open',
+    winner: null,
+    answer: null,
+    sinceDecidedMs: 0,
+  },
+  lastMove: null,
+  ending: null,
+  winner: null,
+};
 
 /** A connection that records what the game asked of it, and tells the room when asked to. */
 class FakeConnection implements RoomConnection {
@@ -28,6 +66,22 @@ class FakeConnection implements RoomConnection {
     this.calls.push(`connect ${token}`);
     if (this.refuse) throw new Error('refused');
     this.events = events;
+  }
+
+  async saveSetup(setup: GameSetup): Promise<void> {
+    this.calls.push(`saveSetup ${setup.tourLength}`);
+  }
+
+  async start(): Promise<void> {
+    this.calls.push('start');
+  }
+
+  async answer(value: number): Promise<void> {
+    this.calls.push(`answer ${value}`);
+  }
+
+  async playAgain(): Promise<void> {
+    this.calls.push('playAgain');
   }
 
   async leave(): Promise<void> {
@@ -50,6 +104,7 @@ describe('FriendsGame', () => {
         FriendsGame,
         { provide: ROOM_CONNECTION, useValue: connection },
         { provide: VISIT, useValue: visit },
+        { provide: NicknameGenerator, useValue: new NicknameGenerator() },
       ],
       TestBed.inject(EnvironmentInjector),
     );
@@ -115,5 +170,42 @@ describe('FriendsGame', () => {
     connection.events!.changed(ROOM);
 
     expect(friends.room()).toBeNull();
+  });
+
+  it('sends an answer as a number only while its card is open and the player is not frozen', async () => {
+    const { friends, connection } = game();
+    await settle();
+    connection.events!.gameChanged(GAME);
+
+    friends.answer(24);
+    connection.events!.gameChanged({
+      ...GAME,
+      duel: { ...GAME.duel!, travellerFrozenMs: 1000, travellerWrong: 23 },
+    });
+    friends.answer(25);
+    connection.events!.gameChanged({
+      ...GAME,
+      phase: 'timeUp',
+      duel: { ...GAME.duel!, outcome: 'timedOut' },
+    });
+    friends.answer(26);
+
+    expect(connection.calls.filter((call) => call.startsWith('answer'))).toEqual(['answer 24']);
+    friends.leave();
+  });
+
+  it('opens Duel for its first card, and the Lobby when "Play again" returns the room to it', async () => {
+    const { friends, connection } = game();
+    const screens: string[] = [];
+    friends.watchScreen((screen) => screens.push(screen));
+    await settle();
+
+    connection.events!.gameChanged(GAME);
+    connection.events!.gameChanged({ ...GAME, phase: 'over', ending: 'allTheWayRound' });
+    connection.events!.changed(ROOM);
+
+    expect(screens).toEqual(['duel', 'lobby']);
+    expect(friends.hasGame()).toBe(false);
+    friends.leave();
   });
 });

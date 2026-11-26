@@ -3,8 +3,8 @@ import { type GameSetup } from './game-setup';
 import { type KidId } from './kid';
 import { type Nickname } from './nickname';
 
-/** Whether a room's players are waiting in the Lobby or playing. */
-export type RoomStatus = 'waiting' | 'playing';
+/** Whether a room's players are waiting in the Lobby, playing, or on the Podium (ADR 0033). */
+export type RoomStatus = 'waiting' | 'playing' | 'over';
 
 /** One player in a room as every player sees them: no connection token (L2-043). */
 export interface RoomPlayer {
@@ -52,6 +52,12 @@ export type ApiErrorCode =
   | 'room_full'
   | 'game_started'
   | 'not_in_room'
+  | 'not_host'
+  | 'not_enough_players'
+  | 'invalid_setup'
+  | 'invalid_answer'
+  | 'not_playing'
+  | 'not_over'
   | 'unknown';
 
 /** A refusal or a failure of the backend, with the `code` a screen branches on. */

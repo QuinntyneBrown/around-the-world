@@ -17,4 +17,8 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The one table of cases the device's rules play too (docs/adr/0033). -->
+    <None Include="..\..\..\docs\specs\tour-cases.json" Link="Tours\tour-cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

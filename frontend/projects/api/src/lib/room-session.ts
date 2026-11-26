@@ -1,4 +1,5 @@
 import { InjectionToken, type Signal } from '@angular/core';
+import { type GameSetup } from './game-setup';
 import { type RoomEntry, type RoomState } from './rooms';
 
 /** Whether the room's connection is opening, live, or lost for good (L2-029 criterion 6). */
@@ -14,6 +15,16 @@ export interface RoomSession {
   /** The room as last received over the connection; null until it first arrives. */
   readonly room: Signal<RoomState | null>;
   readonly link: Signal<RoomLink>;
+  /**
+   * The host's "Save" on Game Setup: sends the setup to the room (L2-018 criterion 2). Resolves
+   * once the room has it; rejects when it is refused or cannot be sent (criterion 7).
+   */
+  saveSetup(setup: GameSetup): Promise<void>;
+  /**
+   * The host's "Start the race" (L2-025 criterion 2). Resolves once the room has started; rejects
+   * when it is refused or cannot be sent.
+   */
+  startRace(): Promise<void>;
   /** Connects afresh with the same token after the room was lost ("Try again"). */
   retry(): void;
   /**

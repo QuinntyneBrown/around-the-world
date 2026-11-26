@@ -12,6 +12,8 @@ public static class RoomRefusals
         RoomRule.GameStarted => new RefusedException(ErrorCodes.GameStarted, 409, "That room's game has started."),
         RoomRule.NotHost => new RefusedException(ErrorCodes.NotHost, 403, "Only the host may do that."),
         RoomRule.NotEnoughPlayers => new RefusedException(ErrorCodes.NotEnoughPlayers, 409, "A game needs at least two players."),
+        RoomRule.NotPlaying => new RefusedException(ErrorCodes.NotPlaying, 409, "The room's game is not being played."),
+        RoomRule.NotOver => new RefusedException(ErrorCodes.NotOver, 409, "The room's game is not over."),
         _ => new RefusedException(ErrorCodes.NotInRoom, 403, "Not in a room."),
     };
 }

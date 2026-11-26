@@ -48,9 +48,9 @@ else at least two players are in the room (L2-025 criterion 2)
   room --> handler : Status Playing, tour made
   handler -> db : Save changes in one unit of work
   db --> handler : Commit result
-  handler -> hub : IRoomNotifier.GameStarted
-  hub --> conn : GameStarted to every player in the room
-  conn --> session : GameStarted
+  handler -> hub : IRoomNotifier.GameChanged
+  hub --> conn : GameChanged to every player in the room
+  conn --> session : GameChanged
   session --> page : Game started
   page --> actor : Mic Check on this device when needed, then Duel (L2-012 criterion 9)
   page --> other : Mic Check on this device when needed, then Duel (L2-012 criterion 9)

@@ -21,5 +21,11 @@ public sealed class HubRoomNotifier(IHubContext<RoomHub> hub) : IRoomNotifier
     public Task RoomChangedAsync(Guid roomId, RoomStateDto room, CancellationToken cancellationToken) =>
         hub.Clients.Group(Group(roomId)).SendAsync(RoomHub.RoomChanged, room, cancellationToken);
 
+    public Task SendGameAsync(string connectionId, GameStateDto game, CancellationToken cancellationToken) =>
+        hub.Clients.Client(connectionId).SendAsync(RoomHub.GameChanged, game, cancellationToken);
+
+    public Task GameChangedAsync(Guid roomId, GameStateDto game, CancellationToken cancellationToken) =>
+        hub.Clients.Group(Group(roomId)).SendAsync(RoomHub.GameChanged, game, cancellationToken);
+
     private static string Group(Guid roomId) => $"room:{roomId:N}";
 }

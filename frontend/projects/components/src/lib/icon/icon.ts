@@ -26,6 +26,7 @@ export type IconName =
   | 'play'
   | 'retry'
   | 'settings'
+  | 'sliders'
   | 'solo'
   | 'sound'
   | 'wifi-off';

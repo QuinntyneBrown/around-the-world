@@ -1,5 +1,6 @@
 using AroundTheWorld.Application.Common;
 using AroundTheWorld.Application.Rooms;
+using AroundTheWorld.Application.Rooms.AdvanceGames;
 using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
 using AroundTheWorld.Domain.Rooms;
 using AroundTheWorld.Infrastructure.Persistence;
@@ -29,12 +30,28 @@ public class ApiFixture : WebApplicationFactory<Program>
 
     private readonly SweepWatcher _sweeps = new();
 
+    private readonly SweepWatcher _games = new();
+
     /// <summary>
     /// Completes when the idle rooms have been swept at that time or later, so a test awaits the
     /// sweep after advancing <see cref="Clock"/> instead of sleeping; it fails after 10 seconds,
     /// naming the last sweep that did arrive.
     /// </summary>
     public Task SweepAt(DateTimeOffset at) => _sweeps.WaitForAsync(at, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when the room's timers have brought the games up to that time or later, so a test
+    /// awaits the tick after advancing <see cref="Clock"/>; it fails after 10 seconds, naming the
+    /// last tick that did arrive.
+    /// </summary>
+    public Task GamesAt(DateTimeOffset at) => _games.WaitForAsync(at, TimeSpan.FromSeconds(10));
+
+    /// <summary>Moves the clock on and waits until the games have caught up with it.</summary>
+    public async Task PassAsync(TimeSpan time)
+    {
+        Clock.Advance(time);
+        await GamesAt(Clock.GetUtcNow());
+    }
 
     /// <summary>The clock of the backend under test. Advance it; never sleep.</summary>
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 1, 5, 9, 0, 0, TimeSpan.Zero));
@@ -65,6 +82,8 @@ public class ApiFixture : WebApplicationFactory<Program>
 
             services.AddSingleton(_sweeps);
             services.AddTransient<IPipelineBehavior<DeleteIdleRoomsCommand, int>, SweepSignal>();
+            services.AddKeyedSingleton("games", _games);
+            services.AddTransient<IPipelineBehavior<AdvanceGamesCommand, int>, GamesSignal>();
         });
     }
 
@@ -100,18 +119,7 @@ public class ApiFixture : WebApplicationFactory<Program>
     /// A real SignalR client connected to a hub of the test server over WebSockets, the hub's
     /// one transport. The caller starts it and disposes it.
     /// </summary>
-    public HubConnection CreateHubConnection(string hubPath) =>
-        new HubConnectionBuilder()
-            .WithUrl(new Uri(Server.BaseAddress, hubPath), options =>
-            {
-                options.Transports = HttpTransportType.WebSockets;
-                options.SkipNegotiation = true;
-                options.HttpMessageHandlerFactory = _ => Server.CreateHandler();
-                options.WebSocketFactory = (context, cancellationToken) =>
-                    new ValueTask<System.Net.WebSockets.WebSocket>(
-                        Server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
-            })
-            .Build();
+    public HubConnection CreateHubConnection(string hubPath) => HubConnections.Create(Server, hubPath);
 }
 
 /// <summary>A store whose first save is refused, after a rival's change was saved through a store of its own.</summary>
@@ -204,4 +212,32 @@ internal sealed class SweepSignal(SweepWatcher sweeps) : IPipelineBehavior<Delet
         sweeps.Swept(request.Now);
         return deleted;
     }
+}
+
+/// <summary>Tells the games' <see cref="SweepWatcher"/> once the room's timers have brought the games up to a time.</summary>
+internal sealed class GamesSignal([FromKeyedServices("games")] SweepWatcher games) : IPipelineBehavior<AdvanceGamesCommand, int>
+{
+    public async Task<int> Handle(AdvanceGamesCommand request, RequestHandlerDelegate<int> next, CancellationToken cancellationToken)
+    {
+        var changed = await next(cancellationToken);
+        games.Swept(request.Now);
+        return changed;
+    }
+}
+
+/// <summary>Real SignalR clients on a test server, over WebSockets, the hub's one transport.</summary>
+internal static class HubConnections
+{
+    public static HubConnection Create(TestServer server, string hubPath) =>
+        new HubConnectionBuilder()
+            .WithUrl(new Uri(server.BaseAddress, hubPath), options =>
+            {
+                options.Transports = HttpTransportType.WebSockets;
+                options.SkipNegotiation = true;
+                options.HttpMessageHandlerFactory = _ => server.CreateHandler();
+                options.WebSocketFactory = (context, cancellationToken) =>
+                    new ValueTask<System.Net.WebSockets.WebSocket>(
+                        server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
+            })
+            .Build();
 }

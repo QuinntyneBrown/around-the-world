@@ -116,7 +116,8 @@ is proved by a unit test of the page (ADR 0024).
 (`L2-035` criterion 3); Mic Check is not shown again in the visit (`L2-012` criterion 6). In a
 game with friends "Play again" returns the players to the same room's Lobby, and the Podium says
 so beforehand, under the buttons: "Everyone goes back to room {code}." (`L2-035` criterion 3).
-The room is kept while the Podium is shown (`L2-027` criterion 3, to confirm); `FriendsGame`
+The room is kept while the Podium is shown, until its last player leaves it (`L2-027`
+criterion 3, ADR 0033); `FriendsGame`
 and the server's part are designed in `rooms/decide-game-on-server`, and the Lobby in
 `rooms/wait-in-lobby`.
 
@@ -152,8 +153,10 @@ Decided in ADR 0024:
   redrawn so.
 - World Map shows the hop or the sit that ends the tour with its message, as every other move,
   and the Podium opens after it.
-- Who may choose "Play again" in a room, and what the other players see until then, is decided
-  with journey 14.
+- In a room any player may choose "Play again"; the first returns everyone to the Lobby, and
+  until then the others see the Podium. In a game with friends the steps show the players by
+  nickname and a classmate has no step (`docs/adr/0033-deciding-a-game-on-the-server.md`,
+  `docs/adr/0034-playing-with-friends-on-the-device.md`).
 
 The screen follows the mocks `docs/mocks/pages/podium/` (states `default`, `second`, `unplaced`,
 `time-up`, `long` and `loading` in a solo game; `friends`, `two-players` and `error` with a
