@@ -21,4 +21,11 @@ public static class ErrorCodes
     public const string RateLimited = "rate_limited";
     public const string NoFreeCode = "no_free_code";
     public const string TooLarge = "too_large";
+    public const string InvalidCode = "invalid_code";
+    public const string RoomNotFound = "room_not_found";
+    public const string RoomFull = "room_full";
+    public const string GameStarted = "game_started";
+    public const string NotHost = "not_host";
+    public const string NotEnoughPlayers = "not_enough_players";
+    public const string NotInRoom = "not_in_room";
 }

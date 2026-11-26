@@ -35,4 +35,7 @@ public sealed class RoomPlayer
     public ConnectionToken Token { get; private set; } = null!;
 
     public DateTimeOffset JoinedAt { get; private set; }
+
+    /// <summary>Marks the player as the host, when the host left (L2-025 criterion 5).</summary>
+    internal void BecomeHost() => IsHost = true;
 }

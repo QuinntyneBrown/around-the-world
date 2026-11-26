@@ -1,4 +1,5 @@
 using AroundTheWorld.Application.Common;
+using AroundTheWorld.Application.Rooms;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,7 +15,9 @@ public static class DependencyInjection
         {
             configuration.RegisterServicesFromAssembly(assembly);
             configuration.AddOpenBehavior(typeof(ValidationBehaviour<,>));
+            configuration.AddOpenBehavior(typeof(RoomPlayerBehaviour<,>));
         });
+        services.AddScoped<RoomPlayerContext>();
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
         return services;
     }

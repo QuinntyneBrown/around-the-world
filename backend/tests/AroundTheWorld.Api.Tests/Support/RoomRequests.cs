@@ -7,8 +7,29 @@ internal static class RoomRequests
 {
     public const string Path = "/api/rooms";
 
+    public const string JoinPath = "/api/rooms/join";
+
     public static object Make(string kid, int adjective, int animal) =>
         new { kid, nickname = new { adjective, animal } };
+
+    public static object Join(string code, string kid, int adjective, int animal) =>
+        new { code, kid, nickname = new { adjective, animal } };
+
+    /// <summary>Makes a room through the API and answers what the host received.</summary>
+    public static async Task<RoomEntryBody> MakeAsync(HttpClient client, string kid = "zuri", int adjective = 0, int animal = 0)
+    {
+        using var made = await client.PostAsJsonAsync(Path, Make(kid, adjective, animal), TestContext.Current.CancellationToken);
+        made.EnsureSuccessStatusCode();
+        return (await made.Content.ReadFromJsonAsync<RoomEntryBody>(TestContext.Current.CancellationToken))!;
+    }
+
+    /// <summary>Joins a room through the API and answers what the player received.</summary>
+    public static async Task<RoomEntryBody> JoinAsync(HttpClient client, string code, string kid = "nia", int adjective = 1, int animal = 1)
+    {
+        using var joined = await client.PostAsJsonAsync(JoinPath, Join(code, kid, adjective, animal), TestContext.Current.CancellationToken);
+        joined.EnsureSuccessStatusCode();
+        return (await joined.Content.ReadFromJsonAsync<RoomEntryBody>(TestContext.Current.CancellationToken))!;
+    }
 }
 
 internal sealed record RoomEntryBody(string Code, string Token, Guid PlayerId, RoomStateBody Room);

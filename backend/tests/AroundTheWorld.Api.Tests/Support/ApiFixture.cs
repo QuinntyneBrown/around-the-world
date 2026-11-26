@@ -1,3 +1,4 @@
+using AroundTheWorld.Application.Common;
 using AroundTheWorld.Application.Rooms;
 using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
 using AroundTheWorld.Domain.Rooms;
@@ -50,6 +51,7 @@ public class ApiFixture : WebApplicationFactory<Program>
         if (!ThrottledAsInProduction)
         {
             builder.UseSetting("RateLimits:MakeRoom:PermitLimit", "1000");
+            builder.UseSetting("RateLimits:JoinRoom:PermitLimit", "1000");
         }
 
         builder.ConfigureServices(services =>
@@ -78,6 +80,23 @@ public class ApiFixture : WebApplicationFactory<Program>
         }));
 
     /// <summary>
+    /// The same backend, store and clock, in which the first save of a request is refused as a
+    /// whole because the rival's change, saved through a store of its own, reached the room
+    /// first: a fault injected through <see cref="IAppDbContext"/>. The room store refuses
+    /// such a unit of work entirely; EF Core InMemory has no transactions, so the double
+    /// refuses it before anything of it is written.
+    /// </summary>
+    public WebApplicationFactory<Program> WithFirstSaveRacedBy(Func<AppDbContext, Task> rival) =>
+        WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IAppDbContext>();
+            services.AddScoped<IAppDbContext>(provider => new FirstSaveRaced(
+                provider.GetRequiredService<AppDbContext>(),
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                rival));
+        }));
+
+    /// <summary>
     /// A real SignalR client connected to a hub of the test server over WebSockets, the hub's
     /// one transport. The caller starts it and disposes it.
     /// </summary>
@@ -93,6 +112,29 @@ public class ApiFixture : WebApplicationFactory<Program>
                         Server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
             })
             .Build();
+}
+
+/// <summary>A store whose first save is refused, after a rival's change was saved through a store of its own.</summary>
+internal sealed class FirstSaveRaced(AppDbContext inner, IServiceScopeFactory scopes, Func<AppDbContext, Task> rival) : IAppDbContext
+{
+    private bool _raced;
+
+    public DbSet<Room> Rooms => inner.Rooms;
+
+    public void Forget() => inner.Forget();
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        if (!_raced)
+        {
+            _raced = true;
+            await using var scope = scopes.CreateAsyncScope();
+            await rival(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+            throw new DbUpdateConcurrencyException("Another change reached the room first.");
+        }
+
+        return await inner.SaveChangesAsync(cancellationToken);
+    }
 }
 
 /// <summary>The backend with the rate limits of production: their defaults, from no setting (L2-045).</summary>
