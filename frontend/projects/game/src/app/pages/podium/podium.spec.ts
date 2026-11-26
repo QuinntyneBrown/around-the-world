@@ -68,6 +68,8 @@ describe('PodiumPage', () => {
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
       watchMoments: () => () => undefined,
+      stickers: signal([]),
+      sendSticker: () => undefined,
       kind: 'solo',
       paused: signal(false),
       pause: () => undefined,

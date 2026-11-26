@@ -124,6 +124,8 @@ export interface FakeRoomHub {
   acceptsMethod(target: string): void;
   /** Sends the game's new state (`GameChanged`) to every open connection, and to every later one. */
   game(state: object | null): void;
+  /** Sends a sticker (`StickerShown`: its id and the sender's player id) to every open connection. */
+  sticker(sticker: number, from: string): void;
   /** How many connections are open now. */
   openConnections(): number;
 }
@@ -415,6 +417,13 @@ class RoomHubFixtures implements FakeRoomHub {
   game(state: object | null): void {
     this.gameState = state;
     for (const socket of this.open) if (!this.held.includes(socket)) this.sendGame(socket);
+  }
+
+  sticker(sticker: number, from: string): void {
+    const message = { type: 1, target: 'StickerShown', arguments: [{ sticker, from }] };
+    for (const socket of this.open) {
+      if (!this.held.includes(socket)) socket.send(JSON.stringify(message) + RS);
+    }
   }
 
   openConnections(): number {

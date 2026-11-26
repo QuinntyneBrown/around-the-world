@@ -111,7 +111,8 @@ test.describe('Watch a duel', () => {
     // And there is no number pad, no "Shout it!", no switch and no microphone (L2-028 1, L2-011 5)
     await expect(duel.numberPad).toHaveCount(0);
     await expect(duel.shout).toHaveCount(0);
-    await expect(duel.switchWay).toHaveCount(0);
+    await expect(duel.useNumberPad).toHaveCount(0);
+    await expect(duel.shoutInstead).toHaveCount(0);
     expect(await voice.listening()).toBe(0);
     expect(await microphone.openStreams()).toBe(0);
 
@@ -163,5 +164,89 @@ test.describe('Watch a duel', () => {
     expect(await duel.named(duel.deskHolder)).toEqual(['You', 'Holds Japan']);
     await expect(duel.shout).toBeVisible();
     await expect.poll(() => voice.listening()).toBe(1);
+  });
+});
+
+test.describe('Send a sticker', () => {
+  test('@critical a watching player is offered six stickers and nothing else, and the one sent shows for everyone, with "You" on their own device', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clock,
+  }) => {
+    // Given Brave Narwhal watching the host and Cosmic Llama duel
+    await clock.hold();
+    await pipInLobby(page, device, backend, roomHub);
+    roomHub.game(game());
+    const duel = new DuelPage(page);
+    await expect(duel.result).toHaveText('Watching… your turn is next');
+
+    // Then she is offered the six stickers, one for each kid and Bolt, and nothing else to send
+    // (L2-028 criteria 2 and 6)
+    await expect(duel.stickers).toHaveText([
+      'Go!',
+      'Wow!',
+      'Nice one',
+      'So close',
+      'Whoosh!',
+      'Beep boop!',
+    ]);
+    await expect(duel.switchWay).toHaveCount(6);
+    await expect(page.getByRole('textbox')).toHaveCount(0);
+
+    // When she sends "Wow!"
+    await duel.sendSticker('Wow!');
+
+    // Then the room is sent its id and nothing else (L2-028 criterion 3, L2-040 criterion 1)
+    await expect
+      .poll(() => roomHub.invocations().at(-1))
+      .toEqual({ target: 'SendSticker', args: [2] });
+
+    // When the room sends it to everyone, and a sticker from Cosmic Llama
+    roomHub.sticker(2, PIP.id);
+    roomHub.sticker(5, NIA.id);
+
+    // Then both show at the edge of Duel with the sender's kid and name, newest at the bottom
+    // (L2-028 criteria 3 and 7)
+    await expect(duel.stickerRegion).toHaveAttribute('aria-live', 'polite');
+    await expect
+      .poll(() => duel.shownStickers())
+      .toEqual([
+        { kid: 'pip', words: 'Wow!', from: 'You' },
+        { kid: 'nia', words: 'Whoosh!', from: 'Cosmic Llama' },
+      ]);
+
+    // And they are gone after 2 seconds (L2-028 criterion 3)
+    await clock.pass(1900);
+    await expect(duel.stickerPops).toHaveCount(2);
+    await clock.pass(200);
+    await expect(duel.stickerPops).toHaveCount(0);
+  });
+
+  test('a player in the duel sees the stickers sent, and has none to send', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+    clock,
+  }) => {
+    // Given Brave Narwhal holding Japan against the host
+    await clock.hold();
+    await pipInLobby(page, device, backend, roomHub);
+    roomHub.game(game({ travellerDesk: 3 }));
+    const duel = new DuelPage(page);
+    await expect(duel.numberPad).toBeVisible();
+
+    // Then no sticker is offered (L2-028 criterion 2)
+    await expect(duel.stickerBar).toHaveCount(0);
+
+    // When Cosmic Llama, watching, sends "Wow!"
+    roomHub.sticker(2, NIA.id);
+
+    // Then it shows with her kid and nickname (L2-028 criterion 3)
+    await expect
+      .poll(() => duel.shownStickers())
+      .toEqual([{ kid: 'nia', words: 'Wow!', from: 'Cosmic Llama' }]);
   });
 });

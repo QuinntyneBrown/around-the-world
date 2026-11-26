@@ -20,6 +20,7 @@ export * from './lib/room-session';
 export * from './lib/rooms';
 export * from './lib/signalr-room-connection';
 export * from './lib/sound';
+export * from './lib/sticker';
 export * from './lib/tour';
 export * from './lib/visit';
 export * from './lib/voice';
