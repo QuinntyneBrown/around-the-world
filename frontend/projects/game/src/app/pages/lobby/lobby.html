@@ -1,0 +1,55 @@
+<atw-screen>
+  <header atw-top-bar heading="Room">
+    <button
+      atw-icon-button
+      slot="back"
+      type="button"
+      icon="back"
+      aria-label="Leave the room"
+      (click)="leave()"
+    ></button>
+  </header>
+  @if (entry(); as entry) {
+    <main atw-screen-body columns="side">
+      <aside atw-stack gap="lg">
+        <section atw-room-code [code]="entry.code"></section>
+        <section atw-panel>
+          <div atw-panel-head heading="The game" headingId="game-title" [level]="2"></div>
+          <dl atw-summary [rows]="setup()"></dl>
+        </section>
+        <div atw-stack gap="sm" class="lobby__start">
+          <button
+            atw-toy-button
+            type="button"
+            size="xl"
+            [block]="true"
+            [disabled]="alone()"
+            aria-describedby="start-hint"
+          >
+            Start the race
+          </button>
+          <p id="start-hint" class="lobby__hint" role="status">
+            @if (alone()) {
+              Waiting for at least one friend…
+            } @else {
+              {{ players().length }} kids ready
+            }
+          </p>
+        </div>
+      </aside>
+      <section atw-stack aria-labelledby="class-title">
+        <div atw-cluster [between]="true">
+          <h2 id="class-title">In the classroom</h2>
+          <p
+            class="lobby__count numeric"
+            role="img"
+            [attr.aria-label]="players().length + ' of ' + capacity + ' players'"
+          >
+            {{ players().length }}/{{ capacity }}
+          </p>
+        </div>
+        <ul atw-player-list [players]="players()" [capacity]="capacity"></ul>
+      </section>
+    </main>
+  }
+</atw-screen>

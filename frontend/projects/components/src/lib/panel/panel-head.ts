@@ -16,6 +16,8 @@ export class PanelHead {
   readonly heading = input.required<string>();
   /** The title's id, which may name a group below it. */
   readonly headingId = input<string>();
+  /** The heading's level: 3 inside a titled panel, 2 when it is the panel's own title (the Lobby's "The game"). */
+  readonly level = input<2 | 3>(3);
   /** Space above, when it follows other content in the panel. */
   readonly spaced = input(false);
 }

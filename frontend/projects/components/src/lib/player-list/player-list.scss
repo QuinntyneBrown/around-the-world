@@ -1,0 +1,26 @@
+// The player-grid block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  list-style: none;
+  padding: 0;
+}
+
+:host(.player-grid--flush) {
+  margin-top: var(--space-0);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+}
+
+@media (min-width: 75rem) {
+  :host {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

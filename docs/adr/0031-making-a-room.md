@@ -77,12 +77,20 @@ routes those paths to the backend, so the game needs no setting of its own and t
 makes no cross-origin request. The CORS policy and `Frontend:Origin` join with journey 17.
 
 **The client.** `@atw/api` holds `RoomsApi` behind `ROOMS_API`, the types `RoomEntry` and
-`RoomState`, and `ApiError` with its `code`; `HttpRoomsApi` implements it over Angular's
-`HttpClient` with `withFetch()`. Both are provided by the route of Solo Or Friends, not in
-`app.config.ts`, so the HTTP client is in no initial chunk (the design's binding in
-`app.config.ts` would grow `main`; `AGENTS.md` lets a lazy route bind what it brings). A request
-that gets no response is `backend_unreachable`; a ProblemDetails is its `code`; any other answer
-is `unknown`.
+`RoomState`, and `ApiError` with its `code`; `FetchRoomsApi` implements it over the browser's
+`fetch`. Angular's `HttpClient` is the platform's usual choice, but provided only by the lazy
+route of Solo Or Friends it still moved 25.3 kB of `@angular/common` into `main` (measured
+against the base commit), and lazy loading outranks convenience (`AGENTS.md`). This is a
+departure from best practice: the game sends a few JSON requests and needs no interceptor, so
+`fetch` costs nothing; when the game first needs what `HttpClient` gives, it should be measured
+again. The route of Solo Or Friends provides `RoomsApi` and `Network`, not `app.config.ts`. A
+request that gets no response is `backend_unreachable`; a ProblemDetails is its `code`; any
+other answer is `unknown`.
+
+**The initial budget.** The room group's route, its `canMatch` guard, the redirect of a room's
+address and the visit's room add 0.31 kB to `main` (251.04 kB to 251.35 kB; 271.87 kB to
+272.17 kB in all). The initial warning moves from 272 kB to 273 kB (ADR 0026); the error stays
+at 285 kB.
 
 **The visit holds the room.** `Visit` gains `room`, `enterRoom` and `leaveRoom`: the `RoomEntry`
 is held in memory for this visit only and never written to the device, so a reload forgets it.

@@ -1,0 +1,65 @@
+// The player-card block of docs/design-system/assets/components.css, on the host element.
+:host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+}
+
+.player-card__picture {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--kid);
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+}
+
+.player-card__badge {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-2);
+}
+
+.player-card__text {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  min-height: 3.75rem;
+}
+
+.player-card__name {
+  font: var(--text-name);
+  overflow-wrap: anywhere;
+}
+
+.player-card__you {
+  color: var(--color-fg-muted);
+}
+
+.player-card__kid {
+  font: var(--text-label);
+  color: var(--color-fg-muted);
+}
+
+:host(.player-card--empty) {
+  background: none;
+  box-shadow: none;
+  border: var(--border-width-thick) dashed var(--color-border-strong);
+  color: var(--color-fg-muted);
+  font: var(--text-body);
+  text-align: center;
+
+  .player-card__picture {
+    background: none;
+    display: grid;
+    place-items: center;
+  }
+}

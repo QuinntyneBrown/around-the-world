@@ -1,0 +1,6 @@
+<p class="room-code__label" id="room-code-label">Room code</p>
+<div class="room-code__row">
+  <p class="room-code__value" role="img" [attr.aria-label]="spelled()">{{ code() }}</p>
+  <ng-content select="[slot=action]" />
+</div>
+<p class="room-code__hint">Say it out loud so friends can type it in.</p>

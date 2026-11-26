@@ -1,6 +1,8 @@
-<span class="alert__icon"><atw-icon name="info" /></span>
+<span class="alert__icon"><atw-icon [name]="icon()" /></span>
 <div class="alert__body">
-  <p class="alert__title">{{ heading() }}</p>
+  @if (heading(); as title) {
+    <p class="alert__title">{{ title }}</p>
+  }
   <ng-content />
   <div class="alert__actions"><ng-content select="[slot=actions]" /></div>
 </div>
