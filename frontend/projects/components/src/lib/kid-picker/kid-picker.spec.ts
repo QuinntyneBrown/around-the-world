@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { type Kid, type KidId } from '@atw/api';
+import type { Kid, KidId } from '@atw/api';
 import { type PortraitState } from '../portrait/portrait';
 import { KidPicker } from './kid-picker';
 
