@@ -3,10 +3,11 @@ import { Icon, type IconName } from '../icon/icon';
 
 /**
  * Text button (docs/design-system/components/text-button.html): a quiet action that is not
- * the screen's one big action. It sits on the native `<button>` (docs/adr/0012).
+ * the screen's one big action. It sits on the native `<button>`, or `<a>` when it opens a
+ * screen (docs/adr/0012).
  */
 @Component({
-  selector: 'button[atw-text-button]',
+  selector: 'button[atw-text-button], a[atw-text-button]',
   imports: [Icon],
   templateUrl: './text-button.html',
   styleUrl: './text-button.scss',

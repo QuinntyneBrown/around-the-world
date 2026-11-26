@@ -26,6 +26,18 @@
   box-shadow: 0 var(--toy-depth-pressed) 0 0 var(--color-toy-base);
 }
 
+:host(.icon-btn--on-code) {
+  background: color-mix(in srgb, var(--color-code-fg) 20%, transparent);
+  color: var(--color-code-fg);
+  box-shadow: 0 var(--toy-depth) 0 0
+    color-mix(in srgb, var(--color-code-bg) 70%, var(--palette-black));
+}
+
+:host(.icon-btn--on-code:hover) {
+  background: color-mix(in srgb, var(--color-code-fg) 30%, transparent);
+  color: var(--color-code-fg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host {
     transition: none;

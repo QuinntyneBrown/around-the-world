@@ -1,0 +1,54 @@
+<atw-screen>
+  <header atw-top-bar heading="Join a room">
+    <a atw-icon-button slot="back" icon="back" routerLink="/play" aria-label="Back"></a>
+  </header>
+  <main atw-screen-body [center]="true" [narrow]="true">
+    <div>
+      <h2>What’s the code?</h2>
+      <p class="text-lg text-muted" id="code-help">
+        Ask the friend who made the room. It’s 4 letters.
+      </p>
+    </div>
+    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -- CodeField's own template puts the input inside this label -->
+    <label
+      atw-code-field
+      describedBy="code-help code-msg"
+      [focusFirst]="true"
+      [value]="code()"
+      (valueChange)="changeCode($event)"
+      [invalid]="refusal() !== null"
+      [disabled]="joining()"
+      (entered)="join()"
+    ></label>
+    @if (words(); as said) {
+      <p atw-field-message id="code-msg" [error]="said.icon">{{ said.words }}</p>
+    } @else {
+      <p atw-field-message id="code-msg">
+        @if (joining()) {
+          Finding your friends…
+        }
+      </p>
+    }
+    <div atw-stack [narrow]="true">
+      <button
+        atw-toy-button
+        type="button"
+        variant="friends"
+        size="xl"
+        [block]="true"
+        [disabled]="!canJoin()"
+        [attr.aria-busy]="joining() || null"
+        (click)="join()"
+      >
+        @if (joining()) {
+          <atw-spinner /> Joining…
+        } @else {
+          Join
+        }
+      </button>
+      @if (refusal() === 'unreachable') {
+        <a atw-text-button routerLink="/setup">Play solo instead</a>
+      }
+    </div>
+  </main>
+</atw-screen>

@@ -16,6 +16,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     '[class.stack--center]': 'center()',
     '[class.stack--middle]': 'middle()',
     '[class.stack--flush]': 'flush()',
+    '[class.stack--narrow]': 'narrow()',
   },
 })
 export class Stack {
@@ -26,4 +27,6 @@ export class Stack {
   readonly middle = input(false);
   /** No gap: the items set their own space, as the Podium's columns do. */
   readonly flush = input(false);
+  /** At most the narrow panel's width, as Room's "Join" (docs/mocks/pages/room/). */
+  readonly narrow = input(false);
 }

@@ -5,6 +5,8 @@ import { ApiError, type RoomEntry, type RoomsApi } from './rooms';
 
 /** Where the backend's rooms are, on the game's own origin (docs/adr/0031-making-a-room.md). */
 export const ROOMS_PATH = '/api/rooms';
+/** Where a code is sent to join its room: in the body, never in the address (L2-053 2). */
+export const JOIN_ROOM_PATH = '/api/rooms/join';
 
 /**
  * `RoomsApi` over the browser's `fetch`. Angular's `HttpClient` would move about 25 kB of
@@ -17,6 +19,15 @@ export class FetchRoomsApi implements RoomsApi {
   async makeRoom(kid: KidId, nickname: Nickname): Promise<RoomEntry> {
     const body = { kid, nickname: { adjective: nickname.adjective, animal: nickname.animal } };
     return (await send(ROOMS_PATH, body)) as RoomEntry;
+  }
+
+  async joinRoom(code: string, kid: KidId, nickname: Nickname): Promise<RoomEntry> {
+    const body = {
+      code,
+      kid,
+      nickname: { adjective: nickname.adjective, animal: nickname.animal },
+    };
+    return (await send(JOIN_ROOM_PATH, body)) as RoomEntry;
   }
 }
 

@@ -60,16 +60,22 @@
               Make a room
             }
           </button>
-          <button
-            atw-toy-button
-            slot="actions"
-            type="button"
-            variant="paper"
-            [block]="true"
-            disabled
-          >
-            Join a room
-          </button>
+          @if (online() && !making()) {
+            <a atw-toy-button slot="actions" variant="paper" [block]="true" routerLink="/room"
+              >Join a room</a
+            >
+          } @else {
+            <button
+              atw-toy-button
+              slot="actions"
+              type="button"
+              variant="paper"
+              [block]="true"
+              disabled
+            >
+              Join a room
+            </button>
+          }
           @if (!online()) {
             <p slot="note" class="hint">Playing with friends needs the internet.</p>
           } @else if (refusal() === 'rate-limited') {

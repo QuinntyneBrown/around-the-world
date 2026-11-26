@@ -36,10 +36,11 @@ export const routes: Routes = [
     loadChildren: () => import('./games/friends-game.routes').then((m) => m.FRIENDS_GAME_ROUTES),
   },
   {
-    // A room's address with no room in the visit (a reload) opens Home; journey 13 opens Room
-    // with the code filled in (docs/adr/0031).
-    path: 'room/:code',
-    redirectTo: '',
+    // Room, where a code is typed; a room's address that is not the visit's room, such as the
+    // room's link on another device or after a reload, opens it with the code filled in
+    // (L2-024 criterion 4, docs/adr/0032).
+    path: 'room',
+    loadChildren: () => import('./pages/room/room.routes').then((m) => m.ROOM_ROUTES),
   },
   {
     // The solo group: Game Setup and the game screens (docs/adr/0016-solo-game-route-group.md).

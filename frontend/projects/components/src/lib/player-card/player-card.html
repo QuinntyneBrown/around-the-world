@@ -1,4 +1,10 @@
-@if (player(); as player) {
+@if (loading()) {
+  <atw-skeleton shape="block" class="player-card__picture" />
+  <div class="player-card__text player-card__text--loading">
+    <atw-skeleton />
+    <atw-skeleton [short]="true" />
+  </div>
+} @else if (player(); as player) {
   <div class="player-card__picture">
     <img [src]="player.picture" alt="" />
     @if (player.host) {
