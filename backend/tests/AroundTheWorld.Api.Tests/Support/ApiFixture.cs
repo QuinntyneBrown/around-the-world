@@ -84,6 +84,7 @@ public class ApiFixture : WebApplicationFactory<Program>
         {
             builder.UseSetting("RateLimits:MakeRoom:PermitLimit", "1000");
             builder.UseSetting("RateLimits:JoinRoom:PermitLimit", "1000");
+            builder.UseSetting("RateLimits:Health:PermitLimit", "1000");
         }
 
         builder.ConfigureServices(services =>

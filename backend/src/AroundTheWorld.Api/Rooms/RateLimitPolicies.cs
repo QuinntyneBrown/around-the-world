@@ -19,30 +19,38 @@ public static class RateLimitPolicies
     /// <summary>The policy of joining a room with a code.</summary>
     public const string JoinRoom = "join-room";
 
+    /// <summary>The policy of the health endpoints, shared by both (docs/adr/0037).</summary>
+    public const string Health = "health";
+
     /// <summary>The largest body a request open to anyone may carry (L2-044 criterion 2).</summary>
     public const int MaxBodyBytes = 1024;
 
     public static IServiceCollection AddRoomRateLimits(this IServiceCollection services, IConfiguration configuration)
     {
-        var makeRoom = Limit(configuration, "MakeRoom");
-        var joinRoom = Limit(configuration, "JoinRoom");
+        var makeRoom = Limit(configuration, "MakeRoom", 10);
+        var joinRoom = Limit(configuration, "JoinRoom", 10);
+        var health = Limit(configuration, "Health", 60);
 
         services.AddRateLimiter(options =>
         {
             options.AddPolicy(MakeRoom, context => PerAddress(context, makeRoom));
             options.AddPolicy(JoinRoom, context => PerAddress(context, joinRoom));
+            options.AddPolicy(Health, context => PerAddress(context, health));
             options.OnRejected = (context, cancellationToken) => RefuseAsync(context, cancellationToken);
         });
         return services;
     }
 
-    /// <summary>A policy's numbers from its settings: 10 in a window of 60 seconds when absent (to confirm).</summary>
-    private static FixedWindowRateLimiterOptions Limit(IConfiguration configuration, string policy)
+    /// <summary>
+    /// A policy's numbers from its settings: its default in a window of 60 seconds when absent
+    /// (10 rooms and 10 codes to confirm, 60 health requests).
+    /// </summary>
+    private static FixedWindowRateLimiterOptions Limit(IConfiguration configuration, string policy, int permits)
     {
         var settings = configuration.GetSection($"RateLimits:{policy}");
         return new FixedWindowRateLimiterOptions
         {
-            PermitLimit = settings.GetValue("PermitLimit", 10),
+            PermitLimit = settings.GetValue("PermitLimit", permits),
             Window = TimeSpan.FromSeconds(settings.GetValue("WindowSeconds", 60)),
             QueueLimit = 0,
         };

@@ -1,3 +1,4 @@
+using AroundTheWorld.Api.Rooms;
 using AroundTheWorld.Application.Health;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,8 @@ namespace AroundTheWorld.Api.Controllers;
 
 /// <summary>
 /// Whether the backend is live and whether it is ready (L2-053 criterion 3), for the hosting
-/// platform's probes. Open to anyone and saying nothing of the server.
+/// platform's probes. Open to anyone, rate limited for each address, and saying nothing of the
+/// server.
 /// </summary>
 /// <remarks>
 /// <see cref="Live"/> is the one endpoint that sends no MediatR request: a liveness probe
@@ -17,6 +19,7 @@ namespace AroundTheWorld.Api.Controllers;
 [ApiController]
 [Route("health")]
 [AllowAnonymous]
+[OpenToAnyone(RateLimitPolicies.Health)]
 public sealed class HealthController(ISender sender) : ControllerBase
 {
     [HttpGet("live")]

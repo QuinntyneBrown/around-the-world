@@ -14,6 +14,8 @@ change (`AGENTS.md`, `L2-052` criterion 4).
 | `RateLimits:MakeRoom:WindowSeconds` | `RateLimits__MakeRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 12 |
 | `RateLimits:JoinRoom:PermitLimit` | `RateLimits__JoinRoom__PermitLimit` | How many codes one address may try in a window; 10 when absent **(to confirm)** ([ADR 0032](../adr/0032-joining-a-room-and-the-lobby.md)). | Journey 13 |
 | `RateLimits:JoinRoom:WindowSeconds` | `RateLimits__JoinRoom__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 13 |
+| `RateLimits:Health:PermitLimit` | `RateLimits__Health__PermitLimit` | How many requests one address may make to `/health/live` and `/health/ready` together in a window; 60 when absent ([ADR 0037](../adr/0037-running-the-backend-deployed.md)). | Journey 17 |
+| `RateLimits:Health:WindowSeconds` | `RateLimits__Health__WindowSeconds` | The length of that window in seconds; 60 when absent. | Journey 17 |
 
 The settings that `docs/detailed-designs/platform/operate-backend/` names for later journeys
 (`Azure:SignalR:ConnectionString`, `Frontend:Origin`, the other rate limits and
@@ -26,7 +28,10 @@ The settings that `docs/detailed-designs/platform/operate-backend/` names for la
    the room store's migrations and exits.
 2. Start the new version. It never migrates on startup.
 3. The hosting platform's liveness probe asks `GET /health/live`, which answers 200 while the
-   process runs.
+   process runs, and its readiness probe asks `GET /health/ready`, which answers 200 when the
+   room store (and Azure SignalR Service, where it is set) can be reached and 503 when not.
+   Both share the `health` rate limit; a probe every 10 seconds of each kind stays well within
+   it.
 
 ## Routing
 
