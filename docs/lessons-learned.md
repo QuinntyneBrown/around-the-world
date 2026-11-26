@@ -131,3 +131,67 @@ the lessons that fit.
 - *An unreachable state gets a unit test of the page* (02, 4): used for "Go!"'s hand-over.
 - *Tag one spec per feature `@critical`* (02, 5): the way from Home through "Play solo" and
   "Go!" to Duel.
+
+## Journey 04: Play a solo duel with the number pad
+
+**What slowed it.**
+
+- The time-driven rules needed a clock a spec could hold without sleeping, but Playwright's
+  paused clock also stops `setTimeout` and `requestAnimationFrame`, which zoneless Angular
+  renders with. The game's clock reads `Date.now` and is ticked by a real interval, so the
+  fixture's `clock.hold()` (`page.clock.setFixedTime`) freezes game time while Angular keeps
+  rendering (ADR 0020). Fixing `Math.random` through the fixture's `random` made a classmate
+  answer as a spec needs.
+- `effect()` and `model()` added 3.4 kB to `main`: the build splits by module, and
+  `@angular/core` is one module that `main` holds, so a framework feature first used in a lazy
+  chunk still lands in `main`. Plain signals and an output brought it back; the last 0.5 kB of
+  framework instructions moved the warning budget by 1 kB (ADR 0021).
+- A spec of the keyboard failed one run in five: the pad read its entry from an input that
+  changes only on the next render, so a second key before it lost the first. The pad became
+  stateless, emitting each key, and the page keeps the entry in a signal.
+- `aria-label` on the flash card's `<p>` and the answer box's `<div>` named nothing, since ARIA
+  does not let those roles be named; the mocks carried the same markup. Both are now
+  `role="img"`, in the mocks and the design system too.
+- The mocks' CSS cut the number pad off on a phone turned on its side; the pad now sits beside
+  the card under 544 px tall at any width, in the design system as well.
+
+**New lessons.**
+
+1. Drive game time from the wall clock with a ticking interval, and hold `Date.now` in specs
+   (`clock.hold()`, `clock.pass(ms)`); never pause Playwright's clock under zoneless Angular.
+2. Prefer signals, `computed()` and outputs to `effect()`, `model()` and `linkedSignal()`, and
+   read the chunk table after a new framework feature: shared framework code lands in `main`.
+3. Keep fast-changing input (key presses) in the state of the component that owns it, never in
+   an input waiting for the next render; run new specs with `--repeat-each` before committing.
+4. Check a mock's accessible names with `toHaveAccessibleName`: an `aria-label` on a paragraph
+   or a plain `div` is silently ignored.
+5. Let a rule with chance take a `RandomSource`, so a unit test fixes the numbers and a spec
+   fixes `Math.random`.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): it showed the budget and the
+  framework code in `main` at once.
+- *Check a fake once by hand* (01, 2): the clock and random fakes were checked by breaking the
+  classmates, the time-up delay, the pad and the seating, each failing its spec as expected.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): TimerBar, WorldRing,
+  NumberPad (with NumberEntry) and Pill added; DuelHud, FlashCard, Portrait, Bean and Icon
+  extended; each marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0021 for the budget; the
+  mocks' unnamed sum was corrected rather than kept.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the agents are their own
+  chunk (`classmate-agent`), and the table showed the framework growth.
+- *A link or button block is an attribute component* (02, 2): the Pill is `p[atw-pill]`.
+- *Drive states through the fixture* (02, 3): extended with `clock` and `random`.
+- *An unreachable state gets a unit test of the page* (02, 4): Duel's loading state, which
+  stands only until the session publishes the first duel.
+- *Tag one spec per feature `@critical`* (02, 5): answering with the pad and winning.
+- *Put the page in the group that provides its service* (03, 1): Duel reads the solo group's
+  `GAME_SESSION`.
+- *Measure the initial bundle against the base commit* (03, 2): a worktree build located the
+  0.54 kB before the budget moved.
+- *A group of toggles is one component* (03, 3): the number pad is one component on a group.
+- *Prove a hand-over with a unit test of the page* (03, 4): `SoloGame`'s unit tests prove the
+  class, the clock, and the first card dealt before the agents arrive.
+

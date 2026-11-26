@@ -28,7 +28,9 @@ model to the agents designed here; without it, the game described in this docume
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
+The class, the profiles and the agents are built (journey 04, `docs/adr/0019-classmate-profiles.md`);
+watching classmates duel on World Map comes with journey 05. The components below are the ones
+the design introduces. The slice
 runs wholly on the device: it has no backend part, makes no request to `AroundTheWorld.Api`
 (`L2-019` criterion 1) and never loads the SignalR client (`L2-047` criterion 3). A solo game
 that has started depends on nothing from the network, so duels, hops and the Podium work when
@@ -40,16 +42,20 @@ criterion 2). "Play solo" works with no network; Solo Or Friends then reads "You
 You can still play solo." (`L2-022` criterion 6, `L2-054` criterion 3). `rooms/make-room`
 designs that screen.
 
-In the `game` application:
+In the `domain` library, folder `tour/`:
 
-- **`SoloGame`** — implementation of the `GameSession` contract, provided at the solo game
-  route behind `GAME_SESSION`. It owns one `Tour`, the class and one `ClassmateAgent` for each
+- **`SoloGame`** — implementation of the `GameSession` contract, provided by the solo route
+  group behind `GAME_SESSION` (ADR 0016). It owns one `Tour` (journey 05; until then the duel at
+  desk 2), the class and one `ClassmateAgent` for each
   classmate. On `start(setup)` it asks `ClassFactory` for the class and creates the `Tour`
   with the device's player as the traveller (`L2-007` criterion 3). Desk 1 is the player's own
   desk and stays empty, the classmates hold desks 2 to the tour length, and the first duel is
   at desk 2 (`L2-007` criterion 4). For each flash card it asks
   the agent of each classmate in the duel for a decision, schedules the answer on the game's
-  clock and passes it to `Duel.answer`, the same method the player's own answer reaches.
+  clock and passes it to `Duel.give`, the same method the player's own answer reaches. It
+  imports the agents dynamically when the tour starts and deals the first card at once; a
+  classmate whose agent arrives late answers at its decided time, or at once if that has
+  passed, so a flash card never waits for a classmate (ADR 0019).
   `SoloGame` decides nothing about the duel itself. Its timers follow the game's clock, so
   Pause stops them (`L2-033` criterion 4), and it clears every timer when the route is
   destroyed. Leaving the route releases the tour, the class and the agents.
@@ -59,11 +65,10 @@ In the `domain` library (`@atw/domain`), folder `classmates/`:
 - **`ClassmateProfile`** — `id`, `kid` (a `KidId`, or none for a further classmate), `skill`,
   `characteristics` and `preferredMaths` (a set of `MathsKind`). A classmate has no nickname:
   a classmate who is one of the five kids is named by the kid's name (`L2-033` criterion 6).
-  How a further classmate is named on Duel or in a message is `<TO SUPPLY>`; no mock names
-  one. The number of skill levels is `<TO SUPPLY>`; the specification fixes only that a class
-  holds at least three different levels (`L2-020` criterion 1). The full list of
-  characteristics is `<TO SUPPLY>`; the specification names bold, careful and quick to guess
-  as examples.
+  A further classmate is named "Classmate" on Duel and in what a screen reader is told. There
+  are five skill levels, 1 to 5, and a class holds at least three of them (`L2-020` criterion
+  1). The characteristics are bold, planner, sprinter, accurate, dreamer, quick to guess and
+  careful (ADR 0019).
 - **`ClassFactory`** — `build(picked: KidId, tourLength, setup)` returns one profile for each
   desk holder. The count is the tour length less 1, because desk 1, the traveller's own desk,
   is the one empty desk (`L2-007` criteria 2, 4 and 6). A tour of 6 has 5 classmates, a tour
@@ -73,7 +78,10 @@ In the `domain` library (`@atw/domain`), folder `classmates/`:
     are spread evenly round the ring and the further classmates fill the desks between them.
   - A kid's profile has characteristics that fit that kid: Zuri bold and first to answer,
     Kenji the planner, Nia the sprinter, Milo quiet and accurate, Pip the dreamer (`L2-020`
-    criterion 6). The skill level and the figures of each kid's profile are `<TO SUPPLY>`.
+    criterion 6): Zuri skill 4, bold, Times and Plus; Kenji 3, planner, Times and Divide; Nia
+    4, sprinter, Plus and Minus; Milo 5, accurate, Times and Divide; Pip 2, dreamer, Plus.
+    Further classmates take seven profiles in turn (ADR 0019). The class is the same for the
+    same kid and tour length; the factory draws no random number.
   - The factory gives the class at least three different skill levels and profiles that
     differ (`L2-020` criterion 1).
   - On World Map a further classmate is a plain bean-bodied character in a calmer colour,
@@ -88,8 +96,12 @@ In the `domain` library (`@atw/domain`), folder `classmates/`:
     shorter than a card of another kind (`L2-020` criterion 3).
   - The characteristics shape the spread: a classmate who is quick to guess answers sooner and
     is wrong more often, a careful one later and more accurately. The figures that turn skill,
-    preference and characteristics into a likelihood and a time are `<TO SUPPLY>`.
-  - `afterMs` is never below the floor of 800 ms **(to confirm)**, whatever the profile
+    preference and characteristics into a likelihood and a time are those of ADR 0019: a
+    chance from 0.55 to 0.90 by skill, plus 0.10 for a preferred kind and the
+    characteristics' change, within 0.30 to 0.97; a typical time from 4,200 to 2,000 ms by
+    skill, times 0.8 for a preferred kind and the characteristics' factor, spread from 0.7 to
+    1.3; a wrong answer is the right one plus or minus 1 to 3.
+  - `afterMs` is never below the floor of 800 ms, nor the time `ClassPace` gives, whatever the profile
     (`L2-020` criterion 5).
 - **`RandomSource`** — source of random numbers passed to `ClassFactory` and to each agent, so
   a unit test supplies a fixed sequence and counts outcomes over 100 flash cards.
@@ -100,9 +112,10 @@ criterion 4, `L2-004`). When the freeze ends and the duel is still open, `SoloGa
 agent to decide again for the same flash card.
 
 `L2-020` criterion 5 also requires that a classmate never wins every duel of a tour of 12 or
-more desks against a child who answers within 2 seconds. The floor alone does not secure that.
-The rule that secures it (for example a limit on a classmate's run of wins, or a bound on the
-figures above) is `<TO SUPPLY>`.
+more desks against a child who answers within 2 seconds. The floor alone does not secure that, so
+**`ClassPace`** (`classmates/`) does: once the device's player has lost two duels in a row, every
+classmate in their next duel answers no sooner than 2,000 ms, and a child who answers correctly
+within 2 seconds then wins at least one duel in every three (ADR 0019).
 
 After the player loses a duel and sits down, a classmate travels and duels the next desk
 holder, who is another classmate. Both agents answer through `Duel` as described. The player
@@ -138,7 +151,7 @@ level-1 (L1) requirement, cited by identifier.
 | L2 ID | Refines (L1) | Requirement |
 |-------|--------------|-------------|
 | `L2-019` | `L1-006` | A solo game is played on the device: a solo game shall be set up and played with no request to the backend; duels, hops and the Podium shall work when the device loses its network; the four kids the child did not pick shall be among the classmates and further classmates shall hold the remaining desks. |
-| `L2-020` | `L1-006` | Each classmate is its own agent: each classmate shall be an agent with a profile of a skill level, characteristics and preferred kinds of maths; the class shall be diverse, with at least three different skill levels; a classmate of a higher skill level, or answering a kind of maths it prefers, shall answer correctly more often and sooner; a wrong answer shall freeze a classmate for 1 second exactly as a player; no classmate's answer shall arrive sooner than a child could give one (a floor of 800 ms **(to confirm)**), and a classmate shall never win every duel of a tour of 12 or more desks against a child who answers within 2 seconds; the characteristics of a classmate who is one of the five kids shall fit that kid (Zuri bold and first to answer, Kenji the planner, Nia the sprinter, Milo quiet and accurate, Pip the dreamer). |
+| `L2-020` | `L1-006` | Each classmate is its own agent: each classmate shall be an agent with a profile of a skill level, characteristics and preferred kinds of maths; the class shall be diverse, with at least three different skill levels; a classmate of a higher skill level, or answering a kind of maths it prefers, shall answer correctly more often and sooner; a wrong answer shall freeze a classmate for 1 second exactly as a player; no classmate's answer shall arrive sooner than a child could give one (a floor of 800 ms (ADR 0019)), and a classmate shall never win every duel of a tour of 12 or more desks against a child who answers within 2 seconds; the characteristics of a classmate who is one of the five kids shall fit that kid (Zuri bold and first to answer, Kenji the planner, Nia the sprinter, Milo quiet and accurate, Pip the dreamer). |
 
 ## Diagrams
 

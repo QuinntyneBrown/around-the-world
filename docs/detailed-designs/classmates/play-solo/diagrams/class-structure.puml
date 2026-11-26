@@ -30,7 +30,7 @@ class SoloGame {
   -release(): void
 }
 class ClassFactory {
-  +build(picked: KidId, tourLength: number, setup: GameSetup): ClassmateProfile[]
+  +build(picked: KidId, tourLength: TourLength): SeatedClassmate[]
 }
 class ClassmateProfile {
   +id: string
@@ -41,14 +41,17 @@ class ClassmateProfile {
 }
 class ClassmateAgent {
   +profile: ClassmateProfile
-  +decide(card: FlashCard): ClassmateDecision
+  +decide(card: FlashCard, notBeforeMs: number): ClassmateDecision
 }
 class ClassmateDecision {
   +answer: number
   +afterMs: number
 }
 interface RandomSource {
-  +next(): number
+  +below(limit: number): number
+}
+class ClassPace <<helper>> {
+  +notBeforeMs(lostInARow: number): number
 }
 class Tour {
   +currentDuel: Duel
@@ -56,7 +59,7 @@ class Tour {
 }
 class Duel {
   +card: FlashCard
-  +answer(playerId: string, value: number, at: number): void
+  +give(playerId: string, value: number, atMs: number): AnswerResult
 }
 class FlashCard {
   +kind: MathsKind
@@ -67,6 +70,7 @@ GameSession <|.. SoloGame
 SoloGame *-- Tour
 SoloGame *-- "1..*" ClassmateAgent
 SoloGame ..> ClassFactory : builds class
+SoloGame ..> ClassPace : how soon classmates may answer
 ClassFactory ..> ClassmateProfile : creates
 ClassFactory ..> RandomSource
 ClassmateAgent *-- ClassmateProfile
