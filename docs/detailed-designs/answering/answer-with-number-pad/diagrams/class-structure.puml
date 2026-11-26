@@ -15,44 +15,40 @@ title Class structure — Answer with the number pad
 
 class NumberPad {
   +disabled: InputSignal<boolean>
-  +entryChange: Output<string>
-  +go: Output<number>
-  +keyPress: Output<void>
-  -entry: Signal<NumberEntry>
-  +onDigit(digit: number): void
-  +onDelete(): void
-  +onGo(): void
-  +onKeydown(event: KeyboardEvent): void
+  +keyPress: Output<PadKey>
+  #press(key: PadKey): void
+  #onKey(event: KeyboardEvent): void
 }
-class NumberEntry {
+enum PadKey {
+  digit 0 to 9
+  delete
+  go
+}
+class NumberEntry <<helper>> {
   +{static} MAX_DIGITS = 3
-  +digits: string
-  +add(digit: number): NumberEntry
-  +removeLast(): NumberEntry
-  +clear(): NumberEntry
-  +value(): number | null
+  +{static} add(entry: string, digit: number): string
+  +{static} removeLast(entry: string): string
+  +{static} value(entry: string): number | null
 }
-class FlashCardView {
-  +card: InputSignal<FlashCard>
-  +entered: InputSignal<string>
+class FlashCard <<component>> {
+  +sum: InputSignal<string>
+  +answer: InputSignal<string | null>
+  +frozen: InputSignal<boolean>
 }
 interface GameSession {
-  +duel: Signal<DuelState>
+  +duel: Signal<DuelState | null>
   +answer(value: number): void
-}
-interface Sound {
-  +play(sound: SoundId): void
 }
 class DuelPage {
   -session: GameSession
-  -entered: Signal<string>
-  +onEntryChange(digits: string): void
-  +onGo(value: number): void
+  -typed: Signal<{card, digits}>
+  #entry: Signal<string>
+  #press(key: PadKey): void
 }
 
-NumberPad *-- NumberEntry
-DuelPage --> NumberPad : binds disabled, listens to outputs
-DuelPage --> FlashCardView : binds entered
+NumberPad ..> PadKey : emits
+DuelPage --> NumberPad : binds disabled, listens to keyPress
+DuelPage ..> NumberEntry : keeps the entry with
+DuelPage --> FlashCard : binds answer
 DuelPage ..> GameSession : injects GAME_SESSION
-DuelPage ..> Sound : injects SOUND
 @enduml

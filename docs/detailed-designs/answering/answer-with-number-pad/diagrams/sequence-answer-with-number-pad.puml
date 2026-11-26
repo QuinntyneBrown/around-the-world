@@ -17,57 +17,60 @@ skinparam package {
 actor "Child" as child
 box "Frontend — components library" #E0F2FE
   participant "NumberPad" as pad
-  participant "NumberEntry" as entry
-  participant "FlashCardView" as card
+  participant "FlashCard" as card
 end box
 box "Frontend — game application" #E0F2FE
   participant "DuelPage" as page
+  participant "NumberEntry" as entry
+end box
+box "Frontend — domain library" #E0F2FE
   participant "SoloGame\n(GameSession)" as solo
 end box
 child -> pad : Press 2 (or type 2 on a keyboard, L2-010 criterion 5)
-pad -> entry : add(2)
-entry --> pad : "2"
-pad --> page : entryChange "2", keyPress
-page -> card : entered "2", shown within 100 ms (L2-049 criterion 1)
+pad --> page : keyPress 2
+page -> entry : add("", 2)
+entry --> page : "2"
+page -> card : answer "2", shown within 100 ms (L2-049 criterion 1)
 child -> pad : Press 4
-pad -> entry : add(4)
-entry --> pad : "24"
-pad --> page : entryChange "24"
-page -> card : entered "24" (L2-010 criterion 1)
+pad --> page : keyPress 4
+page -> entry : add("2", 4)
+entry --> page : "24"
+page -> card : answer "24" (L2-010 criterion 1)
 opt a fourth digit (L2-010 criterion 2)
   child -> pad : Press a digit with three entered
-  pad -> entry : add(digit)
-  entry --> pad : Unchanged
+  pad --> page : keyPress digit
+  page -> entry : add(entry, digit)
+  entry --> page : Unchanged
 end
 opt Delete or Backspace (L2-010 criterion 3)
   child -> pad : Press Delete
-  pad -> entry : removeLast()
-  entry --> pad : One digit fewer
-  pad --> page : entryChange
+  pad --> page : keyPress delete
+  page -> entry : removeLast(entry)
+  entry --> page : One digit fewer
 end
 child -> pad : Press Go (or Enter)
-pad -> entry : value()
+pad --> page : keyPress go
+page -> entry : value(entry)
 alt no digit entered (L2-010 criterion 4)
-  entry --> pad : Nothing
-  pad -> pad : No answer is given
+  entry --> page : null
+  page -> page : No answer is given
 else digits entered
-  entry --> pad : 24
-  pad --> page : go 24
+  entry --> page : 24
+  page -> page : The entry empties
   page -> solo : answer(24)
   alt correct
     solo --> page : DuelState, outcome won
   else wrong (L2-004)
-    solo --> page : DuelState, ownFrozen true, ownWrongAnswer 24
-    page -> card : "Not 24! Frozen for a sec…" (L2-004 criterion 5)
+    solo --> page : DuelState, frozen true, wrongAnswer 24
+    page -> card : answer "24" frozen, "Not 24! Frozen for a sec…" (L2-004 criterion 5)
     page -> pad : disabled true for 1 s
     opt a key while frozen (L2-010 criterion 6)
       child -> pad : Press or type a key
-      pad -> pad : Nothing is entered
+      pad -> pad : No key is emitted
     end
-    solo --> page : DuelState, ownFrozen false
+    solo --> page : DuelState, frozen false
     page -> pad : disabled false
-    pad -> entry : clear()
-    pad --> page : entryChange "", the entry is empty (L2-010 criterion 7)
+    page -> card : answer "", the entry is empty (L2-010 criterion 7)
   end
 end
 @enduml

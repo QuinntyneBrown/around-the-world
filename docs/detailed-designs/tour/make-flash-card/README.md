@@ -25,7 +25,7 @@ over. Choosing the maths on Game Setup is designed outside this subsystem.
 
 ## Description
 
-The slice is not built yet; the parts below are those the design introduces. The design covers a
+The slice is built (journey 04); the parts below are those the design introduces. The design covers a
 solo game, in which the cards are made on the device: the slice has no backend part, and its
 diagrams show frontend libraries only. In a game with friends the server applies the same rules
 (`rooms/decide-game-on-server`).
@@ -40,9 +40,11 @@ diagrams show frontend libraries only. In a game with friends the server applies
   tables. The times tables are used only while Times is on.
 - **`FlashCard`** — type in `api`: a `MathsKind` and two whole numbers, `left` and `right`. It
   does not hold the answer, so a state that carries a card does not reveal it.
-- **`FlashCardView`** — presentation component in `components` that draws a card on the Duel
-  screen as `left`, the sign of the kind and `right`, as in "6 × 4" and "144 ÷ 12". The sum's
-  accessible name gives the sign in words, as in "6 times 4" and "144 divided by 12". A sum
+- **`FlashCardView`** — the `FlashCard` presentation component in `components`
+  (`atw-flash-card`), which draws a card on the Duel screen as `left`, the sign of the kind and
+  `right`, as in "6 × 4" and "144 ÷ 12"; `DuelPage` writes the sum with its `DuelWords` helper.
+  The sum is `role="img"`, and its accessible name gives the sign in words, as in "6 times 4"
+  and "144 divided by 12". A sum
   with a three-digit number fits the card without being cut off. The states of the card during
   a duel are designed in `tour/play-duel`.
 
@@ -67,14 +69,19 @@ criterion 2).
 `SoloGame` holds one `FlashCardMaker` for a tour and calls `next()` when a duel starts, including
 the new duel that follows a card nobody answered in time (`tour/play-duel`).
 
-Open points:
+Decisions (`docs/adr/0018-flash-card-ranges.md`):
 
-- The ranges of the two numbers of a Plus card, of a Minus card, and of the divisor and the
-  quotient of a Divide card: `<TO SUPPLY>`. The specs fix only that the answer is from 0 to 999.
-- Whether a Divide card is drawn from the chosen times tables: `<TO SUPPLY>`.
-- How often each chosen kind is picked relative to the others: `<TO SUPPLY>`. The specs fix only
-  that each chosen kind appears in 100 cards.
-- Whether `4 × 6` and `6 × 4` count as the same card for `L2-008` criterion 6: `<TO SUPPLY>`.
+- Each chosen kind is picked as often as the others.
+- Times: a chosen table and a number from 1 to 12, the table on either side half of the time.
+  Plus: two numbers from 2 to 50. Minus: a left from 10 to 99 and a right from 1 to the left.
+  Divide: a divisor and a quotient from 1 to 12, `left` their product; the divisor is a chosen
+  times table while Times is on, and from 2 to 12 otherwise.
+- `4 × 6` and `6 × 4` are the same card, and so are two Plus cards with the same two numbers in
+  either order; Minus and Divide cards are the same only in the same order. The maker draws
+  again up to 10 times when it drew the last card, then moves the card's second number on by
+  one, so `next()` always ends.
+- `RandomSource.below(limit)` gives a whole number below the limit; the game binds it to
+  `Math.random` (`mathRandom`) and a unit test to a fixed sequence (`fixedRandom`).
 
 The mocks' sums (`6 × 4`, `7 × 8`, `144 ÷ 12`) are the cast, and no mock settles these points.
 
