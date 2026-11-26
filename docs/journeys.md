@@ -18,7 +18,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 04 | [Play a solo duel with the number pad](prompts/04-play-a-solo-duel.md) | Flash cards, classmates from profiles, first correct answer wins, wrong answers freeze. | 6 | 100% |
 | 05 | [Hop round the ring on the World Map](prompts/05-hop-round-the-ring.md) | Winners hop to the next desk, losers sit, the map shows everyone. | 4 | 100% |
 | 06 | [Finish the tour on the Podium](prompts/06-finish-on-the-podium.md) | Tour ends round the ring or on time; podium and passport. | 3 | 100% |
-| 07 | [Shout answers after the Mic Check](prompts/07-answer-by-voice.md) | Mic Check, spoken answers, and switching between voice and number pad. | 5 | 0% |
+| 07 | [Shout answers after the Mic Check](prompts/07-answer-by-voice.md) | Mic Check, spoken answers, and switching between voice and number pad. | 5 | 100% |
 | 08 | [Pause, leave and find the way back](prompts/08-pause-leave-and-recover.md) | Pause and leave dialogs, Back, Not Found and Something Went Wrong. | 3 | 0% |
 | 09 | [Draw the 3D classroom and its cast](prompts/09-draw-the-classroom.md) | Three.js classroom of country desks and animated kids, cheap on low power. | 8 | 0% |
 | 10 | [Feel the hop with motion and sound](prompts/10-motion-and-sound.md) | Hop and card flip animations, gentle losing, sounds, mute, reduced motion. | 4 | 0% |
@@ -33,7 +33,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 0% |
 | 20 | [Prove the game is safe for children](prompts/20-keep-children-safe.md) | Audit that nothing a child types or says leaves the device. | 3 | 0% |
 
-**Total effort:** 86 days. **Overall % complete:** 28% (24 of 86 days).
+**Total effort:** 86 days. **Overall % complete:** 34% (29 of 86 days).
 
 ## Where each journey comes from
 
