@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Around the World" width="420">
+</p>
+
 # Around the World
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
