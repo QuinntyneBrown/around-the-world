@@ -45,3 +45,4 @@ requirements and designs leave.
 | [0036](0036-coming-back-after-a-lost-connection.md) | Coming back after a lost connection: the 30 seconds, the retries, the removed player's desk, the banners and the overlay | Accepted |
 | [0037](0037-running-the-backend-deployed.md) | Running the backend deployed: Azure SignalR Service, the hosting platform, telemetry, health, the limits and the failures | Accepted |
 | [0038](0038-opening-fast-and-staying-smooth.md) | Opening fast and staying smooth: the profiles, the picture first, the way on, CDK Dialog, the measurements and the budgets | Accepted |
+| [0039](0039-every-screen-for-every-child.md) | Every screen for every child: the sweeps, axe-core, named breakpoints, Duel on a short phone and the fixes the sweeps found | Accepted |

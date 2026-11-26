@@ -20,12 +20,12 @@ box "Frontend — game application" #E0F2FE
   participant "GameSetupPage" as setup
   participant "DuelPage" as duel
   participant "RoomPage" as room
-  participant "messageForCode" as words
+  participant "joinRefusal" as words
 end box
 box "Frontend — components library" #E0F2FE
-  participant "ChoiceButton" as choice
-  participant "LiveRegion" as live
-  participant "AlertMessage" as alert
+  participant "ToggleChips" as choice
+  participant "Duel's live region" as live
+  participant "Alert" as alert
 end box
 box "Frontend — api library" #E0F2FE
   participant "GAME_SESSION" as session
@@ -34,20 +34,24 @@ end box
 == A choice ==
 actor -> choice : Press a kind of maths (touch, Space or Enter)
 choice --> setup : chosen
-setup -> choice : pressed = true
+setup -> choice : on includes it
 choice -> sr : aria-pressed="true" and a tick or a dot (L2-051 criterion 3)
 == A duel ==
 session --> duel : DuelState: new flash card, decided, or frozen
-duel -> duel : duelAnnouncement(DuelState)
+duel -> duel : DuelWords.announcement(DuelState)
 duel -> live : "New card: {flash card}. Shout it!", "Not {answer}. Frozen for one second." or a result
 live -> sr : Announce assertively (L2-051 criterion 4)
 == An error ==
 actor -> room : Join with a code
 room -> rooms : joinRoom(code, kid, nickname)
 rooms --> room : ApiError with code room_not_found
-room -> words : messageForCode(joinRoom, ApiError)
+room -> words : joinRefusal(ApiError)
 words --> room : "Hmm, no room with that code. Check the letters?"
 room -> alert : message; the input carries aria-invalid
 alert -> sr : role="alert" announces the words (L2-051 criterion 5)
 alert --> actor : The same words on the screen
+== The skip link ==
+actor -> duel : Tab, then Enter on "Skip to the game"
+duel -> duel : SkipLink focuses the main part (tabindex -1); the address stays
+duel --> actor : The next Tab goes on from the main part (L2-051 criterion 1)
 @enduml
