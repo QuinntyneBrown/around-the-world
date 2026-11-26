@@ -5,6 +5,8 @@ export interface PlayedAnimation {
   /** The keyframes' name, as the stylesheet names it (`flip-in`, `shake`, `fade-in`). */
   name: string;
   ms: number;
+  /** How long after the element appears it starts. */
+  delayMs: number;
   times: number;
 }
 
@@ -25,6 +27,7 @@ export function motionOf(locator: Locator): Promise<Motion> {
     const names = style.animationName.split(',').map((name) => name.trim());
     const lengths = style.animationDuration.split(',').map((length) => length.trim());
     const counts = style.animationIterationCount.split(',').map((count) => count.trim());
+    const delays = style.animationDelay.split(',').map((delay) => delay.trim());
     const ms = (length: string) =>
       length.endsWith('ms') ? parseFloat(length) : parseFloat(length) * 1000;
     return {
@@ -34,6 +37,7 @@ export function motionOf(locator: Locator): Promise<Motion> {
           // Angular scopes a component's keyframes with its own prefix; the name is the end.
           name: name.replace(/^.*_/, ''),
           ms: ms(lengths[index % lengths.length]),
+          delayMs: ms(delays[index % delays.length]),
           times: Number(counts[index % counts.length]),
         })),
       rotate: style.rotate,

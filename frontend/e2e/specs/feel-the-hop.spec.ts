@@ -1,11 +1,13 @@
-import { expect, test } from '../fixtures/test';
+import { type Page } from '@playwright/test';
+import { expect, test, type FakeClock, type FakeDevice, type FakeRandom } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
 import { HomePage } from '../pages/home.page';
 import { PauseDialog } from '../pages/pause.dialog';
+import { PodiumPage } from '../pages/podium.page';
 import { SettingsDialog } from '../pages/settings.dialog';
 import { WorldMapPage } from '../pages/world-map.page';
-import { named } from '../support/motion';
+import { named, type Motion } from '../support/motion';
 
 /**
  * Journey 10: feel the hop with motion and sound (L2-038, L2-039, L2-015). Motion is read from
@@ -15,6 +17,7 @@ import { named } from '../support/motion';
  */
 
 // A child who answers with the number pad, so Mic Check is skipped (L2-012 criterion 13).
+const SETUP = { kinds: ['times'], tables: [2, 3, 4, 5], tourLength: 6, cardSpeed: 'normal' };
 const ZURI = {
   version: 1,
   kid: 'zuri',
@@ -84,7 +87,7 @@ test.describe('Motion', () => {
     // Then the new flash card fades in within 200 ms, with no flip
     const card = await duel.cardMotion();
     expect(named(card, 'flip-in')).toBeUndefined();
-    expect(named(card, 'fade-in')?.ms).toBeGreaterThan(0);
+    expect(named(card, 'fade-in')?.ms).toBeGreaterThanOrEqual(100);
     expect(named(card, 'fade-in')?.ms).toBeLessThanOrEqual(200);
 
     // When the child gives a wrong answer
@@ -94,7 +97,7 @@ test.describe('Motion', () => {
     await expect(duel.result).toHaveText(`Not ${answer + 1}! Frozen for a sec…`);
     const frozen = await duel.cardMotion();
     expect(named(frozen, 'shake')).toBeUndefined();
-    expect(named(frozen, 'fade-back')?.ms).toBeGreaterThan(0);
+    expect(named(frozen, 'fade-back')?.ms).toBeGreaterThanOrEqual(100);
     expect(named(frozen, 'fade-back')?.ms).toBeLessThanOrEqual(200);
 
     // When the child answers right and "You got it!" has shown 1 second
@@ -107,8 +110,65 @@ test.describe('Motion', () => {
     const stamp = await duel.stampMotion();
     expect(stamp.rotate).toBe('none');
     expect(named(stamp, 'stamp-in')).toBeUndefined();
-    expect(named(stamp, 'fade-in')?.ms).toBeGreaterThan(0);
+    expect(named(stamp, 'fade-in')?.ms).toBeGreaterThanOrEqual(100);
     expect(named(stamp, 'fade-in')?.ms).toBeLessThanOrEqual(200);
+  });
+});
+
+test.describe('The Podium', () => {
+  /** Plays a tour of 12 desks to its time limit, so the Podium opens after a lost duel. */
+  async function reachThePodium(
+    page: Page,
+    device: FakeDevice,
+    clock: FakeClock,
+    random: FakeRandom,
+  ): Promise<PodiumPage> {
+    await device.keeps({ ...ZURI, setup: { ...SETUP, tourLength: 12 } });
+    await random.always(0);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    await duel.card();
+    await clock.pass(6 * 60_000);
+    await duel.sitPill.click();
+    await expect(new WorldMapPage(page).message).toHaveText('So close! You sit down at Egypt');
+    await clock.pass(1600);
+    const podium = new PodiumPage(page);
+    await expect(podium.headline).toBeVisible();
+    return podium;
+  }
+
+  const ofPlace = (motions: Motion[], name: string) => motions.map((motion) => named(motion, name));
+
+  test('the places rise in turn, third, second, first, each in under 300 ms', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    const podium = await reachThePodium(page, device, clock, random);
+    const [first, second, third] = ofPlace(await podium.placeMotions(), 'rise');
+    for (const place of [first, second, third]) expect(place?.ms).toBeLessThan(300);
+    expect(third!.delayMs).toBeLessThan(second!.delayMs);
+    expect(second!.delayMs).toBeLessThan(first!.delayMs);
+  });
+
+  test('with reduced motion the places fade in within 200 ms', async ({
+    page,
+    device,
+    clock,
+    random,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const podium = await reachThePodium(page, device, clock, random);
+    const motions = await podium.placeMotions();
+    expect(ofPlace(motions, 'rise').every((rise) => rise === undefined)).toBe(true);
+    for (const fade of ofPlace(motions, 'fade-in')) {
+      expect(fade?.ms).toBeGreaterThanOrEqual(100);
+      expect(fade?.ms).toBeLessThanOrEqual(200);
+    }
   });
 });
 
