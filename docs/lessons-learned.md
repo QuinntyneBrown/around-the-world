@@ -412,3 +412,87 @@ the lessons that fit.
   contract carries no transcript.
 - *A new game service method should reuse the start path* (06, 4): the first card after Mic
   Check is dealt by the same `begin` that "Play again" uses.
+
+## Journey 08: Pause, leave and find the way back
+
+**What slowed it.**
+
+- A modal CDK dialog hides the screen behind it from assistive technology, so the page object's
+  role locators (the timer bar) found nothing while Pause was open. A second locator with
+  `includeHidden` reads the screen behind a dialog; the usual one stays strict.
+- The browser's Back during a game was undesigned: from Duel it opened Game Setup over a game
+  whose clock ran on. Holding it with a `canDeactivate` guard needed the router's
+  `canceledNavigationResolution: 'computed'`, and CDK Dialog's `closeOnNavigation` then closed
+  the Pause dialog on the router's own restoring `popstate` until it was turned off (ADR 0027).
+- A spec that clicks a button whose dialog loads lazily and then presses Escape at once sends
+  the key before the dialog exists; each spec now waits for the dialog before acting on it.
+- An assertion that something did not happen while paused passes before the next tick of the
+  game's interval, so a broken pause could slip through. The specs check after "Keep playing",
+  when many ticks have run, and each was proved by breaking `pause()` by hand.
+- The leave-game dialog needs a game with friends, which journey 14 builds: its states are
+  proved by unit tests of the dialog and of Duel with a game of kind `friends`.
+
+**New lessons.**
+
+1. Put a rule that stops time on the one clock everything waits on: `GameClock.pause()` held
+   the card, the freeze, the classmates, the waits between screens and the tour's time limit
+   with no rule of their own.
+2. Design the browser's Back on every screen, not only the drawn Back button, and hold it with
+   a `canDeactivate` guard that reads the navigation's `trigger`, never one that blocks the
+   game's own navigations.
+3. Break the game in a spec through a browser API the fixture already owns (`random.breaks()`),
+   and declare the console error it expects; add no hook for tests to the product.
+4. Prove "nothing happened while paused" after the pause ends, once the clock has ticked many
+   times, rather than straight after moving the clock on.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` went from 270.72 kB to 271.38 kB with the error handler and the two routes.
+- *Check a fake once by hand* (01, 2): a `pause()` that did not stop the clock failed both pause
+  specs; `random.breaks()` was seen to fail the spec until the error page existed.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): Notice added; Dialog
+  (`closeLabel`, `closable`) and Icon (alert, globe, leave, pause, play) extended; each marked
+  in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0027 fills
+  the designs' gaps.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the Pause and leave-game
+  dialogs and both notice pages are their own lazy chunks.
+- *A link or button block is an attribute component* (02, 2): extended to Notice, on the page's
+  `<main>`, as Screen body is.
+- *Drive states through the fixture* (02, 3): extended with `random.breaks()`.
+- *An unreachable state gets a unit test of the page* (02, 4): the leave-game dialog's two
+  states and Duel's "Leave the game".
+- *Tag one spec per feature `@critical`* (02, 5): Pause and "Keep playing", and Not Found.
+- *Put the page in the group that provides its service* (03, 1): the Pause dialog is opened
+  with the solo group's injector, so it reaches the same `SoloGame`.
+- *Measure the initial bundle against the base commit* (03, 2): 270.72 kB before, 271.38 kB
+  after.
+- *A group of toggles is one component* (03, 3): not needed.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s unit tests prove the held time
+  limit, the held freeze, leaving, and a new game from Game Setup after the Podium.
+- *Drive game time from the wall clock* (04, 1): a paused game is proved by passing a minute.
+- *Prefer signals and outputs to `effect()`* (04, 2): `paused` is a signal Duel reads in a
+  `computed`; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the dialogs are found by their
+  names ("Paused"), and the close buttons by "Keep playing" and "Stay and play".
+- *Let a rule with chance take a `RandomSource`* (04, 5): not needed.
+- *Measure a template feature on the chunk table* (05, 1): no new template feature.
+- *Let the game service decide when the screen changes* (05, 2): "Go home" leaves the game and
+  opens Home; the navigator stops listening as the game stops.
+- *Work one example of a mock through the rule* (06, 1): the mock's "Your desk at Italy" is the
+  duel's desk, which is what the dialog names.
+- *Keep the placing table in one method* (06, 3): not needed.
+- *A new game service method should reuse the start path* (06, 4): "Go!" after the Podium drops
+  the ended tour and takes the same `start` path.
+- *Build CDK-mandated libraries once and read the chunk table* (07, 1): the dialogs reuse CDK
+  Dialog's chunk, and `main` did not grow from them.
+- *Start and stop a browser resource with the element that shows it* (07, 2): while paused
+  "Shout it!" is gone, so listening stops and starts again on "Keep playing".
+- *Give a fake every answer the browser can give* (07, 3): `voice.listening()` proves that
+  nothing listens while paused.
+- *Keep a contract's state where the whole game keeps it* (07, 4): `paused` lives in the
+  session, which the guard, Duel and the dialog share.
