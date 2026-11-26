@@ -12,6 +12,7 @@ export class HomePage {
   readonly changeKid: Locator;
   readonly noNamesLine: Locator;
   readonly status: Locator;
+  readonly settings: Locator;
 
   constructor(private readonly page: Page) {
     this.title = page.locator('h1.home__title');
@@ -24,6 +25,7 @@ export class HomePage {
     this.changeKid = this.kidChip.locator('.kid-chip__action');
     this.noNamesLine = page.getByText('No names, no sign-up. You pick a kid and get a game name.');
     this.status = page.getByRole('status');
+    this.settings = page.locator('.home__corner').getByRole('button', { name: 'Settings' });
   }
 
   async open(): Promise<void> {
