@@ -6,4 +6,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AroundTheWorld.UnitTests" />
+  </ItemGroup>
 </Project>
