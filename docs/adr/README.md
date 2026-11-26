@@ -32,8 +32,9 @@ requirements and designs leave.
 | [0023](0023-game-screens-follow-the-session.md) | The game screens follow the session through a listener, and World Map's room is drawn with the page | Accepted |
 | [0024](0024-ending-a-tour.md) | Ending a tour: the time limit, the places, the first stamp, the headline and Play again | Accepted |
 | [0025](0025-answering-by-voice.md) | Answering by voice: what is heard, on the device, when Mic Check shows and what a failure does | Accepted |
-| [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted |
+| [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted; `initial` warning superseded by 0031 |
 | [0027](0027-pausing-leaving-and-recovering.md) | Pausing, leaving and recovering: the held clock, Back during a game, Not Found and Something Went Wrong | Accepted |
 | [0028](0028-drawing-the-classroom.md) | Drawing the classroom: the scenes' format and paths, the stand-in, the countries, one plan for the room, the hop's look and the detail's steps | Accepted |
 | [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |
 | [0030](0030-classmates-with-the-on-device-model.md) | Classmates with the on-device model: readiness, the sessions, the prompts, the decision and its deadline | Accepted |
+| [0031](0031-making-a-room.md) | Making a room: the code, the token, the rate limit, the room's life and Solo Or Friends' states | Accepted |

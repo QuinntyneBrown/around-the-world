@@ -1,0 +1,40 @@
+// The room-code block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: block;
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.room-code__label {
+  font: var(--text-h4);
+  font-weight: var(--font-weight-medium);
+}
+
+.room-code__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.room-code__value {
+  font: var(--text-hero);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.room-code__hint {
+  margin-top: var(--space-2);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    padding: var(--space-6);
+  }
+
+  .room-code__value {
+    font-size: var(--font-size-7xl);
+  }
+}

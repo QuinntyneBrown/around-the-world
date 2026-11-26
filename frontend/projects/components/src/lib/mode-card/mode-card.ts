@@ -9,7 +9,8 @@ export type Mode = 'solo' | 'friends';
 /**
  * Mode card (docs/design-system/components/mode-card.html): one of the two ways to play on Solo
  * Or Friends, a panel with an icon, a title, one sentence, a picture of what you get
- * (`slot="art"`) and the actions at the bottom (`slot="actions"`). With `loading`, skeletons
+ * (`slot="art"`), the actions at the bottom (`slot="actions"`) and, below them, a note across
+ * the card (`slot="note"`): the alert of a room that could not be made, or a hint. With `loading`, skeletons
  * in its shape stand in and it is hidden from assistive technology; the screen's status says
  * what is arriving.
  */

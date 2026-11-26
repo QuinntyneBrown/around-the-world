@@ -4,6 +4,10 @@
     <ProjectReference Include="..\AroundTheWorld.Infrastructure\AroundTheWorld.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The design-time services `dotnet ef migrations add` needs; never shipped. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="AroundTheWorld.Api.Tests" />
   </ItemGroup>
 </Project>

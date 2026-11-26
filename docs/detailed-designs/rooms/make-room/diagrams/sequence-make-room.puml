@@ -17,7 +17,7 @@ skinparam package {
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
   participant "SoloOrFriendsPage" as page
-  participant "FriendsGame" as session
+  participant "Visit" as session
 end box
 box "Frontend — api" #E0F2FE
   participant "RoomsApi" as client
@@ -36,7 +36,7 @@ end box
 actor -> page : Choose "Make a room"
 page --> actor : "Make a room" busy, reads "Making…"; "Join a room" disabled (L2-022 criterion 5)
 page -> client : makeRoom(kid, nickname indexes)
-client -> controller : POST /rooms
+client -> controller : POST /api/rooms
 alt the backend cannot be reached (L2-022 criterion 3)
   client --> page : ApiError backend_unreachable
   page --> actor : Alert "We couldn't make your room", "Try again"; stay on Solo Or Friends
@@ -47,7 +47,7 @@ else the address is over the rate limit (L2-022 criterion 4)
 else the room is made
   controller -> handler : Send MakeRoomCommand (validated, L2-044)
   loop until the code is held by no room
-    handler -> codes : Next()
+    handler -> codes : Draw()
     codes --> handler : 4 capital letters, not a blocked word (L2-022 criterion 2)
     handler -> db : Look for a room with this code
     db --> handler : Found or not found

@@ -23,7 +23,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 09 | [Draw the 3D classroom and its cast](prompts/09-draw-the-classroom.md) | Three.js classroom of country desks and animated kids, cheap on low power. | 8 | 100% |
 | 10 | [Feel the hop with motion and sound](prompts/10-motion-and-sound.md) | Hop and card flip animations, gentle losing, sounds, mute, reduced motion. | 4 | 100% |
 | 11 | [Let Gemini Nano drive the classmates](prompts/11-classmates-with-gemini-nano.md) | On-device model picks classmates' answers and timing; profiles stay the fallback. | 3 | 100% |
-| 12 | [Make a room as host](prompts/12-make-a-room.md) | Make a room with a 4-letter code and open the Lobby. | 5 | 0% |
+| 12 | [Make a room as host](prompts/12-make-a-room.md) | Make a room with a 4-letter code and open the Lobby. | 5 | 100% |
 | 13 | [Join a room and wait in the Lobby](prompts/13-join-and-wait-in-lobby.md) | Type a code, join friends, and watch the desks fill live. | 5 | 0% |
 | 14 | [Play a game with friends in real time](prompts/14-play-with-friends.md) | Host sets up and starts; the server decides every duel for everyone. | 8 | 0% |
 | 15 | [Watch a duel and send a sticker](prompts/15-watch-and-send-stickers.md) | Watching players see each duel live and send one of six stickers. | 3 | 0% |
@@ -33,7 +33,7 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 0% |
 | 20 | [Prove the game is safe for children](prompts/20-keep-children-safe.md) | Audit that nothing a child types or says leaves the device. | 3 | 0% |
 
-**Total effort:** 86 days. **Overall % complete:** 55% (47 of 86 days).
+**Total effort:** 86 days. **Overall % complete:** 60% (52 of 86 days).
 
 ## Where each journey comes from
 

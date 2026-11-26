@@ -1,0 +1,6 @@
+@for (player of players(); track player.id) {
+  <li atw-player-card [player]="player"></li>
+}
+@for (desk of emptyDesks(); track desk) {
+  <li atw-player-card></li>
+}

@@ -31,6 +31,7 @@ import { Duel, type DuelSide } from './duel';
 import { GameClock } from './game-clock';
 import { GameSetupRules } from './game-setup-rules';
 import { timeLimitMs, Tour } from './tour';
+import { loadClassmateAgent } from '../classmates/load-classmate-agent';
 
 /** How often the game's clock ticks, and the timer bar moves (docs/adr/0020). */
 export const TICK_MS = 100;
@@ -158,7 +159,7 @@ export class SoloGame implements GameSession {
 
   private loadAgents(): void {
     // The classmates' agents load on their own; the first card never waits for them (ADR 0019).
-    void import('../classmates/classmate-agent').then(({ ClassmateAgent }) => {
+    void loadClassmateAgent().then(({ ClassmateAgent }) => {
       if (this.destroyed) return;
       this.agentType = ClassmateAgent;
       this.makeAgents();

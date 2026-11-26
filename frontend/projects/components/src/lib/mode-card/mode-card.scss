@@ -53,6 +53,15 @@
   }
 }
 
+// What the card says about its actions: an alert or a hint, across the card below them.
+.mode-card__note {
+  margin-top: var(--space-3);
+
+  &:empty {
+    display: none;
+  }
+}
+
 // The loading state: skeletons in the shape of the card.
 .mode-card__title-skeleton {
   flex: 1;

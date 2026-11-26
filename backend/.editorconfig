@@ -21,3 +21,7 @@ indent_size = 2
 dotnet_diagnostic.CA1707.severity = none
 # xUnit test classes are discovered by reflection and need not be sealed or static.
 dotnet_diagnostic.CA1515.severity = none
+
+# EF Core writes the migrations; they are generated code, not formatted by hand.
+[src/AroundTheWorld.Infrastructure/Persistence/Migrations/*.cs]
+generated_code = true

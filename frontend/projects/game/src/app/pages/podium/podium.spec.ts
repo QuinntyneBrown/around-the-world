@@ -81,6 +81,9 @@ describe('PodiumPage', () => {
       finishMicCheck: () => undefined,
       voiceLost: signal(false),
       loseVoice: () => undefined,
+      room: signal(null),
+      enterRoom: () => undefined,
+      leaveRoom: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [

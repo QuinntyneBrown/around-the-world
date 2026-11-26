@@ -1,4 +1,9 @@
 <atw-screen>
+  @if (!online()) {
+    <atw-alert tone="warning" icon="wifi-off" [banner]="true">
+      <p><strong>You’re offline.</strong> You can still play solo.</p>
+    </atw-alert>
+  }
   <header atw-top-bar heading="Who’s playing?">
     <a atw-icon-button slot="back" icon="back" routerLink="/kid" aria-label="Back"></a>
   </header>
@@ -45,9 +50,15 @@
             type="button"
             variant="friends"
             [block]="true"
-            disabled
+            [disabled]="!canMakeRoom() && !making()"
+            [attr.aria-busy]="making() || null"
+            (click)="makeRoom()"
           >
-            Make a room
+            @if (making()) {
+              <atw-spinner /> Making…
+            } @else {
+              Make a room
+            }
           </button>
           <button
             atw-toy-button
@@ -59,6 +70,38 @@
           >
             Join a room
           </button>
+          @if (!online()) {
+            <p slot="note" class="hint">Playing with friends needs the internet.</p>
+          } @else if (refusal() === 'rate-limited') {
+            <atw-alert
+              slot="note"
+              tone="warning"
+              icon="clock"
+              heading="Whoa, slow down a moment"
+              [urgent]="true"
+            >
+              <p>That’s a lot of rooms! Wait a little, then try again.</p>
+            </atw-alert>
+          } @else if (refusal() === 'error') {
+            <atw-alert
+              slot="note"
+              tone="danger"
+              icon="alert"
+              heading="We couldn’t make your room"
+              [urgent]="true"
+            >
+              <p>Something went wrong on our side. Try again, or play solo while you wait.</p>
+              <button
+                atw-text-button
+                slot="actions"
+                type="button"
+                icon="retry"
+                (click)="makeRoom()"
+              >
+                Try again
+              </button>
+            </atw-alert>
+          }
         </atw-mode-card>
       </div>
     </main>

@@ -1,0 +1,15 @@
+// The Lobby's own layout (docs/mocks/pages/lobby/): the start control at the foot of its
+// column, its hint under it, and the count beside "In the classroom".
+.lobby__start {
+  margin-top: auto;
+}
+
+.lobby__hint {
+  color: var(--color-fg-muted);
+  text-align: center;
+}
+
+.lobby__count {
+  font: var(--text-h4);
+  color: var(--color-fg-muted);
+}
