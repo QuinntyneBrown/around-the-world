@@ -36,6 +36,28 @@ public sealed class RoomPlayer
 
     public DateTimeOffset JoinedAt { get; private set; }
 
+    /// <summary>The id of the SignalR connection that last presented the player's token (docs/adr/0036).</summary>
+    public string? ConnectionId { get; private set; }
+
+    /// <summary>When the player's connection was lost, while their spot is held; null while connected.</summary>
+    public DateTimeOffset? AwaySince { get; private set; }
+
+    /// <summary>Whether the player has been away for the time their spot is held, at that time.</summary>
+    public bool IsAbsentAt(DateTimeOffset now) => AwaySince is { } since && now - since >= Room.SpotHeldFor;
+
     /// <summary>Marks the player as the host, when the host left (L2-025 criterion 5).</summary>
     internal void BecomeHost() => IsHost = true;
+
+    internal void Bind(string connectionId) => (ConnectionId, AwaySince) = (connectionId, null);
+
+    internal bool MarkAway(string connectionId, DateTimeOffset now)
+    {
+        if (ConnectionId != connectionId || AwaySince is not null)
+        {
+            return false;
+        }
+
+        AwaySince = now;
+        return true;
+    }
 }

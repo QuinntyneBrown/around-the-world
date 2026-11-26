@@ -56,6 +56,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasMaxLength(43)
                 .IsUnicode(false);
             player.HasIndex(p => p.Token).IsUnique();
+            // The room's timers find the players away for 30 seconds by this column (docs/adr/0036).
+            player.Property(p => p.ConnectionId).HasMaxLength(64).IsUnicode(false);
+            player.HasIndex(p => p.AwaySince);
         });
     }
 }

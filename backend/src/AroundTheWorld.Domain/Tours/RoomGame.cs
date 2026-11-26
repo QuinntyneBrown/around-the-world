@@ -46,11 +46,16 @@ public sealed class GamePlayer
 
     public bool IsClassmate => PlayerId is null;
 
+    /// <summary>A player removed after 30 seconds away: their desk is empty and nobody plays for them (docs/adr/0036).</summary>
+    public bool Removed { get; private set; }
+
     /// <summary>A player who left: a classmate takes their place from now on (docs/adr/0033).</summary>
     internal void BecomeClassmate(int pacePercent)
     {
         (PlayerId, Kid, Nickname, PacePercent) = (null, null, null, pacePercent);
     }
+
+    internal void Remove() => Removed = true;
 }
 
 /// <summary>A classmate's answer, given when its time comes (docs/adr/0033).</summary>
@@ -275,6 +280,50 @@ public sealed class RoomGame
         {
             Pending.Add(new PendingAnswer(leaving.Id, Duel.Card.Answer(), at + ClassmateTime(leaving)));
         }
+    }
+
+    /// <summary>
+    /// A player away for 30 seconds is removed (L2-029 criterion 4, docs/adr/0036): the ring empties
+    /// their desk and moves on without them, and an open duel that held them shows its answer as a
+    /// card nobody answered does, the next card coming <see cref="TimeUpFor"/> later.
+    /// </summary>
+    public void Remove(Guid playerId, DateTimeOffset at)
+    {
+        var removed = Players.Find(player => player.PlayerId == playerId);
+        if (removed is null || removed.Removed || Phase == GamePhase.Over)
+        {
+            return;
+        }
+
+        removed.Remove();
+        var inOpenDuel = Phase == GamePhase.Duel && Duel?.SideOf(removed.Id) is not null;
+        Tour.Remove(removed.Id, at);
+        if (inOpenDuel)
+        {
+            Duel!.TimeOut();
+            Pending.Clear();
+            (Phase, DecidedAt, NextCardAt) = (GamePhase.TimeUp, at, at + TimeUpFor);
+        }
+    }
+
+    /// <summary>
+    /// Fewer than two players remain after a removal: the tour ends, an open card shows its answer,
+    /// and whoever travelled furthest wins (L2-029 criterion 5, docs/adr/0036).
+    /// </summary>
+    public void EndAsEveryoneLeft(DateTimeOffset at)
+    {
+        if (Phase == GamePhase.Over)
+        {
+            return;
+        }
+
+        if (Phase == GamePhase.Duel)
+        {
+            Duel!.TimeOut();
+        }
+
+        Pending.Clear();
+        (Ending, Phase, DecidedAt, NextCardAt) = (TourEnding.EveryoneLeft, GamePhase.Over, at, null);
     }
 
     private void Deal(DateTimeOffset at, IRandomSource random)

@@ -8,9 +8,10 @@ public sealed record CardDto(string Kind, int Left, int Right);
 
 /// <summary>
 /// One player of the game as every device sees them: a room's player by id, kid and nickname's
-/// indexes, or a classmate (<c>classmate</c>); their distance travelled and their stamps.
+/// indexes, or a classmate (<c>classmate</c>); their distance travelled, their stamps, and whether
+/// they were removed after 30 seconds away (docs/adr/0036).
 /// </summary>
-public sealed record GamePlayerDto(string Id, string Kid, NicknameDto? Nickname, int Distance, IReadOnlyList<int> Stamps);
+public sealed record GamePlayerDto(string Id, string Kid, NicknameDto? Nickname, int Distance, IReadOnlyList<int> Stamps, bool Removed);
 
 /// <summary>
 /// The duel of the last card dealt. While it is open it holds no answer; the time left and each
@@ -77,7 +78,8 @@ public sealed record GameStateDto(
                 player.Kid is { } kid ? RoomStateDto.Wire(kid) : "classmate",
                 player.Nickname is { } nickname ? new NicknameDto(nickname.Adjective, nickname.Animal) : null,
                 tour.DistanceOf(player.Id),
-                [.. tour.StampsOf(player.Id)]))],
+                [.. tour.StampsOf(player.Id)],
+                player.Removed))],
             [.. tour.Holders],
             tour.Traveller,
             tour.Desk,

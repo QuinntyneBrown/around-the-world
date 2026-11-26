@@ -1,4 +1,5 @@
 using AroundTheWorld.Application.Rooms.AdvanceGames;
+using AroundTheWorld.Application.Rooms.RemoveAbsentPlayers;
 using MediatR;
 
 namespace AroundTheWorld.Api.Rooms;
@@ -8,8 +9,9 @@ namespace AroundTheWorld.Api.Rooms;
 /// on <see cref="TimeProvider"/> it brings each playing room whose game is due up to now, so a
 /// card is dealt, a classmate answers and a card's time runs out without a player's message. A
 /// test advances a fake clock rather than waiting. Every instance runs it; the room's concurrency
-/// token lets one instance's save of a room stand. A failed tick is logged without any detail of a
-/// room and tried again at the next.
+/// token lets one instance's save of a room stand. After the games it removes each player whose
+/// connection has been lost for 30 seconds (docs/adr/0036). A failed tick is logged without any
+/// detail of a room and tried again at the next.
 /// </summary>
 public sealed partial class RoomTimers(IServiceScopeFactory scopes, TimeProvider clock, ILogger<RoomTimers> logger)
     : BackgroundService
@@ -22,16 +24,23 @@ public sealed partial class RoomTimers(IServiceScopeFactory scopes, TimeProvider
         using var timer = new PeriodicTimer(Every, clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            try
-            {
-                await using var scope = scopes.CreateAsyncScope();
-                var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-                await sender.Send(new AdvanceGamesCommand(clock.GetUtcNow()), stoppingToken);
-            }
-            catch (Exception failure) when (failure is not OperationCanceledException)
-            {
-                LogTickFailed(logger, failure.GetType().Name);
-            }
+            var now = clock.GetUtcNow();
+            await SendAsync(new AdvanceGamesCommand(now), stoppingToken);
+            await SendAsync(new RemoveAbsentPlayersCommand(now), stoppingToken);
+        }
+    }
+
+    private async Task SendAsync(IRequest<int> tick, CancellationToken stoppingToken)
+    {
+        try
+        {
+            await using var scope = scopes.CreateAsyncScope();
+            var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+            await sender.Send(tick, stoppingToken);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            LogTickFailed(logger, failure.GetType().Name);
         }
     }
 

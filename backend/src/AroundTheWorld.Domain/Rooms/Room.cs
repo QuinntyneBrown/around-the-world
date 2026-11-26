@@ -22,6 +22,9 @@ public sealed class Room
     /// <summary>A room nobody has done anything in for this long is deleted (L2-027 criterion 4, to confirm).</summary>
     public static readonly TimeSpan IdleLimit = TimeSpan.FromMinutes(10);
 
+    /// <summary>A player whose connection is lost keeps their spot this long (L2-029, L2-043 criterion 4).</summary>
+    public static readonly TimeSpan SpotHeldFor = TimeSpan.FromSeconds(30);
+
     private readonly List<RoomPlayer> _players = [];
 
     private Room()
@@ -118,7 +121,7 @@ public sealed class Room
 
         if (player.IsHost && _players.Count > 0)
         {
-            _players.MinBy(other => other.JoinedAt)!.BecomeHost();
+            EarliestJoiner().BecomeHost();
         }
 
         Touch(now);
@@ -238,6 +241,83 @@ public sealed class Room
         Touch(now);
         return true;
     }
+
+    /// <summary>
+    /// The player's token was presented on a new connection: it is bound to the same player, whose
+    /// spot (desk, role and distance) is as it was, and the player is no longer away (L2-029
+    /// criterion 2, L2-043 criterion 4, docs/adr/0036).
+    /// </summary>
+    public void Return(RoomPlayer player, string connectionId)
+    {
+        player.Bind(connectionId);
+        Version = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// A connection was lost: the player is away from now, when it was their current connection.
+    /// The game does not wait for them (L2-029 criterion 3). Answers whether they are now away.
+    /// </summary>
+    public bool MarkAway(RoomPlayer player, string connectionId, DateTimeOffset now)
+    {
+        if (!player.MarkAway(connectionId, now))
+        {
+            return false;
+        }
+
+        Version = Guid.NewGuid();
+        return true;
+    }
+
+    /// <summary>
+    /// Removes every player away for <see cref="SpotHeldFor"/> or more (L2-029 criteria 4, 5 and
+    /// 6, docs/adr/0036). In a game, the game is first brought up to now, each removed player's
+    /// desk is emptied, and the tour ends when fewer than two players remain; in the Lobby and on
+    /// the Podium they leave as "Leave the room" does. The host mark passes to the earliest joiner
+    /// left. Answers the players removed.
+    /// </summary>
+    public IReadOnlyList<RoomPlayer> RemoveAbsent(DateTimeOffset now, IRandomSource random)
+    {
+        var absent = _players.Where(player => player.IsAbsentAt(now)).ToList();
+        if (absent.Count == 0)
+        {
+            return absent;
+        }
+
+        if (Status == RoomStatus.Playing)
+        {
+            Game?.Advance(now, random);
+        }
+
+        foreach (var player in absent)
+        {
+            _players.Remove(player);
+            if (Status == RoomStatus.Playing)
+            {
+                Game?.Remove(player.Id, now);
+            }
+
+            if (player.IsHost && _players.Count > 0)
+            {
+                EarliestJoiner().BecomeHost();
+            }
+        }
+
+        if (Status == RoomStatus.Playing && _players.Count < 2)
+        {
+            Game?.EndAsEveryoneLeft(now);
+        }
+
+        if (Status == RoomStatus.Playing)
+        {
+            Settle();
+        }
+
+        Touch(now);
+        return absent;
+    }
+
+    /// <summary>The player who joined earliest, by the place they took when two joined at the same time.</summary>
+    private RoomPlayer EarliestJoiner() => _players.OrderBy(player => player.JoinedAt).ThenBy(player => player.Position).First();
 
     private void Settle()
     {
