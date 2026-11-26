@@ -339,3 +339,76 @@ the lessons that fit.
 - *Work out a rule with chance at its start* (05, 5): "Back to the card" ends the tour at once
   when a classmates' duel played out reaches the time limit.
 
+
+## Journey 07: Shout answers after the Mic Check
+
+**What slowed it.**
+
+- CDK Dialog, which `AGENTS.md` requires, put 14.7 kB of `@angular/core` and RxJS into `main`
+  although `@angular/cdk` and the dialog load lazily on the first press of the settings button.
+  The initial budget moved to 272 kB (ADR 0026); no other route kept CDK out of `main`.
+- The CDK overlay's pane is a popover whose dialog container had no size while the dialog's
+  backdrop and panel were `position: fixed`, so Playwright saw the dialog as hidden. A pane
+  that fills the screen, filled by the dialog, fixed it and kept the sheet-or-card layout in CSS.
+- Every earlier spec that pressed "Go!" met Mic Check, since the fake browser has speech
+  recognition. The specs of the number pad now keep `wayOfAnswering: 'numberPad'` (Mic Check is
+  skipped, `L2-012` criterion 13), and journey 03's critical path a browser with no recognition.
+- Waits between screens passed too quickly in a row (`clock.pass` three times without an
+  `expect` between) left World Map on screen: each wait is scheduled when the one before it
+  fires, so a spec waits for each screen before moving the clock on.
+
+**New lessons.**
+
+1. Before choosing a library a rule mandates (CDK Dialog), build it once and read the chunk
+   table: a lazily loaded library still moves the framework code it calls into `main`.
+2. Start and stop a browser resource with the element that shows it: a directive on the
+   "Shout it!" pill listens while it exists, so every rule that hides the pill (a freeze, a
+   decided duel, the pad, leaving Duel) stops recognition, with no effect.
+3. Give a fake every answer the browser can give, and the time it takes: a question held open
+   (`microphone.ask()`), silence, a failure, and counts of what is still open
+   (`voice.listening()`, `microphone.openStreams()`) to prove a release.
+4. Keep a contract's state where the whole game keeps it (`PlayerChoices`, `Visit`), so a
+   service a lazy route binds (the way of answering, on Home and in the solo group) can be
+   bound more than once without disagreeing.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): it showed CDK's cost at the first build.
+- *Check a fake once by hand* (01, 2): Mic Check's "no speech", the freeze that stops listening
+  and the refusal on "Shout instead" were each broken by hand and failed their specs.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): Listener, LevelMeter with
+  Shout, Spinner, Switch and Dialog added; Icon extended (mic, mic off, keypad, settings,
+  close); each marked in `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0025 fills the designs'
+  gaps; ADR 0026 records CDK Dialog's cost and leaves the native `<dialog>` to journey 18.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the speech code is its own
+  2.9 kB chunk (`speech-voice-answer`), and Settings with CDK its own (`open-settings`).
+- *A link or button block is an attribute component* (02, 2): "Shout it!" is `p[atw-shout]`.
+- *Drive states through the fixture* (02, 3): extended with the voice and microphone fakes.
+- *An unreachable state gets a unit test of the page* (02, 4): not needed; every state is
+  reached through the fakes.
+- *Tag one spec per feature `@critical`* (02, 5): Mic Check hears "Ready!" and opens the card.
+- *Put the page in the group that provides its service* (03, 1): Mic Check is in the solo group,
+  which binds the voice and the way of answering.
+- *Measure the initial bundle against the base commit* (03, 2): a worktree build and the stats'
+  inputs located every byte of the growth before ADR 0026.
+- *A group of toggles is one component* (03, 3): not needed.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s unit test proves that the first
+  card waits for Mic Check and that the classmates still answer.
+- *Drive game time from the wall clock* (04, 1): criterion 8 is proved by passing 10 seconds on
+  Mic Check and reading a full timer bar.
+- *Prefer signals and outputs to `effect()`* (04, 2): listening follows the page through a
+  directive's life, and the contract is a listener (ADR 0025).
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the switch's description and
+  the dialog's name.
+- *Let a rule with chance take a `RandomSource`* (04, 5): not needed.
+- *Measure a template feature on the chunk table* (05, 1): CDK measured (lesson 1 above).
+- *Let the game service decide when the screen changes* (05, 2): leaving Mic Check calls
+  `continue()`, and the navigator opens Duel.
+- *Work one example of a mock through the rule* (06, 1): the mocks' "“Ready!”" holds, since the
+  contract carries no transcript.
+- *A new game service method should reuse the start path* (06, 4): the first card after Mic
+  Check is dealt by the same `begin` that "Play again" uses.
