@@ -1,10 +1,13 @@
+using AroundTheWorld.Domain.Tours;
+
 namespace AroundTheWorld.Domain.Rooms;
 
-/// <summary>Whether a room's players are waiting in the Lobby or playing.</summary>
+/// <summary>Whether a room's players are waiting in the Lobby, playing, or on the Podium.</summary>
 public enum RoomStatus
 {
     Waiting,
     Playing,
+    Over,
 }
 
 /// <summary>
@@ -36,6 +39,12 @@ public sealed class Room
     public DateTimeOffset LastActivityAt { get; private set; }
 
     public IReadOnlyList<RoomPlayer> Players => _players;
+
+    /// <summary>The game being played, or the one just over while the Podium is shown; null while waiting.</summary>
+    public RoomGame? Game { get; private set; }
+
+    /// <summary>When the game next needs the server's clock, so the room's timers find it (docs/adr/0033).</summary>
+    public DateTimeOffset? GameDueAt { get; private set; }
 
     /// <summary>
     /// Changes with every change to the room's players, so the store refuses the second of two
@@ -100,6 +109,13 @@ public sealed class Room
             throw new RoomRuleException(RoomRule.NotInRoom);
         }
 
+        // During a game a classmate takes the player's place, and the race carries on (ADR 0033).
+        if (Status == RoomStatus.Playing)
+        {
+            Game?.Leave(player.Id, now);
+            GameDueAt = Game?.DueAt;
+        }
+
         if (player.IsHost && _players.Count > 0)
         {
             _players.MinBy(other => other.JoinedAt)!.BecomeHost();
@@ -131,10 +147,16 @@ public sealed class Room
 
     /// <summary>
     /// The host starts the game once at least two players are in the room (L2-025 criteria 1,
-    /// 2 and 4). Journey 14 makes the tour; until then the room is only marked playing.
+    /// 2 and 4): the host travels from desk 1 and the others hold the next desks in the order they
+    /// joined (L2-007 criterion 8, docs/adr/0033).
     /// </summary>
     public void Start(RoomPlayer by, DateTimeOffset now)
     {
+        if (Status != RoomStatus.Waiting)
+        {
+            throw new RoomRuleException(RoomRule.GameStarted);
+        }
+
         if (!by.IsHost)
         {
             throw new RoomRuleException(RoomRule.NotHost);
@@ -146,7 +168,75 @@ public sealed class Room
         }
 
         Status = RoomStatus.Playing;
+        var order = _players.OrderByDescending(player => player.IsHost).ThenBy(player => player.Position).ToList();
+        Game = RoomGame.Start(Setup, order, now);
+        GameDueAt = Game.DueAt;
         Touch(now);
+    }
+
+    /// <summary>
+    /// A player's answer, as a number, at the time it arrived; the game decides it (L2-026). A room
+    /// that is not playing refuses with <see cref="RoomRule.NotPlaying"/>.
+    /// </summary>
+    public AnswerResult Answer(RoomPlayer by, int value, DateTimeOffset at, IRandomSource random)
+    {
+        if (Status != RoomStatus.Playing || Game is null)
+        {
+            throw new RoomRuleException(RoomRule.NotPlaying);
+        }
+
+        var result = Game.Answer(by.Id.ToString(), value, at, random);
+        Settle();
+        Touch(at);
+        return result;
+    }
+
+    /// <summary>
+    /// Runs what the game's clock has made due by now: a card, a classmate's answer, a card's time
+    /// running out (docs/adr/0033). Time passing is not activity. Answers whether anything changed.
+    /// </summary>
+    public bool AdvanceGame(DateTimeOffset now, IRandomSource random)
+    {
+        if (Status != RoomStatus.Playing || Game is null || !Game.Advance(now, random))
+        {
+            return false;
+        }
+
+        Settle();
+        Version = Guid.NewGuid();
+        return true;
+    }
+
+    /// <summary>
+    /// "Play again" from the Podium: the room returns to its Lobby with the same players, host and
+    /// setup (L2-035 criterion 3, docs/adr/0033). Answers whether it changed: the first player's
+    /// choice returns it, and any later one finds it waiting already.
+    /// </summary>
+    public bool PlayAgain(DateTimeOffset now)
+    {
+        if (Status == RoomStatus.Waiting)
+        {
+            return false;
+        }
+
+        if (Status != RoomStatus.Over)
+        {
+            throw new RoomRuleException(RoomRule.NotOver);
+        }
+
+        (Status, Game, GameDueAt) = (RoomStatus.Waiting, null, null);
+        Touch(now);
+        return true;
+    }
+
+    private void Settle()
+    {
+        if (Game?.Phase == GamePhase.Over)
+        {
+            Status = RoomStatus.Over;
+        }
+
+        GameDueAt = Game?.DueAt;
     }
 
     private void Touch(DateTimeOffset now)
