@@ -63,6 +63,9 @@ Rules in the `domain` library (`@atw/domain`), folder `tour/`:
     so they are on again when Times is turned on again (`L2-016` criterion 6).
   - `read(value)` returns a setup read back from the device when every value is one Game Setup
     offers, and null otherwise, so the defaults stand in (`L2-015` criterion 2).
+  - `defaults` and `read` live in `tour/game-setup.ts`, which the store of the player's
+    choices uses when the game opens; the rest load with Game Setup's chunk, so the initial
+    bundle carries only what reading the device needs.
   - `describeTour(length)` returns the tour's name and about how long it takes: Quick hop,
     about 2 minutes; Round the world, about 5; Grand tour, about 10 (`L2-017` criterion 2).
     `secondsPerCard(speed)` returns 10, 6 or 3 (`L2-017` criterion 3).
