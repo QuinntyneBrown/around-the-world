@@ -880,3 +880,80 @@ the lessons that fit.
 - *Await a background job through a pipeline behaviour* (12, 4): hub tests await each room state
   through a client that records what arrived, by what it holds.
 - *Record what the game sent* (12, 5): the join's body and the tokens the connections presented.
+
+## Journey 14: Play a game with friends in real time
+
+**What slowed it.**
+
+- The rules live on the device for a solo game and had to be written again on the server for a
+  game with friends. One table of cases (`docs/specs/tour-cases.json`), played by a Vitest spec
+  of `domain` and an xUnit theory of the backend, keeps the two equal; the device's rules passed
+  every case first, which proved the table, and the server's port then failed only where it was
+  broken by hand (a freeze ending one millisecond late failed two cases) (ADR 0033).
+- The design's seven hub events (`GameStarted`, `FlashCardShown`, `DuelDecided`…) would each have
+  needed a handler and a fake. One `GameChanged` carrying the whole game, with durations left
+  rather than the server's times, let the device keep the last state only and let a pure helper
+  (`FriendsView`) work out the duel, the tour, the result and the screen from it.
+- A mutable domain object stored as a JSON column is not seen as changed by EF Core unless the
+  converter has a `ValueComparer` that compares and snapshots it by its JSON; the domain's
+  private setters are written through a `System.Text.Json` resolver modifier in Infrastructure,
+  so the domain knows nothing of storage.
+- A hosted service on `PeriodicTimer` with `FakeTimeProvider` runs at the final time of an
+  `Advance`, so every event of the game (the first card, a classmate's answer, a card's time)
+  runs at its own due time inside `RoomGame.Advance`, in order, however late the tick.
+- `RoomHubClient.WaitForAsync` returned the first matching state ever received, so "the room
+  waiting again" matched the Lobby before the race; `WaitForNextAsync` waits from now on.
+- `RoomSession.start` and `GameSession.start` clashed on `FriendsGame`, which implements both;
+  the Lobby's is `startRace`.
+- The backend's code for every slice, and the frontend's for slices 2 to 6, was written before
+  their specs ran, so most specs were green on their first run. Each was broken by hand (the
+  room's timers not registered; the loser's World Map, the Podium's lost room and Mic Check
+  switched off) and failed for the expected reason.
+
+**New lessons.**
+
+1. When the server and the device must apply the same rules, write one table of cases in a
+   neutral file both test projects read, and let the table name the requirement of each case.
+2. Send a real-time game as one state with durations left, not as events with the server's
+   times: a device then needs no clock of the server's, keeps one state, and a missed message
+   is put right by the next.
+3. Give a hosted service's work a "due at" column with an index and let the domain run every
+   event due by `now` at its own time, so a fake clock moved in one step plays out exactly.
+4. Store a domain aggregate as JSON only with a value comparer that snapshots it, or EF Core
+   saves nothing of a change made in place.
+5. A test helper that waits for "a state like this" must say whether it means any received so
+   far or the next one; offer both.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build.
+- *Check a fake once by hand* (01, 2): the room's timers, the freeze, the loser's World Map,
+  the Podium's lost room and Mic Check were each broken by hand.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): no new component; Icon
+  (`sliders`) and TableKeys (`locked`) extended; Alert, Spinner, Skeleton, TextButton and
+  ToyButton reused in the Lobby, Game Setup and Podium in a room.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADRs 0033 and
+  0034 fill the designs' gaps. `L2-030` criterion 8 (Mic Check's Back to the Lobby) was changed,
+  since the race has started when Mic Check shows.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): `main` grew 0.15 kB, the
+  room guard; everything else is in the room group's chunks.
+- *Drive states through the fixture* (02, 3): `roomHub` gained `game`, `invocations`,
+  `holdBackMethod`, `refusesMethod` and `acceptsMethod`.
+- *Tag one spec per feature `@critical`* (02, 5): the host starts, answers, hops and ends on the
+  Podium.
+- *Put the page in the group that provides its service* (03, 1): Game Setup, Mic Check, Duel,
+  World Map and the Podium join the room group, which provides `GAME_SESSION`.
+- *Drive game time from the wall clock* (04, 1): `FriendsGame` counts durations left on
+  `GameClock`, so `clock.pass` moves the timer bar, the freeze and the screens.
+- *Prefer signals and outputs to `effect()`* (04, 2): no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let the game service decide when the screen changes* (05, 2): `FriendsView.screen` decides it,
+  and the navigator listens.
+- *Design the browser's Back on every screen* (08, 2): Back on Duel and World Map asks "Leave the
+  game?" in a race.
+- *Prove a backend rule through a store double* (13, 2): two answers saved together are proved
+  with `WithFirstSaveRacedBy` over the hub.
+- *Fake a real-time channel at its protocol* (13, 4): the fake hub completes, holds and refuses
+  invocations as SignalR does.

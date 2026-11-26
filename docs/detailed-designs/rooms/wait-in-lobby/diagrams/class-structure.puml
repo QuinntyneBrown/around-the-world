@@ -37,7 +37,7 @@ interface RoomConnection <<frontend, api>> {
   +startGame(): Promise<void>
   +leaveRoom(): Promise<void>
   +onRoomChanged(handler): void
-  +onGameStarted(handler): void
+  +gameChanged(handler): void
   +close(): Promise<void>
 }
 class RoomState <<frontend, api>> {
@@ -77,7 +77,7 @@ class RoomPlayer {
 }
 interface IRoomNotifier {
   +RoomChanged(room: Room): Task
-  +GameStarted(room: Room): Task
+  +GameChangedAsync(roomId, game: GameStateDto): Task
 }
 
 LobbyPage --> PlayerList : shows
