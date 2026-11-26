@@ -1,0 +1,56 @@
+<atw-screen [fill]="true" class="world-map">
+  @if (tour(); as tour) {
+    <header class="world-map__head">
+      <button
+        atw-icon-button
+        icon="back"
+        aria-label="Back to the card"
+        type="button"
+        (click)="backToTheCard()"
+      ></button>
+      <div class="world-map__titles">
+        <h1 class="world-map__title">World map</h1>
+        <p class="world-map__where">{{ where() }}</p>
+      </div>
+    </header>
+    <atw-map-toast [message]="message()" />
+    <main id="main" class="world-map__body">
+      <section class="world-map__room">
+        <atw-world-map
+          [countries]="countries()"
+          [kids]="kids()"
+          [travellerDesk]="tour.travellerDesk"
+          [nextDesk]="nextDesk()"
+          [label]="label()"
+        />
+      </section>
+      <footer class="world-map__foot">
+        <atw-standings [items]="standings()" [tourLength]="tour.tourLength" />
+      </footer>
+    </main>
+  } @else {
+    <header class="world-map__head">
+      <button
+        atw-icon-button
+        icon="back"
+        aria-label="Back to the card"
+        type="button"
+        (click)="backToTheCard()"
+      ></button>
+      <div class="world-map__titles">
+        <h1 class="world-map__title">World map</h1>
+        <p class="world-map__where">Drawing the classroom…</p>
+      </div>
+    </header>
+    <atw-map-toast />
+    <main id="main" class="world-map__body">
+      <section class="world-map__room" aria-busy="true">
+        <p class="visually-hidden" role="status">Drawing the classroom…</p>
+        <atw-skeleton shape="panel" class="world-map__placeholder" />
+      </section>
+      <footer class="world-map__foot">
+        <atw-standings [loading]="true" />
+      </footer>
+    </main>
+  }
+</atw-screen>

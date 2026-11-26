@@ -36,8 +36,18 @@ export class DuelPage {
   readonly padKeys: Locator;
   readonly go: Locator;
   readonly deleteKey: Locator;
+  readonly stamp: Locator;
+  readonly stampCountry: Locator;
+  readonly stampLandmark: Locator;
+  readonly stampHop: Locator;
+  readonly sitPill: Locator;
 
   constructor(private readonly page: Page) {
+    this.stamp = page.locator('.stamp-card');
+    this.stampCountry = this.stamp.locator('.stamp-card__country');
+    this.stampLandmark = this.stamp.locator('.stamp-card__landmark');
+    this.stampHop = this.stamp.locator('.pill');
+    this.sitPill = page.locator('.flash-card .text-btn--pill');
     this.heading = page.getByRole('heading', { level: 1 });
     this.announcement = page.locator('.duel__stage > [role="status"]');
     this.flashCard = page.locator('.flash-card');

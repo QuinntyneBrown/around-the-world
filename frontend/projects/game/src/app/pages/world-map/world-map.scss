@@ -1,0 +1,66 @@
+// World Map's own layout, the world-map block of docs/design-system/assets/components.css: the
+// header, the room filling the space between, and the standings at the bottom. It fills the
+// screen and never scrolls.
+.world-map {
+  background: var(--color-bg-canvas);
+}
+
+.world-map__head {
+  position: relative;
+  z-index: var(--z-raised);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.world-map__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.world-map__title {
+  font: var(--text-h3);
+}
+
+.world-map__where {
+  color: var(--color-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-map__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.world-map__room {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.world-map__placeholder {
+  position: absolute;
+  inset: var(--space-3);
+}
+
+.world-map__foot {
+  position: relative;
+  z-index: var(--z-raised);
+  padding: var(--space-3);
+}
+
+@media (min-width: 36rem) {
+  .world-map__head,
+  .world-map__foot {
+    padding: var(--space-5);
+  }
+
+  .world-map__title {
+    font: var(--text-h2);
+  }
+}

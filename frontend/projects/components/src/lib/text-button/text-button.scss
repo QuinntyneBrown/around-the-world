@@ -34,6 +34,10 @@
   background: var(--color-bg-subtle);
 }
 
+:host(.text-btn--sunken) {
+  background: var(--color-bg-canvas);
+}
+
 :host(:disabled) {
   color: var(--color-fg-disabled);
   pointer-events: none;

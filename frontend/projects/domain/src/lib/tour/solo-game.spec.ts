@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { PLAYER_CHOICES, type GameSetup, type KidId, type PlayerChoices } from '@atw/api';
 import { FlashCardMaker } from '../questions/flash-card-maker';
-import { SoloGame, TICK_MS, TIME_UP_MS } from './solo-game';
+import { MESSAGE_MS, RIGHT_MS, SoloGame, STAMP_MS, TICK_MS, TIME_UP_MS } from './solo-game';
 
 const SETUP: GameSetup = { kinds: ['times'], tables: [7], tourLength: 6, cardSpeed: 'normal' };
 
@@ -142,6 +142,100 @@ describe('SoloGame', () => {
       deskHolder: { name: 'Kenji' },
     });
     expect(next?.card).not.toEqual(first);
+  });
+
+  it('shows "You got it!", then the stamp, then World Map with the hop (L2-033 7, L2-002)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const game = await started();
+    const screens: string[] = [];
+    game.watchScreen((screen) => screens.push(screen));
+    game.answer(answerOf(game));
+    vi.advanceTimersByTime(RIGHT_MS);
+    expect(game.duel()?.hop).toEqual({
+      kind: 'hop',
+      traveller: 'you',
+      from: 2,
+      to: 3,
+      passedEmptyDesk: false,
+      satDown: null,
+    });
+    expect(game.screen()).toBe('duel');
+    vi.advanceTimersByTime(STAMP_MS);
+    expect(game.screen()).toBe('world-map');
+    expect(game.tour()).toMatchObject({
+      phase: 'moving',
+      traveller: 'you',
+      travellerDesk: 3,
+      stamps: [3],
+      lastMove: { kind: 'hop', to: 3 },
+    });
+    expect(game.tour()?.standings[0]).toEqual({ place: 1, player: 'you', distance: 2 });
+    vi.advanceTimersByTime(MESSAGE_MS);
+    expect(game.screen()).toBe('duel');
+    expect(game.duel()).toMatchObject({ desk: 3, country: 'Japan', outcome: 'open', hop: null });
+    expect(game.tour()?.lastMove).toBeNull();
+    expect(screens).toEqual(['world-map', 'duel']);
+  });
+
+  it('waits on a lost duel for the pill, then sits the child down (L2-033 8, L2-003 1)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    expect(game.duel()?.winner).toBe('deskHolder');
+    vi.advanceTimersByTime(10_000);
+    expect(game.screen()).toBe('duel');
+    game.continue();
+    expect(game.screen()).toBe('world-map');
+    expect(game.tour()).toMatchObject({
+      phase: 'moving',
+      traveller: 'kenji',
+      travellerDesk: 3,
+      lastMove: { kind: 'deskHolderTravels', satDown: 'you', from: 2 },
+    });
+    expect(game.tour()?.desks[1].holder).toBe('you');
+  });
+
+  it('plays the classmates’ duels on World Map while the child is seated (L2-034 7)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    game.continue();
+    vi.advanceTimersByTime(MESSAGE_MS);
+    expect(game.tour()).toMatchObject({ phase: 'watching', lastMove: null });
+    expect(game.screen()).toBe('world-map');
+    vi.advanceTimersByTime(5000);
+    expect(game.tour()?.phase).toBe('moving');
+    expect(game.tour()?.lastMove?.traveller).not.toBe('you');
+    expect(game.screen()).toBe('world-map');
+  });
+
+  it('plays the classmates’ duels out at once on "Back to the card" (L2-034 12)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    game.continue();
+    game.continue();
+    expect(game.screen()).toBe('duel');
+    expect(game.duel()).toMatchObject({ role: 'deskHolder', desk: 2, outcome: 'open' });
+  });
+
+  it('opens World Map with no stamp when the child wins as the desk holder (L2-033 10)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    vi.advanceTimersByTime(5000);
+    game.continue();
+    game.continue();
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    game.answer(answerOf(game));
+    vi.advanceTimersByTime(RIGHT_MS);
+    expect(game.duel()?.hop).toBeNull();
+    expect(game.screen()).toBe('world-map');
+    expect(game.tour()).toMatchObject({
+      traveller: 'you',
+      travellerDesk: 3,
+      stamps: [],
+      lastMove: { kind: 'deskHolderTravels', traveller: 'you' },
+    });
   });
 
   it('stops its clock when the solo group is destroyed (L2-048)', async () => {

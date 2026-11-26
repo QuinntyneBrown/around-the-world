@@ -105,8 +105,8 @@ one desk is empty (`L2-007` criterion 5).
   When the message has stayed for 1.6 seconds on the game's clock `SoloGame` moves on, and Duel
   returns with the next flash card (`L2-034` criterion 9, `L2-030` criterion 4). "Back to the
   card" calls `continue()` at once, and Duel returns (`L2-034` criterion 12). The room is drawn
-  inside `@defer (on immediate)`, whose placeholder is the loading state and whose `@error` block
-  is the error state (ADR 0023).
+  with the page; the loading state shows until the tour is published, and the error state comes
+  with the 3D classroom in journey 09 (ADR 0023).
 - **`WorldMap`** (`atw-world-map`), **`Standings`** (component), **`MapToast`** — presentation
   components in `components`. `WorldMap` draws the room from above: the desks on the ring with
   their plaques, the players on them and each kid's name tag (the kid tag's colours, drawn in

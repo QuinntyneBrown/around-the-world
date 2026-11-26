@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import type { KidId } from '@atw/api';
+import { BeanParts } from '../bean-parts/bean-parts';
 
 /**
  * Bean: the small bean-bodied kid with their one accessory (Zuri's pencil, Kenji's glasses
@@ -9,6 +10,7 @@ import type { KidId } from '@atw/api';
  */
 @Component({
   selector: 'atw-bean',
+  imports: [BeanParts],
   templateUrl: './bean.html',
   styleUrl: './bean.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
