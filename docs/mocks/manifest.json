@@ -133,7 +133,8 @@
         "full",
         "edited",
         "loading",
-        "error"
+        "error",
+        "starting"
       ],
       "not_applicable": {}
     },
