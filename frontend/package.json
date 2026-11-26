@@ -12,6 +12,7 @@
     "format:check": "prettier --check .",
     "e2e": "playwright test",
     "e2e:typecheck": "tsc -p e2e",
+    "e2e:measure": "playwright test --config playwright.measure.config.ts",
     "classroom:stand-in": "node tools/make-classroom-stand-in.mjs",
     "sounds": "node tools/make-sounds.mjs"
   },

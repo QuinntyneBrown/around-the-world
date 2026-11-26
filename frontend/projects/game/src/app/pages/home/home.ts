@@ -12,11 +12,10 @@ import { PICTURE_LOADER, PLAYER_CHOICES, VISIT, type PictureArrival } from '@atw
 import { Alert, IconButton, KidChip, Skeleton, ToyButton } from '@atw/components';
 import { ClassroomStates, kidById, NicknameGenerator } from '@atw/domain';
 import { ClassroomCanvas, type ClassroomStatus } from '../../classroom/classroom-canvas';
+import { CLASSROOM_PICTURE } from '../../pictures/home-picture';
+import { warmTheWayOn } from './warm-the-way-on';
 
 type Arrival = PictureArrival | 'loading';
-
-/** The classroom's still picture, shown until the 3D classroom is drawn over it, or instead. */
-const CLASSROOM_PICTURE = 'img/scene-classroom.jpg';
 
 /**
  * Home (docs/mocks/pages/home/): the classroom, the game's name, one big Play button and the
@@ -79,9 +78,11 @@ export class HomePage {
     const arriving = new AbortController();
     inject(DestroyRef).onDestroy(() => arriving.abort());
 
-    this.pictures
-      .preload([CLASSROOM_PICTURE], arriving.signal)
-      .then((arrival) => this.classroom.set(arrival));
+    this.pictures.preload([CLASSROOM_PICTURE], arriving.signal).then((arrival) => {
+      this.classroom.set(arrival);
+      // The picture first, then the way on (docs/adr/0038).
+      void warmTheWayOn();
+    });
     const kept = this.kept();
     if (kept) {
       this.pictures

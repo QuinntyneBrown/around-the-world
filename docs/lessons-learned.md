@@ -1159,3 +1159,60 @@ the lessons that fit.
 - *Let a test fixture record every request handled* (16, 3): `HandledCount` reads the same log.
 - *Keep a per-connection limit in the connection's own items* (15, 2): the answers' limit is a
   ring of 5 times there, and the stickers' a ring of 1.
+
+## Journey 18: Open fast and stay smooth on any device
+
+**What slowed it.**
+
+- The specs' server sent every file uncompressed, so the first measurement of Home on a phone on
+  slow 4G (4.1 seconds) mostly measured `main` at 252 kB on the wire. The server now gzips text
+  as the deployed host must, and the host's duty is in `docs/operations/settings.md`.
+- With the compression fixed Home still took 2.5 seconds: its picture was asked for only once
+  Home's code had run, and the 3D classroom's 133 kB shared the connection with it. A request
+  waterfall, read from a short Playwright script on the throttled page, showed both at once.
+- The first heap checks failed at 17.6% and 69.7%. Heap snapshot diffs showed the leak was the
+  specs' own WebGL fake, which kept every context it counted and with it each released canvas
+  and its page; V8's compiled code made up the rest of the growth.
+- Event Timing measured a pressed digit at 144 to 264 ms. The digit was quick; the frame after
+  it was not, since headless Chromium draws WebGL in software at about 10 frames a second.
+- The 20-second spec passed at its first run, as journeys 01 to 17 had built the way; it was
+  broken by hand (a 1-second limit) to prove it measures.
+
+**New lessons.**
+
+1. Before tuning a timing, serve the build as production does (compressed) and read the
+   request waterfall under the throttled profile: it names the cause, where a single number
+   only says something is slow.
+2. Make the largest content of the first screen the first thing asked for, and let heavy
+   extras (the 3D classroom, the next screens' code) wait until it is in.
+3. A test fake that counts resources must let go of the ones the game released, or it is the
+   leak a heap check finds. Diff two heap snapshots by kind of object before suspecting the game.
+4. Measure a heap from a snapshot with compiled code left out: V8's optimising compiler grows
+   the code space over the first runs, which is not memory the game holds.
+5. Time a press with Event Timing against a screen without software-drawn WebGL; the machine
+   that runs the specs is not a child's device, and a frame-bound measure there times the
+   software renderer.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every timing ran against the
+  production build, now served compressed; `main` is 253.31 kB and the initial total 274.13 kB.
+- *Check a fake once by hand* (01, 2): the 20-second limit was broken by hand, and the fakes'
+  release was proved by the heap checks passing only once they let go.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no screen changed
+  its markup, and no component was added.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0038 measured CDK Dialog
+  against the native `<dialog>` and keeps the `AGENTS.md` rule; no correction is proposed.
+- *Tag one spec per feature `@critical`* (02, 5): the first flash card within 20 seconds on a
+  school connection.
+- *Measure the initial bundle against the base commit* (03, 2): module by module, `main` grew
+  0.4 kB for the picture's request only; with no lazy route `main` would be 204 kB, so the rest
+  is framework code the screens need.
+- *Prefer signals and outputs to `effect()`* (04, 2): `linkedSignal` in the Lobby was measured
+  and costs `main` nothing; nothing was changed.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let a short-lived thing live on the game's clock* (15, 4): confirmed by the audit: the duel's
+  timers and the stickers are bounded by the game's clock, so no general buffer was built.
+

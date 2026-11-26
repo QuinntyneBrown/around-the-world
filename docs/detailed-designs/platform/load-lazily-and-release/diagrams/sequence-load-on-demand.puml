@@ -36,13 +36,14 @@ end box
 actor -> net : Open the game
 net --> shell : Initial chunks, within the angular.json budget (L2-047 criterion 1)
 shell -> net : loadComponent: Home chunk (L2-047 criterion 2)
+shell -> net : Home's still picture, asked for as the game starts at Home's address
 net --> home : HomePage
 home --> actor : Still picture of the classroom and "Play" (L2-047 criterion 4)
-home -> net : import() world chunk after the interface is drawn (L2-036 criterion 2)
+home -> net : Once the picture is in: import() world chunk (L2-036 criterion 2)\nand the Pick Your Kid and Solo Or Friends chunks (L2-031 criterion 1)
 net --> renderer : Three.js and the renderer
 actor -> home : Play; a child with no kid kept confirms a kid first (L2-030 criterion 1)
-shell -> net : loadComponent: each screen's own chunk
-net --> sof : SoloOrFriendsPage
+shell -> sof : loadComponent: each screen's own chunk, already fetched
+sof -> net : Fetch the solo game's chunks while the child chooses
 alt Play solo
   actor -> sof : Play solo
   shell -> solo : Provide at the solo game route as GAME_SESSION

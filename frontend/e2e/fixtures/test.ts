@@ -21,7 +21,9 @@ import {
  *   method, and records the
  *   tokens presented and the methods invoked (docs/adr/0032);
  * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
- * - `network`: the device's network, taken away and given back (`navigator.onLine`);
+ * - `network`: the device's network, taken away and given back (`navigator.onLine`), or slowed
+ *   to a connection's speed and delay through the DevTools protocol (docs/adr/0038);
+ * - `processor`: the device's processor, slowed to stand for a slower device (docs/adr/0038);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
  * - `classroom`: the 3D classroom's scenes on localhost, held back or refused when a spec asks,
@@ -203,6 +205,20 @@ export interface FakeNetwork {
   offline(): Promise<void>;
   /** The device has its network back. */
   online(): Promise<void>;
+  /** The device's network has this connection's speeds and delay, from now on (docs/adr/0038). */
+  like(connection: Connection): Promise<void>;
+}
+
+/** A network a device is on: its speeds and its delay (docs/adr/0038). */
+export interface Connection {
+  downMbps: number;
+  upMbps: number;
+  latencyMs: number;
+}
+
+export interface FakeProcessor {
+  /** The page runs this many times slower, as on a slower device (docs/adr/0038). */
+  slowedBy(rate: number): Promise<void>;
 }
 
 export interface FakeSound {
@@ -249,6 +265,7 @@ interface Fixtures {
   roomHub: FakeRoomHub;
   clipboard: FakeClipboard;
   network: FakeNetwork;
+  processor: FakeProcessor;
 }
 
 /** Where a held clock starts: any fixed moment will do. */
@@ -798,6 +815,25 @@ export const test = base.extend<Fixtures>({
     await use({
       offline: () => page.context().setOffline(true),
       online: () => page.context().setOffline(false),
+      like: async ({ downMbps, upMbps, latencyMs }) => {
+        const devTools = await page.context().newCDPSession(page);
+        await devTools.send('Network.enable');
+        await devTools.send('Network.emulateNetworkConditions', {
+          offline: false,
+          latency: latencyMs,
+          downloadThroughput: (downMbps * 1_000_000) / 8,
+          uploadThroughput: (upMbps * 1_000_000) / 8,
+        });
+      },
+    });
+  },
+
+  processor: async ({ page }, use) => {
+    await use({
+      slowedBy: async (rate) => {
+        const devTools = await page.context().newCDPSession(page);
+        await devTools.send('Emulation.setCPUThrottlingRate', { rate });
+      },
     });
   },
 
