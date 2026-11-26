@@ -1,6 +1,6 @@
 # 0032. Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages
 
-- **Status:** Accepted
+- **Status:** Accepted; a lost connection in the Lobby (the retries, and a waiting player kept) superseded by ADR 0036
 - **Date:** 2026-11-26
 
 ## Context

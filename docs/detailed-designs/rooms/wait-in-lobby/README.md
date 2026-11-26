@@ -93,8 +93,9 @@ Frontend:
   back, an alert takes the place of the start control: "We lost the room" and "The connection
   dropped and we couldn't get back in.", with "Try again" and "Go home", which opens Home
   (`L2-029` criterion 6); the code, the setup and the players last received stay shown. The
-  connection reconnects by itself at once and after 1 and 3 seconds before the alert shows;
-  "Try again" connects afresh with the same token (ADR 0032).
+  connection reconnects by itself at once, after 1 second and then every 2 seconds, for 30
+  seconds before the alert shows, and the server removes a player away for 30 seconds as if they
+  had left; "Try again" connects afresh with the same token (ADR 0032, ADR 0036).
 - **`PlayerList`** — presentation component in `components`; it renders the mocks' `player-grid`
   block. It takes the players, the device's own player id and the capacity of 8. It shows each
   player's kid on the kid's colour, the nickname and "as {kid}", marks the host with a crown

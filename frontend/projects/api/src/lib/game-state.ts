@@ -15,6 +15,8 @@ export interface GamePlayer {
   readonly distance: number;
   /** The desks whose countries the player has a stamp for, in the order reached. */
   readonly stamps: readonly number[];
+  /** Removed after 30 seconds away: no desk, and nobody plays for them (docs/adr/0036). */
+  readonly removed: boolean;
 }
 
 /**

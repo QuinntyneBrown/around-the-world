@@ -1,8 +1,11 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import {
   ROOM_CONNECTION,
+  SPOT_HELD_MS,
   VISIT,
   WAY_OF_ANSWERING,
+  type ConnectionNotice,
+  type GameConnection,
   type GameMoment,
   type GameScreen,
   type GameSession,
@@ -18,8 +21,14 @@ import {
   isStickerId,
 } from '@atw/api';
 import { GameClock, NicknameGenerator, TICK_MS } from '@atw/domain';
-import { FriendsView, type Seen } from './friends-view';
+import { EVERYONE_LEFT_MS, FriendsView, type Seen } from './friends-view';
 import { StickerBuffer, type ReceivedSticker } from './sticker-buffer';
+
+/** How long "You're back!" and "{nickname} dropped out." show (docs/adr/0036). */
+export const NOTICE_MS = 4000;
+
+/** How long an answer or a sticker waits for its reply before the connection is slow (ADR 0036). */
+export const WOBBLY_MS = 2000;
 
 /**
  * The room the device's player is in, and its game, kept up to date over the room's connection
@@ -33,11 +42,16 @@ import { StickerBuffer, type ReceivedSticker } from './sticker-buffer';
  * of those before (L2-048 criterion 5), and `FriendsView` turns it into what the screens show; the
  * times left are counted down on the game's clock, ticked every 100 ms while a game is held
  * (docs/adr/0020). An answer goes to the room as a number and nothing else (L2-026, L2-040).
+ *
+ * When the connection is lost it is tried again with the same token, held in memory only, for 30
+ * seconds (docs/adr/0036): meanwhile the game's clock ticks, Duel shows "Reconnecting…" and nothing
+ * is sent; the first room state after it is back confirms the return, and at 30 seconds the device
+ * gives up and closes the connection. Its banners live on the same clock.
  */
 @Injectable()
 export class FriendsGame implements RoomSession, GameSession {
   private readonly visit = inject(VISIT);
-  private readonly connection = inject(ROOM_CONNECTION);
+  private readonly hub = inject(ROOM_CONNECTION);
   private readonly way = inject(WAY_OF_ANSWERING, { optional: true });
   private readonly nicknames = inject(NicknameGenerator);
   private readonly received = signal<RoomState | null>(null);
@@ -59,6 +73,15 @@ export class FriendsGame implements RoomSession, GameSession {
   /** The stickers received, at most three (docs/adr/0035). */
   private readonly receivedStickers = signal<readonly ReceivedSticker[]>([]);
   private stickerKey = 0;
+  /** When, on the game's clock, the connection was lost; null while it is not being tried again. */
+  private lostAtMs: number | null = null;
+  /** When the device's player came back within 30 seconds. */
+  private readonly backAt = signal<number | null>(null);
+  /** The last player removed after 30 seconds away, and when the device learnt of it. */
+  private readonly droppedOut = signal<{ nickname: string; atMs: number } | null>(null);
+  /** When each answer or sticker still waiting for its reply was sent. */
+  private readonly sent = signal<ReadonlyMap<number, number>>(new Map());
+  private sentKey = 0;
   private ticking: ReturnType<typeof setInterval> | null = null;
   private gone = false;
 
@@ -98,6 +121,34 @@ export class FriendsGame implements RoomSession, GameSession {
     return seen ? FriendsView.result(seen, this.nameOf) : null;
   });
 
+  /** The device's connection to the room, as the game screens show it (L2-029, ADR 0036). */
+  readonly connection = computed<GameConnection>(() => {
+    const link = this.state();
+    return link === 'reconnecting' ? 'reconnecting' : link === 'lost' ? 'gone' : 'live';
+  });
+
+  /**
+   * The connection's banner, one at a time and the most urgent first: everyone else has left,
+   * a player dropped out, the device's player is back, the connection is slow (ADR 0036).
+   */
+  readonly notice = computed<ConnectionNotice | null>(() => {
+    if (this.connection() !== 'live') return null;
+    const now = this.nowMs();
+    const seen = this.seen();
+    const state = seen?.state;
+    if (seen && state?.phase === 'over' && state.ending === 'everyoneLeft') {
+      if (FriendsView.sinceDecided(seen) < EVERYONE_LEFT_MS) return { kind: 'everyoneLeft' };
+    }
+    const dropped = this.droppedOut();
+    if (dropped && now - dropped.atMs < NOTICE_MS) {
+      return { kind: 'droppedOut', nickname: dropped.nickname };
+    }
+    const back = this.backAt();
+    if (back !== null && now - back < NOTICE_MS) return { kind: 'back' };
+    const oldest = Math.min(...this.sent().values());
+    return now - oldest >= WOBBLY_MS ? { kind: 'wobbly' } : null;
+  });
+
   /** The stickers showing, each for 2 seconds of the game's clock (L2-028 criteria 3 and 7). */
   readonly stickers = computed<readonly ShownSticker[]>(() =>
     StickerBuffer.showing(this.receivedStickers(), this.nowMs()).map(({ shown }) => shown),
@@ -111,20 +162,20 @@ export class FriendsGame implements RoomSession, GameSession {
       if (this.gone) return;
       this.gone = true;
       this.visit.leaveRoom();
-      void this.connection
+      void this.hub
         .leave()
         .catch(() => undefined)
-        .finally(() => this.connection.close());
+        .finally(() => this.hub.close());
     });
     void this.connect();
   }
 
   saveSetup(setup: GameSetup): Promise<void> {
-    return this.connection.saveSetup(setup);
+    return this.hub.saveSetup(setup);
   }
 
   startRace(): Promise<void> {
-    return this.connection.start();
+    return this.hub.start();
   }
 
   retry(): void {
@@ -136,11 +187,11 @@ export class FriendsGame implements RoomSession, GameSession {
     this.gone = true;
     this.stopTicking();
     try {
-      await this.connection.leave();
+      await this.hub.leave();
     } catch {
       // A room that cannot be told forgets the player when it is idle (docs/adr/0031).
     }
-    await this.connection.close();
+    await this.hub.close();
     this.visit.leaveRoom();
   }
 
@@ -153,13 +204,14 @@ export class FriendsGame implements RoomSession, GameSession {
   answer(value: number): void {
     const duel = this.duel();
     if (!duel || duel.role === 'watching' || duel.outcome !== 'open' || duel.frozen) return;
-    this.connection.answer(value).catch(() => undefined);
+    if (this.connection() !== 'live') return;
+    this.send(() => this.hub.answer(value));
   }
 
   /** Sends a sticker as its id, while the device's player watches the duel (L2-028 3). */
   sendSticker(sticker: StickerId): void {
-    if (this.duel()?.role !== 'watching') return;
-    this.connection.sendSticker(sticker).catch(() => undefined);
+    if (this.duel()?.role !== 'watching' || this.connection() !== 'live') return;
+    this.send(() => this.hub.sendSticker(sticker));
   }
 
   /**
@@ -181,7 +233,7 @@ export class FriendsGame implements RoomSession, GameSession {
 
   /** "Play again" on the Podium: the room returns to its Lobby for everyone (L2-035 3). */
   playAgain(): void {
-    this.connection.playAgain().catch(() => undefined);
+    this.hub.playAgain().catch(() => undefined);
   }
 
   pause(): void {
@@ -208,10 +260,12 @@ export class FriendsGame implements RoomSession, GameSession {
   private async connect(): Promise<void> {
     this.state.set('connecting');
     try {
-      await this.connection.connect(this.entry.token, {
+      await this.hub.connect(this.entry.token, {
         changed: (room) => {
           if (this.gone) return;
           this.received.set(room);
+          // The first room state after the connection came back confirms the return (L2-029 2).
+          if (this.state() === 'reconnecting') this.cameBack();
           this.state.set('live');
           // "Play again" returned the room to its Lobby: the game is dropped (L2-035 3).
           if (room.status === 'waiting' && this.last()?.game.phase === 'over') this.dropGame();
@@ -222,8 +276,14 @@ export class FriendsGame implements RoomSession, GameSession {
         stickerShown: (sticker) => {
           if (!this.gone) this.showSticker(sticker);
         },
+        reconnecting: () => {
+          if (!this.gone) this.lostConnection();
+        },
+        reconnected: () => {
+          // The room state that follows confirms the return; until then, it is still away.
+        },
         lost: () => {
-          if (!this.gone) this.state.set('lost');
+          if (!this.gone) this.giveUp();
         },
       });
     } catch {
@@ -231,9 +291,53 @@ export class FriendsGame implements RoomSession, GameSession {
     }
   }
 
+  /** The connection was lost: it is tried again for 30 seconds, on the game's clock (ADR 0036). */
+  private lostConnection(): void {
+    this.lostAtMs = this.clock.now();
+    this.nowMs.set(this.lostAtMs);
+    this.sent.set(new Map());
+    this.state.set('reconnecting');
+    this.startTicking();
+    this.follow();
+  }
+
+  /** Back within 30 seconds: "You're back!" shows on the game's clock (L2-029 criterion 2). */
+  private cameBack(): void {
+    this.lostAtMs = null;
+    this.nowMs.set(this.clock.now());
+    this.backAt.set(this.clock.now());
+    if (!this.last()) this.stopTicking();
+  }
+
+  /**
+   * The connection could not be got back in 30 seconds, or its token was refused: it is closed,
+   * which releases its retry timer and the try in flight (L2-029 criteria 4 and 6, L2-048 2).
+   */
+  private giveUp(): void {
+    this.lostAtMs = null;
+    this.state.set('lost');
+    void this.hub.close();
+    if (!this.last()) this.stopTicking();
+    this.follow();
+  }
+
+  /** Sends an answer or a sticker, timing its reply: one that takes 2 seconds is slow (ADR 0036). */
+  private send(sending: () => Promise<void>): void {
+    const key = ++this.sentKey;
+    const done = () =>
+      this.sent.update((sent) => {
+        const left = new Map(sent);
+        left.delete(key);
+        return left;
+      });
+    this.sent.update((sent) => new Map(sent).set(key, this.clock.now()));
+    sending().then(done, done);
+  }
+
   /** A new state of the game: kept in place of the last, and the screen follows it. */
   private receive(game: GameState): void {
     const before = this.last()?.game;
+    if (before) this.noticeRemoved(before, game);
     if (!before) {
       // The first state of a game: Mic Check first when the player needs it (L2-012 9).
       this.atMicCheck.set(this.way?.micCheckNeeded() ?? false);
@@ -244,6 +348,16 @@ export class FriendsGame implements RoomSession, GameSession {
     this.nowMs.set(this.clock.now());
     this.last.set({ game, atMs: this.clock.now() });
     this.follow();
+  }
+
+  /** A player removed after 30 seconds away since the last state: "{nickname} dropped out." */
+  private noticeRemoved(before: GameState, game: GameState): void {
+    for (const player of game.players) {
+      const was = before.players.find(({ id }) => id === player.id);
+      if (!player.removed || was?.removed || player.id === this.entry.playerId) continue;
+      if (!player.nickname) continue;
+      this.droppedOut.set({ nickname: this.nameOf(player.nickname), atMs: this.clock.now() });
+    }
   }
 
   /**
@@ -273,6 +387,10 @@ export class FriendsGame implements RoomSession, GameSession {
     if (this.ticking !== null) return;
     this.ticking = setInterval(() => {
       this.nowMs.set(this.clock.now());
+      if (this.lostAtMs !== null && this.clock.now() - this.lostAtMs >= SPOT_HELD_MS) {
+        this.giveUp();
+        return;
+      }
       this.follow();
     }, TICK_MS);
   }
@@ -287,6 +405,8 @@ export class FriendsGame implements RoomSession, GameSession {
     const seen = this.seen();
     if (!seen) return;
     if (this.atMicCheck()) return this.show('mic-check');
+    // Away from the room in a game not over: Duel shows "Reconnecting…" or the lost game (ADR 0036).
+    if (this.connection() !== 'live' && seen.state.phase !== 'over') return this.show('duel');
     const screen = FriendsView.screen(seen);
     this.report(seen, screen);
     this.show(screen);

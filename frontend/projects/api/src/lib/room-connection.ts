@@ -12,7 +12,17 @@ export interface RoomEvents {
   gameChanged(game: GameState): void;
   /** A sticker a player of the room sent, as its id and the sender's player id (L2-028 3). */
   stickerShown(sticker: StickerMessage): void;
-  /** The connection is gone and could not be got back (L2-029 criterion 6). */
+  /**
+   * The connection was lost, and is being tried again with the same token (L2-029 criterion 1,
+   * docs/adr/0036); the room and the game arrive again once it is back.
+   */
+  reconnecting(): void;
+  /** The connection is back; the room as it stands follows (L2-029 criterion 2). */
+  reconnected(): void;
+  /**
+   * The connection is gone and could not be got back within 30 seconds, or the room refused the
+   * token (L2-029 criteria 4 and 6, L2-043 criterion 4).
+   */
   lost(): void;
 }
 

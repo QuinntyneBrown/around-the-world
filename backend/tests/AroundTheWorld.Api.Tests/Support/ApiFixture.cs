@@ -32,6 +32,8 @@ public class ApiFixture : WebApplicationFactory<Program>
 
     private readonly SweepWatcher _games = new();
 
+    private readonly RequestLog _requests = new();
+
     /// <summary>
     /// Completes when the idle rooms have been swept at that time or later, so a test awaits the
     /// sweep after advancing <see cref="Clock"/> instead of sleeping; it fails after 10 seconds,
@@ -45,6 +47,19 @@ public class ApiFixture : WebApplicationFactory<Program>
     /// last tick that did arrive.
     /// </summary>
     public Task GamesAt(DateTimeOffset at) => _games.WaitForAsync(at, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when a request of that name (such as <c>MarkPlayerAwayCommand</c>) from the
+    /// connection that presented the token has been handled, so a test awaits what the hub does
+    /// when a connection is lost; it fails after 10 seconds, naming the requests that were handled.
+    /// </summary>
+    public Task HandledForAsync(string request, string token) => _requests.WaitForAsync(request, token, TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// Completes when a request of that name carrying a time (<c>Now</c>) at or after
+    /// <paramref name="at"/> has been handled, such as the room's timers' sweep of absent players.
+    /// </summary>
+    public Task HandledAtAsync(string request, DateTimeOffset at) => _requests.WaitForAtAsync(request, at, TimeSpan.FromSeconds(10));
 
     /// <summary>Moves the clock on and waits until the games have caught up with it.</summary>
     public async Task PassAsync(TimeSpan time)
@@ -84,6 +99,8 @@ public class ApiFixture : WebApplicationFactory<Program>
             services.AddTransient<IPipelineBehavior<DeleteIdleRoomsCommand, int>, SweepSignal>();
             services.AddKeyedSingleton("games", _games);
             services.AddTransient<IPipelineBehavior<AdvanceGamesCommand, int>, GamesSignal>();
+            services.AddSingleton(_requests);
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestLogged<,>));
         });
     }
 
@@ -222,6 +239,80 @@ internal sealed class GamesSignal([FromKeyedServices("games")] SweepWatcher game
         var changed = await next(cancellationToken);
         games.Swept(request.Now);
         return changed;
+    }
+}
+
+/// <summary>Records each request the backend handled, by its type's name and the time it carried, if any.</summary>
+internal sealed class RequestLog
+{
+    private readonly Lock _gate = new();
+    private readonly List<(string Name, DateTimeOffset? At, string? Token)> _handled = [];
+    private readonly List<(Func<bool> Ready, TaskCompletionSource Done)> _waiting = [];
+
+    public Task WaitForAsync(string name, string token, TimeSpan timeout) =>
+        WaitAsync(() => _handled.Any(handled => handled.Name == name && handled.Token == token), $"{name} for the token", timeout);
+
+    public Task WaitForAtAsync(string name, DateTimeOffset at, TimeSpan timeout) =>
+        WaitAsync(() => _handled.Any(handled => handled.Name == name && handled.At >= at), $"{name} at {at:O}", timeout);
+
+    public void Handled(string name, DateTimeOffset? at, string? token)
+    {
+        List<TaskCompletionSource> ready;
+        lock (_gate)
+        {
+            _handled.Add((name, at, token));
+            ready = [.. _waiting.Where(waiter => waiter.Ready()).Select(waiter => waiter.Done)];
+            _waiting.RemoveAll(waiter => waiter.Ready());
+        }
+
+        ready.ForEach(done => done.TrySetResult());
+    }
+
+    private async Task WaitAsync(Func<bool> ready, string what, TimeSpan timeout)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (ready())
+            {
+                return;
+            }
+
+            _waiting.Add((ready, done));
+        }
+
+        try
+        {
+            await done.Task.WaitAsync(timeout, TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            string handled;
+            lock (_gate)
+            {
+                handled = string.Join(", ", _handled.Select(request => request.Name).Distinct());
+            }
+
+            Assert.Fail($"No {what} was handled; what was: {(handled.Length == 0 ? "nothing" : handled)}.");
+        }
+    }
+}
+
+/// <summary>Tells the <see cref="RequestLog"/> of every request once it has been handled, failed or not.</summary>
+internal sealed class RequestLogged<TRequest, TResponse>(RequestLog log, ICurrentPlayer caller) : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
+{
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await next(cancellationToken);
+        }
+        finally
+        {
+            var at = typeof(TRequest).GetProperty("Now")?.GetValue(request) as DateTimeOffset?;
+            log.Handled(typeof(TRequest).Name, at, caller.Token);
+        }
     }
 }
 

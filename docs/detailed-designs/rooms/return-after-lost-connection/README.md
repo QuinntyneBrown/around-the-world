@@ -31,75 +31,94 @@ The token itself, and the refusal of any other token, belong to
 
 ## Description
 
-The slice is not built yet; the parts below are the ones the design introduces. The slice runs
-from the Duel screen in the `game` application, over the player's SignalR connection, to the room
-store.
+The slice runs from the Duel screen in the `game` application, over the player's SignalR
+connection, to the room store. The decisions below are recorded in
+[ADR 0036](../../../adr/0036-coming-back-after-a-lost-connection.md).
 
 Frontend:
 
-- **`RoomConnection`** — SignalR client contract in `api`. It reports its state as `connected`,
-  `reconnecting` or `closed`, and reports separately whether the connection is slow. What counts
-  as a slow connection is `<TO SUPPLY>`. When the connection is lost it reconnects by itself and presents
+- **`RoomConnection`** — SignalR client contract in `api`, implemented by
+  `SignalRRoomConnection`. It tells the game `reconnecting` when the connection is lost and
+  `reconnected` when it is back, besides the room, the game and the stickers. When the connection
+  is lost it reconnects by itself, at once, after 1 second and then every 2 seconds, and presents
   the same connection token, the one value it holds that the server gave it (`L2-040`
-  criterion 1). It stops trying 30 seconds after the loss and reports `closed`. Its
-  retry timers are cleared when it is closed (`L2-048` criterion 2).
-- **`FriendsGame`** — game service in `game`. It exposes the connection's state, and whether it
-  is slow, as signals. It
-  keeps the connection token in memory only, because the device's storage holds no token
-  (`L2-015` criterion 4); a page that is reloaded therefore has no token and cannot return. On
-  the `GameSnapshot` that follows a return, it replaces its room, tour and duel state whole
-  (`L2-029` criterion 2).
-- **`DuelPage`** — page in `game`. While the state is `reconnecting` it shows an overlay over
-  the whole Duel screen: "Reconnecting…" and "Hang tight! Your spot at {country} is saved for 30
+  criterion 1). It stops trying 30 seconds after the loss, or at once when the server refuses the
+  token, and tells the game `lost`. Its retry timer and the attempt in flight are released when it
+  is closed (`L2-048` criterion 2).
+- **`FriendsGame`** — game service in `game`. Its `link` is `connecting`, `live`,
+  `reconnecting` or `lost`; as the room group's `GameSession` it exposes `connection` (`live`,
+  `reconnecting` or `gone`) and `notice`, the banner to show, as signals. It keeps the connection
+  token in memory only, because the device's storage holds no token (`L2-015` criterion 4); a
+  page that is reloaded therefore has no token and cannot return. A return is confirmed by the
+  first `RoomChanged` received after reconnecting, and the `GameChanged` after it replaces the
+  game whole (`L2-029` criterion 2). While a game is held it gives up the moment 30 seconds have
+  passed since the loss on its clock, ticked every 100 ms, and closes the connection. A
+  connection is slow while an answer or a sticker it sent has had no reply for 2 seconds or more
+  on that clock. While the connection is away during a game that is not over it opens Duel,
+  wherever its player was, and sends no answer and no sticker.
+- **`DuelPage`** — page in `game`. While the state is `reconnecting` it shows `StatusOverlay`
+  (`@atw/components`) over the whole Duel screen: "Reconnecting…" and "Hang tight! Your spot at {country} is saved for 30
   seconds.", where the country is that of the player's desk. The overlay is announced as an
   alert in words (`L2-029` criterion 1, `L2-051` criterion 5). The number pad and the voice
-  answer send nothing while the connection is away. When the state is `closed` during a game,
+  answer send nothing while the connection is away, nothing listens, and the screen behind the
+  overlay is `inert`. When the state is `closed` during a game,
   because the 30 seconds have passed or the token was refused, the overlay reads "We lost the
   game" and "The connection was away for too long, so your desk was given up. Nothing was your
   fault.", and offers "Home", which opens Home (`L2-029` criterion 4).
 
-  The page shows one banner across the top of the Duel screen for each of four events. A banner
-  does not cover the flash card and stays until it is no longer true
+  The page shows one banner at a time across the top of the Duel screen, as `ConnectionBanner`
+  (`@atw/components`, composing `Alert`), the most urgent first in the order below. A banner does
+  not cover the flash card and stays until it is no longer true
   (`docs/design-system/patterns/notifications.html`):
   - "You're back!" and "Same desk, same game.", a status, after a return within 30 seconds
-    (`L2-029` criterion 2). When this banner leaves is `<TO SUPPLY>`;
+    (`L2-029` criterion 2); it leaves 4 seconds after the return, on the game's clock;
   - "{nickname} dropped out." and "Their desk is empty now.", a status, on the devices of the
     other players when a player is removed (`L2-029` criterion 4). The nickname is that of the
-    removed player, read from the `RoomState` held before the removal;
+    removed player, read from the game, which marks a removed player `removed`; it leaves after
+    4 seconds;
   - "Everyone else has left." and "The tour ends here. On to the podium!", an alert, on the
     device of the one player who remains, before the Podium opens (`L2-029` criterion 5). How
-    long it shows before the Podium opens is `<TO SUPPLY>`;
+    long it shows before the Podium opens: 3 seconds;
   - "Your internet is wobbly." and "Answers might take a moment.", a status, while the
     connection is slow (`L2-029` criterion 7).
-- **`GameSnapshot`** — type in `api`: the `RoomState`, the `TourState` and the `DuelState` with
-  the current flash card, without its answer.
+- **The snapshot** — the `RoomChanged` and `GameChanged` pair every connection is sent on
+  connecting (ADR 0033): the room, and the game with the current flash card without its answer.
+  No separate type is added. `GameState` marks each removed player `removed`, and a tour ended by
+  removals has the ending `everyoneLeft`.
 
 Backend:
 
 - **`RoomHub`** — `OnDisconnectedAsync` sends `MarkPlayerAwayCommand` and `OnConnectedAsync`
   sends `ReconnectCommand`. Each sends one MediatR request and checks nothing itself.
-- **`MarkPlayerAwayCommandHandler`** — finds the `RoomPlayer` the lost connection belonged to
-  and calls `MarkAway(now)`, which records `AwaySince`. It changes nothing else: the current
+- **`MarkPlayerAwayCommandHandler`** — finds the `RoomPlayer` the lost connection's token names
+  and, when the lost connection is still the player's current one, calls `MarkAway(now)`, which
+  records `AwaySince`; a connection replaced already, or whose player is gone, marks nobody. It changes nothing else: the current
   `Duel` is untouched, its flash card's time keeps running and the other player's answer is
   decided as usual (`L2-029` criterion 3).
 - **`ReconnectCommandHandler`** — loads the room and the player the token names. With no such
   player it refuses with `not_in_room` and the hub closes the connection (`L2-043` criterion 4).
-  Otherwise it calls `Room.Return`, saves, adds the connection to the room's group and returns a
-  `GameSnapshotDto`.
-- **`Room`** — `Return(token, connectionId, now)` clears `AwaySince` and binds the new
-  connection to the same `RoomPlayer`, whose desk and distance are unchanged. `Remove(player,
-  now)` does nothing when the player has returned. Otherwise it removes the player, tells the
-  `Tour` that the desk is empty and ends the tour when fewer than two players remain (`L2-029`
-  criteria 4 and 5). The desk stays empty for the rest of the tour and no classmate takes it, so
-  the ring then holds that empty desk besides the traveller's own (`L2-007` criterion 6).
+  Otherwise it calls `Room.Return`, saves, adds the connection to the room's group and sends it
+  the room and the game as they stand.
+- **`Room`** — `Return(player, connectionId)` clears `AwaySince` and binds the new
+  connection to the same `RoomPlayer`, whose desk and distance are unchanged. `RemoveAbsent(now)`
+  removes each player away for 30 seconds or more; a player who has returned is not away. In a
+  game it tells the `RoomGame`, which empties the desk and ends the tour when fewer than two
+  players remain (`L2-029` criteria 4 and 5); in the Lobby and on the Podium the player leaves as
+  "Leave the room" does. The desk stays empty for the rest of the tour and no classmate takes it,
+  so the ring then holds that empty desk besides the traveller's own (`L2-007` criterion 6).
+- **`RoomGame`** and **`Tour`** — `Remove` marks the player `Removed` and empties their desk.
+  When they held the desk the traveller stands beside, the traveller moves on to the next held
+  desk without a hop. When they were the traveller, the desk holder they stood beside travels on
+  as if they had won and nobody sits down there. An open duel that held them shows its answer,
+  and the next card comes 2 seconds later. Their distance still counts in the standings.
 - **`RoomPlayer`** — holds the `ConnectionToken`, the id of the current SignalR connection and
-  `AwaySince`.
-- **`RoomTimers`** — hosted service in `AroundTheWorld.Api` driven by `TimeProvider`. It finds
-  each player whose `AwaySince` is 30 seconds old or more and sends one
-  `RemoveAbsentPlayerCommand` for each.
-- **`RemoveAbsentPlayerCommandHandler`** — loads the room, calls `Room.Remove`, saves, and
-  announces `RoomChanged` to the players who remain, or `TourEnded` to the one who remains. After
-  `TourEnded` the room is kept while the Podium is shown, as
+  `AwaySince` (migration `AddPlayerAway`, with an index on `AwaySince`).
+- **`RoomTimers`** — hosted service in `AroundTheWorld.Api` driven by `TimeProvider`. At each
+  tick, after the games, it sends `RemoveAbsentPlayersCommand(now)`.
+- **`RemoveAbsentPlayersCommandHandler`** — finds, by the indexed `AwaySince`, each room with a
+  player away for 30 seconds or more, loads it, calls `Room.RemoveAbsent`, saves, and announces
+  `RoomChanged` and `GameChanged` to the players who remain; a tour that ended carries the ending
+  `everyoneLeft`. The room is then kept while the Podium is shown, as
   [`rooms/decide-game-on-server`](../decide-game-on-server/README.md) describes. When the
   removal leaves no player in the room, the handler deletes the room and everything it held
   (`L2-027` criterion 3).
@@ -107,21 +126,20 @@ Backend:
 
 Tests advance `FakeTimeProvider` past 30 seconds; none sleeps.
 
-Four points are undecided:
+Four points the design left open are decided in ADR 0036:
 
-- What the tour does when the removed player is the traveller or the desk holder of the current
-  duel is `<TO SUPPLY>`: `L2-029` criterion 4 fixes only that the desk is empty and the game
-  continues.
-- Whether the other players are shown that a player is away during the 30 seconds is
-  `<TO SUPPLY>`. No mock draws it: the other players are told when the player is removed.
+- When the removed player is the desk holder of the current duel, the traveller moves on to the
+  next held desk without a hop; when they are its traveller, the desk holder travels on and
+  nobody sits down. An open duel shows its answer, and the next card follows 2 seconds later.
+- The other players are not shown that a player is away during the 30 seconds: they are told
+  when the player is removed (`docs/design-system/components/status-overlay.html`).
 - A player who chooses "Leave" during a game (`L2-033` criterion 4) tells the room and cannot
   come back: `FriendsGame.leave()` sends `LeaveRoom` and closes the connection, and no spot is
-  saved ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)). Whether that
-  player's desk is then treated as a removed player's desk, and whether the other players are
-  shown "{nickname} dropped out.", are `<TO SUPPLY>`.
-- A connection lost in the Lobby, before the game starts, belongs to
-  [`rooms/wait-in-lobby`](../wait-in-lobby/README.md) (`L2-029` criterion 6). Whether the 30
-  seconds apply there is `<TO SUPPLY>`.
+  saved ([`rooms/decide-game-on-server`](../decide-game-on-server/README.md)). A classmate takes
+  their place; their desk is not a removed player's and no banner is shown.
+- A connection lost in the Lobby (`L2-029` criterion 6,
+  [`rooms/wait-in-lobby`](../wait-in-lobby/README.md)) is tried for the same 30 seconds, and the
+  server removes a waiting player away for 30 seconds as if they had left the room.
 
 The screen follows the mocks `docs/mocks/pages/duel/` (states `reconnecting`, `error`) and
 `docs/mocks/notifications/connection-banner/` (states `info`, `success`, `warning`, `danger`).

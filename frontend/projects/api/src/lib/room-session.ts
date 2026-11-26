@@ -2,8 +2,11 @@ import { InjectionToken, type Signal } from '@angular/core';
 import { type GameSetup } from './game-setup';
 import { type RoomEntry, type RoomState } from './rooms';
 
-/** Whether the room's connection is opening, live, or lost for good (L2-029 criterion 6). */
-export type RoomLink = 'connecting' | 'live' | 'lost';
+/**
+ * Whether the room's connection is opening, live, lost and being tried again for 30 seconds, or
+ * lost for good (L2-029 criteria 1 and 6, docs/adr/0036).
+ */
+export type RoomLink = 'connecting' | 'live' | 'reconnecting' | 'lost';
 
 /**
  * The room the device's player is in, kept up to date over its connection: what the Lobby reads
