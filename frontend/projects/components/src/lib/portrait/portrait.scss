@@ -1,0 +1,70 @@
+// The portrait block of docs/design-system/assets/components.css.
+:host {
+  display: contents;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  aspect-ratio: 1;
+  width: 3.5rem;
+  height: auto;
+  flex: none;
+}
+
+// A skeleton keeps its own shimmer; a picture or a drawn kid sits on the kid's colour.
+.portrait:not(.skeleton) {
+  background: var(--kid);
+}
+
+.portrait--sm {
+  width: 2.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.portrait--md {
+  width: 2.75rem;
+}
+
+.portrait--round {
+  border-radius: var(--radius-full);
+}
+
+// In a stack, each portrait overlaps the one before it on a ring of the surface colour; the
+// stack's own padding makes room for the first (docs/design-system/components/portrait.html).
+:host-context(.portrait-stack) .portrait {
+  box-shadow: 0 0 0 var(--border-width-heavy) var(--color-bg-surface);
+  margin-left: calc(-1 * var(--space-3));
+}
+
+.portrait--ring {
+  box-shadow: 0 0 0 var(--border-width-heavy) var(--kid);
+}
+
+.portrait--fill {
+  width: 100%;
+}
+
+.portrait--hero {
+  width: 100%;
+  max-width: 17rem;
+  border-radius: calc(var(--radius-xl) + var(--radius-xs));
+}
+
+@media (min-width: 36rem) {
+  .portrait--md {
+    width: 3.5rem;
+  }
+
+  .portrait--hero {
+    max-width: 24rem;
+  }
+}
+
+@media (min-width: 62rem) {
+  .portrait--hero {
+    max-width: 28rem;
+  }
+}

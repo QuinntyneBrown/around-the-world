@@ -1,0 +1,11 @@
+// The dialog fills CDK Dialog's pane; the line under Done is centred
+// (docs/mocks/dialogs/settings/).
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.settings__note {
+  text-align: center;
+}

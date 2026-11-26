@@ -182,6 +182,9 @@ a:hover { color: var(--color-fg-link-hover); }
 .home { display: flex; flex-direction: column; min-height: 100dvh; overflow: hidden; }
 .home__scene { position: relative; height: 46vh; min-height: 18rem; flex: none; background: var(--color-bg-subtle); }
 .home__picture { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The 3D classroom's canvas fades in over the still picture once it is drawn (ADR 0028). */
+.home__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: var(--color-bg-subtle); opacity: 0; transition: opacity var(--duration-slow) var(--ease-standard); }
+.home__canvas--drawn { opacity: 1; }
 .home__corner { position: absolute; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-2); }
 .home__panel { position: relative; z-index: var(--z-raised); flex: 1; display: flex; flex-direction: column; gap: var(--space-8); margin-top: calc(-1 * var(--space-8)); padding: var(--space-8) var(--space-6); background: var(--color-bg-canvas); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 .home__intro { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
@@ -234,6 +237,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .mode-card__art { margin-top: var(--space-6); }
 .mode-card__actions { margin-top: auto; padding-top: var(--space-8); display: grid; gap: var(--space-3); }
 @media (min-width: 36rem) { .mode-card__actions--two { grid-template-columns: 1fr 1fr; } }
+.mode-card__note { margin-top: var(--space-3); }
 .code-letters { display: flex; gap: var(--space-2); }
 .code-letters__letter { display: grid; place-items: center; width: 3.5rem; aspect-ratio: 1; border-radius: var(--radius-sm); background: var(--color-bg-canvas); box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default); font: var(--text-h2); color: var(--color-fg-accent); }
 
@@ -335,6 +339,8 @@ a:hover { color: var(--color-fg-link-hover); }
 /* ---------- Duel: fills the screen and never scrolls ---------------------- */
 .duel { background: var(--color-bg-inverse); }
 .duel__scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.duel__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: var(--color-bg-subtle); opacity: 0; transition: opacity var(--duration-slow) var(--ease-standard); }
+.duel__canvas--drawn { opacity: 1; }
 .duel__scrim { position: absolute; inset: 0; background: var(--color-scene-scrim); }
 .duel__hud { position: relative; z-index: var(--z-raised); display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); }
 .duel__progress { position: relative; z-index: var(--z-raised); display: flex; justify-content: center; margin-top: calc(-1 * var(--space-1)); }
@@ -380,7 +386,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .flash-card__result--wrong { color: var(--color-danger-fg); font: var(--text-h3); }
 .flash-card__result--quiet { color: var(--color-fg-muted); font: var(--text-h3); font-weight: var(--font-weight-semibold); }
 .flash-card--right { box-shadow: var(--shadow-ledge-2), inset 0 0 0 var(--border-width-stamp) var(--color-success-icon); }
-.flash-card--frozen { box-shadow: var(--shadow-ledge-2), inset 0 0 0 var(--border-width-stamp) var(--color-danger-solid); }
+.flash-card--frozen { box-shadow: var(--shadow-ledge-2), inset 0 0 0 var(--border-width-stamp) var(--color-danger-solid); animation: shake var(--duration-slow) var(--ease-standard) 1; }
 @media (min-width: 36rem) { .flash-card { padding: var(--space-8); } .flash-card__sum { font-size: var(--font-size-8xl); } .flash-card__foot { min-height: 5rem; } }
 @media (min-width: 62rem) { .flash-card__sum { font-size: var(--font-size-9xl); } }
 @media (max-height: 42rem) { .flash-card { padding: var(--space-3) var(--space-5); } .flash-card__sum { font-size: var(--font-size-6xl); } .flash-card__foot { min-height: 3rem; margin-top: var(--space-2); } .flash-card__result { font: var(--text-h4); } }
@@ -405,7 +411,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .number-pad__key:disabled { opacity: 0.4; pointer-events: none; }
 @media (min-width: 36rem) { .number-pad { gap: var(--space-3); } .number-pad__key { height: var(--control-height-xl); } }
 @media (min-width: 48rem) { .number-pad { max-width: 18rem; flex: none; } }
-@media (max-height: 34rem) { .number-pad__key { height: var(--target-min); font: var(--text-h3); } .number-pad { max-width: 16rem; } }
+@media (max-height: 34rem) { .number-pad__key { height: var(--target-min); font: var(--text-h3); } .number-pad { max-width: 16rem; flex: none; } .duel__stage { flex-direction: row; gap: var(--space-4); } }
 @media (max-width: 47.99rem) and (max-height: 42rem) { .number-pad__key { height: var(--target-min); font: var(--text-h3); } .duel__foot { padding-block: var(--space-1) var(--space-2); min-height: 0; } .duel__stage { padding-block: var(--space-2); gap: var(--space-2); } }
 .stamp-card { width: 100%; max-width: 28rem; display: flex; flex-direction: column; align-items: center; padding: var(--space-8) var(--space-6); text-align: center; background: var(--color-bg-surface); border: var(--border-width-stamp) dashed var(--color-danger-solid); border-radius: var(--radius-xl); rotate: -3deg; }
 .stamp-card__kicker { font: var(--text-h4); color: var(--color-danger-fg); }
@@ -443,6 +449,9 @@ a:hover { color: var(--color-fg-link-hover); }
 .world-map__view--room { display: none; }
 .world-map__foot { position: relative; z-index: var(--z-raised); padding: var(--space-3); }
 .world-map__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The 3D room under the drawn room's labels, drawn on the screen's own background. */
+.world-map__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: var(--color-bg-canvas); opacity: 0; transition: opacity var(--duration-slow) var(--ease-standard); }
+.world-map__canvas--drawn { opacity: 1; }
 @media (min-width: 36rem) { .world-map__head, .world-map__foot { padding: var(--space-5); } .world-map__title { font: var(--text-h2); } }
 @media (min-width: 48rem) { .world-map__view--room { display: block; } .world-map__view--zoom { display: none; } }
 .map-toast-region { position: absolute; inset-inline: 0; top: 5rem; z-index: var(--z-toast); display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding-inline: var(--space-4); pointer-events: none; }
@@ -504,7 +513,9 @@ a:hover { color: var(--color-fg-link-hover); }
 .podium__cheer { font: var(--text-body-lg); color: var(--color-fg-muted); text-align: center; margin-top: var(--space-2); }
 .podium__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: var(--space-2); margin-top: var(--space-8); }
 .podium__steps--two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 28rem; margin-inline: auto; width: 100%; }
-.podium__place { display: flex; flex-direction: column; align-items: center; }
+.podium__place { display: flex; flex-direction: column; align-items: center; order: 1; }
+.podium__place--first { order: 2; }
+.podium__place--third { order: 3; }
 .podium__picture { width: 100%; height: auto; max-width: 10rem; aspect-ratio: 1; object-fit: cover; background: var(--kid); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 .podium__place--first .podium__picture { max-width: 14rem; }
 .podium__step { width: 100%; height: 6rem; display: flex; flex-direction: column; align-items: center; padding: var(--space-3) var(--space-2) 0; border-radius: var(--radius-md); background: var(--kid-tag-bg); color: var(--kid-tag-fg); }
@@ -599,12 +610,13 @@ a:hover { color: var(--color-fg-link-hover); }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @keyframes ring-out { from { opacity: 0.6; scale: 1; } to { opacity: 0; scale: 1.25; } }
 @keyframes level { from { scale: 1 0.25; } to { scale: 1 1; } }
+@keyframes shake { 20%, 60% { translate: -0.5rem 0; } 40%, 80% { translate: 0.5rem 0; } }
 
 /* Reduced motion: nothing moves across the screen; quick fades only (L2-038). */
 @media (prefers-reduced-motion: reduce) {
   .toy-btn, .icon-btn, .number-pad__key, .sticker { transition: none; }
   .listener__ring { display: none; }
-  .level-meter__bar, .skeleton { animation: none; }
+  .level-meter__bar, .skeleton, .flash-card--frozen { animation: none; }
   .dialog__panel, .toast, .map-toast, .sticker-pop { animation-name: fade-in; }
   .stamp-card, .stamp, .sticker-pop { rotate: none; }
 }

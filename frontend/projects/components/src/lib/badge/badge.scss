@@ -1,0 +1,23 @@
+// The badge block of docs/design-system/assets/components.css, on the host element.
+:host {
+  --icon-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  color: var(--color-fg-default);
+  font: var(--text-overline);
+  white-space: nowrap;
+}
+
+.badge__icon {
+  display: flex;
+  color: var(--color-warning-icon);
+}
+
+:host(.badge--you) {
+  background: var(--color-bg-inverse);
+  color: var(--color-fg-inverse);
+}

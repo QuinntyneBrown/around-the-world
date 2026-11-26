@@ -1,0 +1,31 @@
+@if (loading()) {
+  <section atw-panel class="mode-card" aria-hidden="true">
+    <div class="mode-card__head">
+      <atw-skeleton shape="block" class="mode-card__icon" />
+      <atw-skeleton shape="title" class="mode-card__title-skeleton" />
+    </div>
+    <div class="mode-card__text mode-card__lines">
+      <atw-skeleton shape="text" />
+      <atw-skeleton shape="text" [short]="true" />
+    </div>
+    <div class="mode-card__art"><atw-skeleton shape="block" class="mode-card__art-skeleton" /></div>
+    <div class="mode-card__actions">
+      <atw-skeleton shape="block" class="mode-card__action-skeleton" />
+    </div>
+  </section>
+} @else {
+  <section atw-panel class="mode-card" [attr.aria-labelledby]="headingId()">
+    <div class="mode-card__head">
+      <span class="mode-card__icon" [class.mode-card__icon--friends]="mode() === 'friends'"
+        ><atw-icon [name]="mode()"
+      /></span>
+      <h2 [id]="headingId()">{{ heading() }}</h2>
+    </div>
+    <p class="mode-card__text">{{ text() }}</p>
+    <div class="mode-card__art"><ng-content select="[slot=art]" /></div>
+    <div class="mode-card__actions" [class.mode-card__actions--two]="mode() === 'friends'">
+      <ng-content select="[slot=actions]" />
+    </div>
+    <div class="mode-card__note"><ng-content select="[slot=note]" /></div>
+  </section>
+}

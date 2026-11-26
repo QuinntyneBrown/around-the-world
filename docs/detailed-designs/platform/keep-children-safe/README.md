@@ -61,8 +61,8 @@ a member may carry.
 
 The connection token of `L2-043` criterion 1 is the one value of a client message that is not
 closed. `L2-040` criterion 1 lists it among the values a client message may hold. The server
-issues it when a player joins, and a child never types or says it. How the token travels with a
-message is `<TO SUPPLY>` and is settled in `docs/detailed-designs/rooms/guard-room/`.
+issues it when a player joins, and a child never types or says it. The token travels as SignalR's access token, settled in
+`docs/detailed-designs/rooms/guard-room/` (`docs/adr/0031-making-a-room.md`).
 
 **No audio is recorded, stored or sent (`L2-040` criterion 2).**
 
@@ -77,10 +77,10 @@ message is `<TO SUPPLY>` and is settled in `docs/detailed-designs/rooms/guard-ro
 - Neither `RoomsApi` nor `RoomConnection` has a member that accepts audio or a transcript, so a
   shout reaches a room only as `submitAnswer(number)`.
 
-Whether `SpeechVoiceAnswer` shall require recognition that runs on the device, so that the
-browser's own recognizer sends no sound to a recognition service, is `<TO SUPPLY>`. `L2-040`
-criterion 2 names only the backend; `AGENTS.md` states that nothing a child says leaves the
-device as sound. The decision belongs to `docs/detailed-designs/answering/`.
+`SpeechVoiceAnswer` requires recognition that runs on the device: each session sets
+`processLocally`, and a browser that cannot recognise speech on the device plays with the number
+pad, so no sound reaches a recognition service (`docs/adr/0025-answering-by-voice.md`,
+`docs/detailed-designs/answering/answer-by-voice/`).
 
 **A nickname is rebuilt from its indexes and rendered as text (`L2-040` criterion 3).**
 
@@ -101,7 +101,9 @@ device as sound. The decision belongs to `docs/detailed-designs/answering/`.
 Each list holds ten words, so each index runs from 0 to 9 and 100 nicknames exist (`L2-014`).
 The adjectives are Speedy, Mighty, Clever, Bouncy, Sneaky, Brave, Zippy, Jolly, Cosmic and
 Turbo. The animals are Otter, Panda, Falcon, Gecko, Llama, Narwhal, Koala, Fox, Penguin and
-Yak. How the backend's validator and `NicknameGenerator` hold the same lists is `<TO SUPPLY>`.
+Yak. The backend holds no word of either list: its validator checks only that each index is a whole
+number from 0 to 9, and only `NicknameGenerator` on the device turns the indexes into words
+(`docs/adr/0031-making-a-room.md`).
 
 **No screen has a free-text field other than the room code (`L2-040` criterion 4).**
 

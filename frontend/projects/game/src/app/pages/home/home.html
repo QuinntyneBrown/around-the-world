@@ -1,0 +1,76 @@
+<main id="main" class="home">
+  <div class="home__scene">
+    @switch (classroom()) {
+      @case ('loading') {
+        <atw-skeleton shape="panel" class="home__picture" />
+      }
+      @case ('loaded') {
+        <img class="home__picture" [src]="classroomPicture" alt="" />
+      }
+    }
+    <canvas
+      class="home__canvas"
+      [class.home__canvas--drawn]="scene() === 'drawn'"
+      [atwClassroom]="atRest"
+      (status)="scene.set($event)"
+    ></canvas>
+    <div class="home__corner">
+      <button
+        atw-icon-button
+        type="button"
+        [icon]="muted() ? 'mute' : 'sound'"
+        [attr.aria-label]="muted() ? 'Turn sound on' : 'Mute sound'"
+        [attr.aria-pressed]="muted()"
+        (click)="toggleSound()"
+      ></button>
+      <button
+        atw-icon-button
+        type="button"
+        icon="settings"
+        aria-label="Settings"
+        (click)="openSettings()"
+      ></button>
+    </div>
+  </div>
+  <section class="home__panel">
+    <div class="home__intro">
+      <p class="home__kicker">The flash-card race</p>
+      <h1 class="home__title">
+        Around<br />
+        the <span class="home__title-accent">World</span>
+      </h1>
+      <p class="home__lead">
+        Shout the answer first. Hop to the next desk. Make it all the way round.
+      </p>
+      <a atw-toy-button size="xl" class="home__play" [routerLink]="playLink()">{{ playLabel() }}</a>
+    </div>
+
+    @if (scene() === 'still') {
+      <atw-alert heading="The 3D classroom is having a rest">
+        <p>You’re seeing a picture of it instead. The game plays just the same.</p>
+      </atw-alert>
+    }
+
+    @if (kept(); as kept) {
+      @if (kidPicture() === 'loading') {
+        <div aria-busy="true">
+          <p class="visually-hidden" role="status">Getting your kid…</p>
+          <span atw-kid-chip [kid]="kept.kid.id" [loading]="true"></span>
+        </div>
+      } @else {
+        <!-- eslint-disable-next-line @angular-eslint/template/elements-content -- the chip renders its words -->
+        <a
+          atw-kid-chip
+          routerLink="/kid"
+          [kid]="kept.kid.id"
+          [kidName]="kept.kid.name"
+          [nickname]="kept.nickname"
+          [picture]="kept.kid.picture"
+          [pictureState]="kidPicture()"
+        ></a>
+      }
+    } @else {
+      <p class="text-muted">No names, no sign-up. You pick a kid and get a game name.</p>
+    }
+  </section>
+</main>

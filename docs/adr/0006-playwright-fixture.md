@@ -17,15 +17,30 @@ off localhost or a page error (`AGENTS.md`, E2E).
   replaces `SpeechRecognition`/`webkitSpeechRecognition`, `navigator.mediaDevices.getUserMedia`,
   the microphone's permission query and Chrome's `LanguageModel`. The spec drives them through
   the fixtures `voice` (`say`, `unsupported`), `microphone` (`grant`, `deny`) and `model`
-  (`answers`, `downloadable`, `sessions`). By default the microphone is not expected and the
+  (`answers`, `downloadable`, `sessions`). Journey 07 adds `voice.silence()`, `voice.fail()`
+  and `voice.listening()`, `microphone.ask()` (the browser's question held open) and
+  `microphone.openStreams()`, and the fake recognizer offers on-device recognition
+  (`processLocally`, docs/adr/0025-answering-by-voice.md). Journey 11 adds `model.holds()`
+  with `reply`, `waiting` and `aborted` (a slow model), `model.fails()`, `model.missing()` and
+  `model.asked()`; `sessions()` also counts what is still open, and a session created while the
+  model is not downloaded, which would start a download, is a problem
+  (docs/adr/0030-classmates-with-the-on-device-model.md). By default the microphone is not expected and the
   model is unavailable, so a classmate plays from its profile.
+- Journey 12 adds `backend.holdBack` (an answer held until the spec releases it, the
+  submitting state), `backend.unreachable` (no response at all, until the spec answers it) and
+  `backend.requests()` (every API request with its JSON body, so a spec proves what the game
+  sent), and `network.offline()` and `network.online()` (Playwright's `setOffline`, which sets
+  `navigator.onLine` and fails every request) (docs/adr/0031-making-a-room.md).
 - The overridden `page` fixture routes every request: off localhost is refused, `/api/` and
   `/hubs/` are answered only from the `backend` fixture (`answer`, `hub`), and any other
   localhost request (the build, its fonts, the classroom's assets) goes through.
 - A problem is collected, not thrown, and the fixture fails the spec at its end with the list:
   an unexpected microphone call, an unanswered request or WebSocket, a request off localhost, a
   page error, or a console error (Angular's global error listeners log uncaught errors rather
-  than letting them reach the browser as page errors).
+  than letting them reach the browser as page errors). Journey 08 adds `random.breaks()`, which makes the
+  page's `Math.random` throw from then on so a spec can break the game as a broken browser
+  would; the console error the game then logs is expected (`expectedErrors`), and any other
+  still fails the spec (docs/adr/0027-pausing-leaving-and-recovering.md).
 - The specs run against the production build in `dist/game/browser`, served on localhost by
   `e2e/support/serve.mjs`, on Chromium only, with traces off.
 

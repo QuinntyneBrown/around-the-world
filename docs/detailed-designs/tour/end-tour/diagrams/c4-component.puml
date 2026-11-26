@@ -6,9 +6,9 @@ title Components — End a tour
 Person(child, "Child", "The device's player")
 Container_Boundary(game, "game (Angular application and its libraries)") {
   Component(page, "PodiumPage", "Page, game application", "Shows the result and offers Play again and Home")
-  Component(views, "PodiumSteps, PassportView, KidTag", "Presentation, components library", "Draw the top three, rising in turn, and the player's passport")
+  Component(views, "Podium, Passport", "Presentation, components library", "Draw the top three, rising in turn, and the player's passport")
   Component(session, "GameSession (GAME_SESSION)", "Contract and token, api library", "Publishes the tour's result; plays again or leaves")
-  Component(solo, "SoloGame", "Game service, game application", "Ends the tour and starts a new one with the same kid and setup")
+  Component(solo, "SoloGame", "Game service, domain tour/", "Ends the tour and starts a new one with the same kid and setup")
   Component(tour, "Tour", "Rule type, domain tour/", "Knows when a distance travelled equals the tour length and when the time limit has passed")
   Component(standings, "Standings", "Rule type, domain tour/", "Gives every player a place by distance travelled")
   Component(passport, "Passport", "Rule type, domain tour/", "Holds the player's stamps")

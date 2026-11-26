@@ -1,0 +1,102 @@
+// The standings block of docs/design-system/assets/components.css: five equal columns on a
+// phone, one centred row from 576 px. The child's entry has an accent edge as well as "You".
+:host {
+  display: block;
+}
+
+.standings {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: var(--space-1);
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-1);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+}
+
+.standings__item {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.standings__item[aria-current='true'] {
+  background: var(--color-bg-canvas);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-accent);
+}
+
+.standings__place {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-1);
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+  color: var(--color-fg-muted);
+}
+
+.standings__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--kid, var(--color-bg-subtle)) 22%, var(--color-bg-surface));
+}
+
+.standings__text {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.standings__name {
+  display: block;
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings__score {
+  display: block;
+  font: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 36rem) {
+  .standings {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .standings__item {
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+    text-align: left;
+  }
+
+  .standings__place {
+    position: static;
+    width: 1.25rem;
+    text-align: center;
+    font-size: var(--font-size-lg);
+  }
+
+  .standings__name {
+    font-size: var(--font-size-md);
+  }
+}

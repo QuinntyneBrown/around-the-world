@@ -1,0 +1,121 @@
+<atw-screen [fill]="true" class="duel">
+  <img class="duel__scene" src="img/scene-duel.jpg" alt="" />
+  <canvas
+    class="duel__canvas"
+    [class.duel__canvas--drawn]="scene() === 'drawn'"
+    [atwClassroom]="classroom()"
+    (status)="scene.set($event)"
+  ></canvas>
+  <div class="duel__scrim"></div>
+  @if (duel(); as duel) {
+    <header class="duel__hud">
+      <atw-duel-hud
+        [traveller]="traveller()"
+        [deskHolder]="deskHolder()"
+        [desk]="'Desk ' + duel.desk + ' of ' + duel.tourLength"
+      >
+        <atw-timer-bar
+          [seconds]="duel.secondsToAnswer"
+          [timeLeftMs]="duel.timeLeftMs"
+          [kid]="duel.traveller.kid"
+          [stopped]="!open()"
+        />
+      </atw-duel-hud>
+      <atw-world-ring [tourLength]="duel.tourLength" [desk]="duel.desk" [places]="duel.ring" />
+      @if (canPause) {
+        <button
+          atw-icon-button
+          type="button"
+          icon="pause"
+          aria-label="Pause"
+          (click)="pause()"
+        ></button>
+      } @else {
+        <button
+          atw-icon-button
+          type="button"
+          icon="leave"
+          aria-label="Leave the game"
+          (click)="leave()"
+        ></button>
+      }
+    </header>
+    <div class="duel__progress">
+      <p atw-pill>{{ duel.country }} · desk {{ duel.desk }} of {{ duel.tourLength }}</p>
+    </div>
+    <main id="main" class="duel__stage">
+      <h1 class="visually-hidden">Duel at {{ duel.country }}</h1>
+      <p class="visually-hidden" role="status" aria-live="assertive">{{ announcement() }}</p>
+      @if (stamp(); as stamp) {
+        <atw-stamp-card [country]="stamp.country" [landmark]="stamp.landmark" [hop]="stamp.hop" />
+      } @else {
+        <!-- A new flash card for each card dealt, so each one flips in (docs/adr/0029). -->
+        @for (card of [duel.card]; track card) {
+          <atw-flash-card
+            [sum]="sum()"
+            [sumLabel]="sumLabel()"
+            [answer]="answerBox()"
+            [frozen]="duel.frozen"
+            [result]="line().result"
+            [emphasis]="line().emphasis"
+            [tone]="line().tone"
+          >
+            @if (listening()) {
+              <p
+                atw-shout
+                atwListening
+                (heard)="shouted($event)"
+                (failed)="voiceStopped($event)"
+              ></p>
+            }
+            @if (voiceFailed() && open()) {
+              <p class="text-sm text-muted" role="status">
+                Bolt stopped hearing, so tap your answer for this one.
+              </p>
+            }
+            @if (pill(); as words) {
+              <button
+                atw-text-button
+                type="button"
+                [pill]="true"
+                [sunken]="true"
+                (click)="moveOn()"
+              >
+                {{ words }}
+              </button>
+            }
+          </atw-flash-card>
+        }
+      }
+      @if (open() && !byVoice()) {
+        <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
+      }
+    </main>
+  } @else {
+    <header class="duel__hud"><atw-duel-hud [loading]="true" /></header>
+    <main id="main" class="duel__stage">
+      <h1 class="visually-hidden">Duel</h1>
+      <atw-flash-card status="Getting the first card ready…" result="Get ready…" />
+    </main>
+  }
+  <footer class="duel__foot">
+    @switch (switchTo()) {
+      @case ('numberPad') {
+        <button
+          atw-text-button
+          type="button"
+          icon="keypad"
+          [pill]="true"
+          (click)="switchWay('numberPad')"
+        >
+          Use number pad
+        </button>
+      }
+      @case ('voice') {
+        <button atw-text-button type="button" icon="mic" [pill]="true" (click)="switchWay('voice')">
+          Shout instead
+        </button>
+      }
+    }
+  </footer>
+</atw-screen>

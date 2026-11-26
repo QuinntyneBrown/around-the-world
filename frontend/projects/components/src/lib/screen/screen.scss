@@ -1,0 +1,13 @@
+// The screen block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+:host(.screen--fill) {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}

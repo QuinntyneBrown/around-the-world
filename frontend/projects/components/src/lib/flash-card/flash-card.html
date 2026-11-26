@@ -1,0 +1,56 @@
+@if (status(); as words) {
+  <p class="visually-hidden" role="status">{{ words }}</p>
+}
+@if (sum(); as shown) {
+  <p
+    class="flash-card__sum"
+    [attr.role]="sumLabel() ? 'img' : null"
+    [attr.aria-label]="sumLabel() || null"
+  >
+    {{ shown }}
+  </p>
+} @else {
+  <atw-skeleton shape="title" class="flash-card__sum flash-card__sum--dealing" />
+}
+<div class="flash-card__foot">
+  @if (answer(); as digits) {
+    <div
+      class="answer-box numeric"
+      role="img"
+      [class.answer-box--frozen]="frozen()"
+      [attr.aria-hidden]="frozen() || null"
+      [attr.aria-label]="'Your answer: ' + digits"
+    >
+      {{ digits }}
+    </div>
+  } @else if (answer() === '') {
+    <div class="answer-box numeric" role="img" aria-label="Your answer: nothing yet">
+      <span class="answer-box__empty">?</span>
+    </div>
+  }
+  @if (result(); as line) {
+    <p
+      class="flash-card__result"
+      [class.flash-card__result--quiet]="tone() === 'quiet' || tone() === 'timeUp'"
+      [class.flash-card__result--right]="tone() === 'right'"
+      [class.flash-card__result--wrong]="tone() === 'wrong'"
+    >
+      @switch (tone()) {
+        @case ('right') {
+          <atw-icon name="check" size="lg" />
+        }
+        @case ('wrong') {
+          <atw-icon name="frozen" />
+        }
+        @case ('timeUp') {
+          <atw-icon name="clock" />
+        }
+      }
+      {{ line }}
+      @if (emphasis(); as strong) {
+        <strong class="flash-card__emphasis">{{ strong }}</strong>
+      }
+    </p>
+  }
+  <ng-content />
+</div>

@@ -1,0 +1,61 @@
+// The world-ring block of docs/design-system/assets/components.css, on the host element. It
+// shows from 768 px wide; under that a pill gives the same in words (L2-050 criterion 3).
+:host {
+  display: none;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-1) var(--space-3) var(--space-2);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-ledge-1);
+}
+
+@media (min-width: 48rem) {
+  :host {
+    display: flex;
+  }
+}
+
+// A phone turned on its side: the desk goes beside the names instead (L2-050 criterion 5).
+@media (max-height: 34rem) {
+  :host {
+    display: none;
+  }
+}
+
+.world-ring__svg {
+  width: 8.25rem;
+  height: 8.25rem;
+}
+
+.world-ring__track {
+  fill: none;
+  stroke: var(--color-border-default);
+  stroke-width: 6;
+}
+
+.world-ring__desk {
+  fill: var(--color-toy-base);
+}
+
+.world-ring__desk--start {
+  fill: var(--color-fg-default);
+}
+
+.world-ring__racer {
+  fill: var(--kid);
+  stroke: var(--color-bg-surface);
+  stroke-width: 2.5;
+}
+
+.world-ring__racer--me {
+  stroke: var(--color-fg-default);
+  stroke-width: 3;
+}
+
+.world-ring__label {
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+  margin-top: calc(-1 * var(--space-1));
+}

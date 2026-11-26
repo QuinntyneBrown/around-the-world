@@ -1,0 +1,27 @@
+@if (loading()) {
+  <div class="duel-hud__row">
+    <atw-skeleton shape="block" class="duel-hud__portrait" />
+    <atw-skeleton shape="text" />
+    <span class="duel-hud__vs">vs</span>
+    <atw-skeleton shape="text" />
+    <atw-skeleton shape="block" class="duel-hud__portrait" />
+  </div>
+  <atw-skeleton shape="round" class="duel-hud__timer" />
+} @else {
+  <div class="duel-hud__row">
+    @for (player of players(); track $index) {
+      @if ($index === 1) {
+        <span class="duel-hud__vs" aria-hidden="true">vs</span>
+      }
+      <div class="duelist" [class.duelist--flip]="$index === 1" [attr.data-kid]="player.kid">
+        <atw-portrait [kid]="player.kid" [src]="player.picture" size="md" [ring]="true" />
+        <div class="duelist__text">
+          <p class="duelist__name">{{ player.name }}</p>
+          <p class="duelist__role">{{ player.role }}</p>
+        </div>
+      </div>
+    }
+    <p class="duel-hud__desk numeric">{{ desk() }}</p>
+  </div>
+  <ng-content />
+}

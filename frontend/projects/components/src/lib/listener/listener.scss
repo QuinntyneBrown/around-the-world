@@ -1,0 +1,83 @@
+// The listener block of docs/design-system/assets/components.css, on the host element.
+:host {
+  position: relative;
+  flex: none;
+  display: block;
+  width: 14rem;
+  aspect-ratio: 1;
+}
+
+.listener__picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background: var(--kid);
+}
+
+.listener__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: var(--border-width-heavy) solid var(--color-success-icon);
+  animation: ring-out var(--duration-sweep) var(--ease-enter) infinite;
+}
+
+.listener__ring:nth-of-type(2) {
+  animation-delay: calc(var(--duration-sweep) / 2);
+}
+
+.listener__badge {
+  position: absolute;
+  bottom: calc(-1 * var(--space-1));
+  right: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-action-go);
+  color: var(--color-fg-on-action);
+  box-shadow: 0 0 0 var(--space-2) var(--color-bg-canvas);
+}
+
+.listener__badge--off {
+  background: var(--color-danger-solid);
+  color: var(--color-fg-on-danger);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    width: 18rem;
+  }
+
+  .listener__badge {
+    width: 5rem;
+    height: 5rem;
+  }
+}
+
+@media (min-width: 62rem) {
+  :host {
+    width: 20rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listener__ring {
+    display: none;
+  }
+}
+
+@keyframes ring-out {
+  from {
+    opacity: 0.6;
+    scale: 1;
+  }
+
+  to {
+    opacity: 0;
+    scale: 1.25;
+  }
+}

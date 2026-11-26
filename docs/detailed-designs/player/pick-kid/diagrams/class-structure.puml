@@ -85,6 +85,24 @@ class KidChip {
 
 class HomePage
 
+interface PictureLoader {
+  +preload(urls: string[], signal: AbortSignal): Promise<"loaded" | "failed">
+}
+
+class BrowserPictureLoader
+
+class Portrait {
+  +kid: KidId
+  +src: string
+  +state: "loading" | "loaded" | "failed"
+}
+
+class NicknameView <<component>> {
+  +value: string
+  +loading: boolean
+  +newName: Output<void>
+}
+
 PlayerStorage <|.. LocalPlayerStorage
 PlayerChoices <|.. StoredPlayerChoices
 PlayerRecord *-- Nickname
@@ -97,4 +115,10 @@ PickYourKidPage ..> NicknameGenerator : generates
 PickYourKidPage --> KidPicker : renders
 HomePage --> PlayerChoices : reads
 HomePage --> KidChip : renders when a kid is kept
+PictureLoader <|.. BrowserPictureLoader
+PickYourKidPage --> PictureLoader : waits for the portraits
+HomePage --> PictureLoader : waits for the pictures
+PickYourKidPage --> NicknameView : renders
+KidPicker --> Portrait : renders
+KidChip --> Portrait : renders
 @enduml

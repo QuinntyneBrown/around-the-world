@@ -1,0 +1,109 @@
+<atw-screen>
+  @if (!online()) {
+    <atw-alert tone="warning" icon="wifi-off" [banner]="true">
+      <p><strong>You’re offline.</strong> You can still play solo.</p>
+    </atw-alert>
+  }
+  <header atw-top-bar heading="Who’s playing?">
+    <a atw-icon-button slot="back" icon="back" routerLink="/kid" aria-label="Back"></a>
+  </header>
+  @if (pictures() === 'loading') {
+    <main atw-screen-body [center]="true" aria-busy="true">
+      <p class="visually-hidden" role="status">Getting ready…</p>
+      <div atw-mode-grid>
+        <atw-mode-card [loading]="true" />
+        <atw-mode-card [loading]="true" />
+      </div>
+    </main>
+  } @else {
+    <main atw-screen-body [center]="true">
+      <div atw-mode-grid>
+        <atw-mode-card
+          mode="solo"
+          heading="Just me"
+          text="Race the class. Your classmates are played by the computer."
+        >
+          <div atw-portrait-stack slot="art">
+            @for (kid of classmates(); track kid.id) {
+              <atw-portrait
+                [kid]="kid.id"
+                [src]="kid.picture"
+                [alt]="kid.name"
+                [round]="true"
+                [state]="pictures()"
+              />
+            }
+          </div>
+          <a atw-toy-button slot="actions" variant="solo" [block]="true" routerLink="/setup"
+            >Play solo</a
+          >
+        </atw-mode-card>
+        <atw-mode-card
+          mode="friends"
+          heading="With friends"
+          text="Play live with up to 8 friends. Share a 4-letter code to get them in."
+        >
+          <atw-code-letters slot="art" letters="BOLT" />
+          <button
+            atw-toy-button
+            slot="actions"
+            type="button"
+            variant="friends"
+            [block]="true"
+            [disabled]="!canMakeRoom() && !making()"
+            [attr.aria-busy]="making() || null"
+            (click)="makeRoom()"
+          >
+            @if (making()) {
+              <atw-spinner /> Making…
+            } @else {
+              Make a room
+            }
+          </button>
+          <button
+            atw-toy-button
+            slot="actions"
+            type="button"
+            variant="paper"
+            [block]="true"
+            disabled
+          >
+            Join a room
+          </button>
+          @if (!online()) {
+            <p slot="note" class="hint">Playing with friends needs the internet.</p>
+          } @else if (refusal() === 'rate-limited') {
+            <atw-alert
+              slot="note"
+              tone="warning"
+              icon="clock"
+              heading="Whoa, slow down a moment"
+              [urgent]="true"
+            >
+              <p>That’s a lot of rooms! Wait a little, then try again.</p>
+            </atw-alert>
+          } @else if (refusal() === 'error') {
+            <atw-alert
+              slot="note"
+              tone="danger"
+              icon="alert"
+              heading="We couldn’t make your room"
+              [urgent]="true"
+            >
+              <p>Something went wrong on our side. Try again, or play solo while you wait.</p>
+              <button
+                atw-text-button
+                slot="actions"
+                type="button"
+                icon="retry"
+                (click)="makeRoom()"
+              >
+                Try again
+              </button>
+            </atw-alert>
+          }
+        </atw-mode-card>
+      </div>
+    </main>
+  }
+</atw-screen>

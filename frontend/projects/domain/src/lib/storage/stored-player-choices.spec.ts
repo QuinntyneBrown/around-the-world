@@ -1,0 +1,79 @@
+import { TestBed } from '@angular/core/testing';
+import { PLAYER_STORAGE, type PlayerRecord, type PlayerStorage } from '@atw/api';
+import { StoredPlayerChoices } from './stored-player-choices';
+
+class RecordingStorage implements PlayerStorage {
+  reads = 0;
+  readonly writes: PlayerRecord[] = [];
+  constructor(private readonly kept: PlayerRecord) {}
+  read(): PlayerRecord {
+    this.reads += 1;
+    return this.kept;
+  }
+  write(record: PlayerRecord): void {
+    this.writes.push(record);
+  }
+}
+
+function choicesWith(storage: PlayerStorage): StoredPlayerChoices {
+  TestBed.configureTestingModule({
+    providers: [StoredPlayerChoices, { provide: PLAYER_STORAGE, useValue: storage }],
+  });
+  return TestBed.inject(StoredPlayerChoices);
+}
+
+describe('StoredPlayerChoices', () => {
+  it('reads the device once and offers what it keeps', () => {
+    const storage = new RecordingStorage({ kid: 'nia', nickname: { adjective: 1, animal: 2 } });
+    const choices = choicesWith(storage);
+    expect(choices.kid()).toBe('nia');
+    expect(choices.nickname()).toEqual({ adjective: 1, animal: 2 });
+    expect(choices.kid()).toBe('nia');
+    expect(storage.reads).toBe(1);
+  });
+
+  it('keeps a confirmed kid and nickname on the device', () => {
+    const storage = new RecordingStorage({ kid: null, nickname: null });
+    const choices = choicesWith(storage);
+
+    choices.confirmKid('milo', { adjective: 8, animal: 5 });
+
+    expect(choices.kid()).toBe('milo');
+    expect(choices.nickname()).toEqual({ adjective: 8, animal: 5 });
+    expect(storage.writes).toEqual([{ kid: 'milo', nickname: { adjective: 8, animal: 5 } }]);
+  });
+
+  it('offers the default setup until the child changes it (L2-016 1, L2-017 1)', () => {
+    const choices = choicesWith(new RecordingStorage({ kid: 'nia', nickname: null }));
+    expect(choices.setup()).toEqual({
+      kinds: ['times'],
+      tables: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+      tourLength: 12,
+      cardSpeed: 'normal',
+    });
+  });
+
+  it('keeps a changed setup on the device beside the kid and nickname (L2-015 3)', () => {
+    const storage = new RecordingStorage({ kid: 'pip', nickname: { adjective: 1, animal: 1 } });
+    const choices = choicesWith(storage);
+    const setup = { kinds: ['plus'], tables: [7], tourLength: 24, cardSpeed: 'chill' } as const;
+
+    choices.changeSetup(setup);
+
+    expect(choices.setup()).toEqual(setup);
+    expect(storage.writes).toEqual([{ kid: 'pip', nickname: { adjective: 1, animal: 1 }, setup }]);
+  });
+
+  it('has sound on until the child mutes it, and keeps the mute on the device (L2-015 3)', () => {
+    const storage = new RecordingStorage({ kid: 'pip', nickname: { adjective: 1, animal: 1 } });
+    const choices = choicesWith(storage);
+    expect(choices.soundMuted()).toBe(false);
+
+    choices.setSoundMuted(true);
+
+    expect(choices.soundMuted()).toBe(true);
+    expect(storage.writes).toEqual([
+      { kid: 'pip', nickname: { adjective: 1, animal: 1 }, soundMuted: true },
+    ]);
+  });
+});

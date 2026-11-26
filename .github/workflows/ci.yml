@@ -42,8 +42,8 @@ jobs:
         run: npm run build
       - name: Install Chromium
         run: npx playwright install --with-deps --only-shell chromium
-      - name: Behaviour specs
-        run: npm run e2e
+      - name: Behaviour specs (the critical path of each feature, docs/adr/0015)
+        run: npm run e2e -- --grep @critical
 
   backend:
     name: Backend
@@ -61,5 +61,5 @@ jobs:
         run: dotnet format --verify-no-changes
       - name: Build
         run: dotnet build --configuration Release
-      - name: Acceptance tests
-        run: dotnet test --configuration Release --no-build
+      - name: Acceptance tests (the unit tests run locally, docs/adr/0031)
+        run: dotnet test tests/AroundTheWorld.Api.Tests --configuration Release --no-build

@@ -1,0 +1,5 @@
+{
+  "name": "@atw/api",
+  "private": true,
+  "sideEffects": false
+}

@@ -1,0 +1,65 @@
+// The toggle-row and toggle-chip blocks of docs/design-system/assets/components.css.
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  color: var(--color-fg-default);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  font: var(--text-name);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
+
+  &[aria-pressed='true'] {
+    background: var(--color-selected-bg);
+    color: var(--color-selected-fg);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+.toggle-chip__symbol {
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+}
+
+// The tick shows only when the chip is on.
+.toggle-chip__tick {
+  --icon-size: 1.125rem;
+  display: none;
+}
+
+.toggle-chip[aria-pressed='true'] .toggle-chip__tick {
+  display: contents;
+}
+
+@media (min-width: 36rem) {
+  :host {
+    gap: var(--space-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle-chip {
+    transition: none;
+  }
+}

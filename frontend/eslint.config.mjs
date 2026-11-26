@@ -6,19 +6,22 @@ import tseslint from 'typescript-eslint';
 
 /**
  * The dependency direction of AGENTS.md (Frontend), enforced by eslint-plugin-boundaries
- * (docs/adr/0005-eslint-boundaries.md): game -> components, api, domain; domain -> api;
- * components -> api for types only; api -> nothing. No library imports an app. A new library
- * takes its place here in the same change that adds it.
+ * (docs/adr/0005-eslint-boundaries.md): game -> components, api, domain, world; domain -> api;
+ * components -> api for types only; world -> api; api -> nothing. No library imports an app. A
+ * new library takes its place here in the same change that adds it (world: docs/adr/0028).
  */
 const dependencyDirection = {
   plugins: { boundaries },
   settings: {
     'import/resolver': { typescript: { project: './tsconfig.json' } },
+    // A dynamic import() is a dependency too: `world` is reached only that way.
+    'boundaries/dependency-nodes': ['import', 'dynamic-import'],
     'boundaries/elements': [
       { type: 'game', pattern: 'projects/game' },
       { type: 'api', pattern: 'projects/api' },
       { type: 'domain', pattern: 'projects/domain' },
       { type: 'components', pattern: 'projects/components' },
+      { type: 'world', pattern: 'projects/world' },
     ],
   },
   rules: {
@@ -27,10 +30,11 @@ const dependencyDirection = {
       {
         default: 'disallow',
         rules: [
-          { from: 'game', allow: ['game', 'components', 'api', 'domain'] },
+          { from: 'game', allow: ['game', 'components', 'api', 'domain', 'world'] },
           { from: 'domain', allow: ['domain', 'api'] },
           { from: 'components', allow: ['components'] },
           { from: 'components', allow: ['api'], importKind: 'type' },
+          { from: 'world', allow: ['world', 'api'] },
           { from: 'api', allow: ['api'] },
         ],
       },
@@ -52,7 +56,8 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/component-selector': [
         'error',
-        { type: 'element', prefix: 'atw', style: 'kebab-case' },
+        // An element, or an attribute on the native <a> or <button> it is (docs/adr/0012).
+        { type: ['element', 'attribute'], prefix: 'atw', style: 'kebab-case' },
       ],
       '@angular-eslint/directive-selector': [
         'error',

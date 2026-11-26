@@ -154,6 +154,7 @@
         "easy",
         "times-off",
         "last-one",
+        "last-table",
         "loading",
         "submitting",
         "error"
@@ -210,6 +211,8 @@
         "wrong",
         "wrong-pad",
         "lost",
+        "kept",
+        "desk-holder",
         "timeout",
         "hop",
         "watching",

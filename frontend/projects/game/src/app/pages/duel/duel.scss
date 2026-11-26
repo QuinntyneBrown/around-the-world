@@ -1,0 +1,146 @@
+// Duel's own layout, the duel block of docs/design-system/assets/components.css: the
+// classroom behind a scrim, the HUD on top, the flash card on the stage. It fills the screen
+// and never scrolls.
+.duel {
+  background: var(--color-bg-inverse);
+}
+
+.duel__scene,
+.duel__canvas,
+.duel__scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.duel__scene {
+  object-fit: cover;
+}
+
+// The 3D classroom fades in over the still picture once it is drawn, under the scrim
+// (docs/adr/0028).
+.duel__canvas {
+  display: block;
+  background: var(--color-bg-subtle);
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+.duel__canvas--drawn {
+  opacity: 1;
+}
+
+.duel__scrim {
+  background: var(--color-scene-scrim);
+}
+
+.duel__hud,
+.duel__progress,
+.duel__stage,
+.duel__foot {
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+.duel__hud {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.duel__progress {
+  display: flex;
+  justify-content: center;
+  margin-top: calc(-1 * var(--space-1));
+}
+
+.duel__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.duel__foot {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  min-height: calc(var(--target-min) + var(--space-6));
+}
+
+@media (min-width: 36rem) {
+  .duel__hud {
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .duel__stage {
+    padding: var(--space-6);
+    gap: var(--space-4);
+  }
+
+  .duel__foot {
+    padding: var(--space-3) var(--space-5) var(--space-5);
+  }
+}
+
+// From 768 px the world ring replaces the pill and the pad sits beside the card (L2-050).
+@media (min-width: 48rem) {
+  .duel__progress {
+    display: none;
+  }
+
+  .duel__stage {
+    flex-direction: row;
+    gap: var(--space-8);
+  }
+}
+
+@media (min-width: 62rem) {
+  .duel__stage {
+    gap: var(--space-10);
+  }
+}
+
+// A phone turned on its side: the pad goes beside the card so both are whole (L2-050 5).
+@media (max-height: 34rem) {
+  .duel__progress {
+    display: none;
+  }
+
+  .duel__stage {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+
+  .duel__hud {
+    padding-block: var(--space-2);
+  }
+
+  .duel__stage {
+    padding-block: var(--space-1);
+  }
+
+  .duel__foot {
+    padding-block: var(--space-1) var(--space-2);
+    min-height: 0;
+  }
+}
+
+@media (max-width: 47.99rem) and (max-height: 42rem) {
+  .duel__stage {
+    padding-block: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .duel__foot {
+    padding-block: var(--space-1) var(--space-2);
+    min-height: 0;
+  }
+}

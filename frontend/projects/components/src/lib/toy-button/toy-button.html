@@ -1,0 +1,9 @@
+<ng-template #label><ng-content /></ng-template>
+@if (icon(); as name) {
+  <atw-icon [name]="name" />
+}
+@if (wideLabelOnly()) {
+  <span class="toy-btn__label--wide"><ng-container [ngTemplateOutlet]="label" /></span>
+} @else {
+  <ng-container [ngTemplateOutlet]="label" />
+}

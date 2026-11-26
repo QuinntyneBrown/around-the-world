@@ -1,0 +1,6 @@
+@if (level() === 2) {
+  <h2 class="panel__title panel__title--sm" [id]="headingId()">{{ heading() }}</h2>
+} @else {
+  <h3 class="panel__title panel__title--sm" [id]="headingId()">{{ heading() }}</h3>
+}
+<ng-content />

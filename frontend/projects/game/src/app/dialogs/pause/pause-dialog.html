@@ -1,0 +1,25 @@
+<atw-dialog heading="Paused" [titleId]="titleId" closeLabel="Keep playing" (closed)="keepPlaying()">
+  <p>The clock is stopped. Your desk at {{ country() }} is waiting.</p>
+  <button
+    atw-toy-button
+    slot="actions"
+    type="button"
+    size="xl"
+    icon="play"
+    [block]="true"
+    (click)="keepPlaying()"
+  >
+    Keep playing
+  </button>
+  <button
+    atw-toy-button
+    slot="actions"
+    type="button"
+    variant="paper"
+    icon="home"
+    [block]="true"
+    (click)="goHome()"
+  >
+    Go home
+  </button>
+</atw-dialog>

@@ -1,0 +1,40 @@
+// The panel block of docs/design-system/assets/components.css, on the host element. A skeleton
+// on a panel shines in the canvas colour.
+:host {
+  --skeleton-shine: var(--color-bg-canvas);
+  display: block;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default);
+  padding: var(--space-5);
+  min-width: 0;
+}
+
+:host(.panel--sm) {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+:host(.panel--tint) {
+  background: color-mix(in srgb, var(--color-border-default) 60%, transparent);
+  box-shadow: none;
+  text-align: center;
+}
+
+:host(.panel--float) {
+  box-shadow: var(--shadow-ledge-1);
+}
+
+.panel__title {
+  font: var(--text-h3);
+}
+
+@media (min-width: 36rem) {
+  :host {
+    padding: var(--space-6);
+  }
+
+  :host(.panel--sm) {
+    padding: var(--space-5);
+  }
+}

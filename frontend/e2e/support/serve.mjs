@@ -20,8 +20,11 @@ const types = {
   '.ico': 'image/x-icon',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
   '.woff2': 'font/woff2',
+  '.glb': 'model/gltf-binary',
   '.txt': 'text/plain; charset=utf-8',
+  '.wav': 'audio/wav',
 };
 
 createServer((request, response) => {

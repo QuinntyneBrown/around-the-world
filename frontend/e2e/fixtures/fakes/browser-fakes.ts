@@ -2,21 +2,55 @@
  * The fakes that run inside the page, installed by the shared fixture before any script of
  * the game runs: a speech recognizer that says what the spec tells it to, a microphone whose
  * permission the spec sets, and an on-device model (Chrome's `LanguageModel`) that answers as
- * the spec tells it to. A use the spec did not set up is recorded as a problem, and the
- * fixture fails the spec with it.
+ * the spec tells it to. WebGL is Chromium's own (SwiftShader when there is no GPU): the fakes
+ * only count the contexts the game opens, and take WebGL away when the spec asks. Sound is
+ * never heard: each sound the game plays is recorded by its file's name, and the audio
+ * elements the game makes are counted until it lets them go. A use the
+ * spec did not set up is recorded as a problem, and the fixture fails the spec with it.
  *
  * This function is serialised into the page, so it must not close over anything.
  */
-export type MicrophoneSetting = 'unexpected' | 'granted' | 'denied';
+export type MicrophoneSetting = 'unexpected' | 'asking' | 'granted' | 'denied';
+export type ModelAvailability = 'missing' | 'unavailable' | 'downloadable' | 'available';
 
 export interface BrowserFakesState {
   problems: string[];
   microphone: MicrophoneSetting;
   speechSupported: boolean;
-  modelAvailability: 'unavailable' | 'downloadable' | 'available';
+  /** What `LanguageModel.availability()` answers; `missing` takes `LanguageModel` away. */
+  modelAvailability: ModelAvailability;
+  /** What a prompt does once the replies set by the spec run out. */
+  modelWhenNoReply: 'problem' | 'hold' | 'fail';
   modelReplies: string[];
+  /** The primed sessions the game created and destroyed (clones are not counted here). */
   modelSessions: { created: number; destroyed: number };
+  /** Every text the game gave the model: each session's system prompt and each prompt. */
+  modelAsked: string[];
+  /** How many prompts the game aborted while they waited. */
+  modelAborted: number;
+  /** Answers the oldest waiting prompt with the text; resolves to how many it answered. */
+  modelReply(text: string): number;
+  /** How many prompts are waiting for `modelReply`. */
+  modelWaiting(): number;
+  /** How many sessions and clones the game created and has not destroyed. */
+  modelOpen(): number;
   say(transcript: string): number;
+  /** The recognizers listening report that they heard no speech, and end. */
+  silence(): number;
+  /** The recognizers listening fail with the browser's error, and end. */
+  fail(error: string): number;
+  /** How many recognizers are listening. */
+  listening(): number;
+  /** How many microphone tracks the game opened and has not stopped. */
+  openTracks(): number;
+  /** Whether the browser gives a WebGL context; false draws no 3D classroom. */
+  webglSupported: boolean;
+  /** How many WebGL contexts the game opened that are not lost. */
+  openContexts(): number;
+  /** The sounds the game played, in order, by their file's name: `pop`, `chime`, `jingle`. */
+  played: string[];
+  /** How many audio elements the game made that still hold a source. */
+  openSounds(): number;
 }
 
 declare global {
@@ -31,23 +65,54 @@ export function installBrowserFakes(): void {
     microphone: 'unexpected',
     speechSupported: true,
     modelAvailability: 'unavailable',
+    modelWhenNoReply: 'problem',
     modelReplies: [],
     modelSessions: { created: 0, destroyed: 0 },
+    modelAsked: [],
+    modelAborted: 0,
+    modelReply: () => 0,
+    modelWaiting: () => 0,
+    modelOpen: () => 0,
     say: () => 0,
+    silence: () => 0,
+    fail: () => 0,
+    listening: () => 0,
+    openTracks: () => 0,
+    webglSupported: true,
+    openContexts: () => 0,
+    played: [],
+    openSounds: () => 0,
   };
   Object.defineProperty(window, '__atwFakes', { value: fakes, configurable: false });
+
+  // The browser's question about the microphone, open while the setting is 'asking': it is
+  // answered when the spec grants or denies.
+  let microphoneSetting: MicrophoneSetting = 'unexpected';
+  const asking: (() => void)[] = [];
+  Object.defineProperty(fakes, 'microphone', {
+    get: () => microphoneSetting,
+    set: (value: MicrophoneSetting) => {
+      microphoneSetting = value;
+      if (value !== 'asking') asking.splice(0).forEach((answer) => answer());
+    },
+  });
 
   const notAllowed = () => new DOMException('Permission denied', 'NotAllowedError');
 
   // ---- Microphone -----------------------------------------------------------------------
+  const opened: MediaStreamTrack[] = [];
   const silentStream = (): MediaStream => {
+    let stream: MediaStream;
     try {
       const context = new AudioContext();
-      return context.createMediaStreamDestination().stream;
+      stream = context.createMediaStreamDestination().stream;
     } catch {
-      return new MediaStream();
+      stream = new MediaStream();
     }
+    opened.push(...stream.getAudioTracks());
+    return stream;
   };
+  fakes.openTracks = () => opened.filter((track) => track.readyState === 'live').length;
   const mediaDevices = navigator.mediaDevices ?? ({} as MediaDevices);
   Object.defineProperty(mediaDevices, 'getUserMedia', {
     configurable: true,
@@ -55,6 +120,9 @@ export function installBrowserFakes(): void {
       if (fakes.microphone === 'unexpected') {
         fakes.problems.push('Unexpected microphone call: getUserMedia');
         throw notAllowed();
+      }
+      if (fakes.microphone === 'asking') {
+        await new Promise<void>((answer) => asking.push(answer));
       }
       if (fakes.microphone === 'denied') throw notAllowed();
       return constraints?.audio ? silentStream() : new MediaStream();
@@ -128,6 +196,12 @@ export function installBrowserFakes(): void {
       this.end();
     }
 
+    /** Reports an error the browser gives, then ends, as Chrome's recognizer does. */
+    report(error: string): void {
+      this.emit(Object.assign(new Event('error'), { error, message: '' }));
+      this.end();
+    }
+
     hear(transcript: string): void {
       const alternative = { transcript, confidence: 0.95 };
       const result = Object.assign([alternative], {
@@ -149,6 +223,23 @@ export function installBrowserFakes(): void {
     recognizers.forEach((recognizer) => recognizer.hear(transcript));
     return recognizers.length;
   };
+  fakes.silence = () => {
+    const recognizers = [...listening];
+    recognizers.forEach((recognizer) => recognizer.report('no-speech'));
+    return recognizers.length;
+  };
+  fakes.fail = (error: string) => {
+    const recognizers = [...listening];
+    recognizers.forEach((recognizer) => recognizer.report(error));
+    return recognizers.length;
+  };
+  fakes.listening = () => listening.size;
+  // processLocally is a property of the recognizer's prototype in Chrome.
+  Object.defineProperty(FakeSpeechRecognition.prototype, 'processLocally', {
+    configurable: true,
+    writable: true,
+    value: false,
+  });
   let supported = true;
   const defineRecognizer = () => {
     for (const name of ['SpeechRecognition', 'webkitSpeechRecognition']) {
@@ -173,38 +264,146 @@ export function installBrowserFakes(): void {
   });
 
   // ---- On-device model (Chrome's Prompt API) ----------------------------------------------
+  // Sessions and their clones answer a prompt with the next reply the spec set; when none is
+  // left, the prompt waits for `modelReply`, fails, or is a problem, as the spec chose. A prompt
+  // given an abort signal rejects when it is aborted, as Chrome's does.
+  const openModel = new Set<FakeLanguageModelSession>();
+  const waitingPrompts: { answer: (text: string) => void }[] = [];
+  const destroyedError = () => new DOMException('The session was destroyed', 'InvalidStateError');
   class FakeLanguageModelSession {
     private destroyed = false;
 
-    async prompt(): Promise<string> {
-      if (this.destroyed) throw new DOMException('The session was destroyed', 'InvalidStateError');
+    constructor(private readonly primed: boolean) {
+      openModel.add(this);
+      if (primed) fakes.modelSessions.created += 1;
+    }
+
+    async clone(options?: { signal?: AbortSignal }): Promise<FakeLanguageModelSession> {
+      if (this.destroyed) throw destroyedError();
+      options?.signal?.throwIfAborted();
+      return new FakeLanguageModelSession(false);
+    }
+
+    prompt(input: unknown, options?: { signal?: AbortSignal }): Promise<string> {
+      if (this.destroyed) return Promise.reject(destroyedError());
+      const signal = options?.signal;
+      if (signal?.aborted) return Promise.reject(signal.reason);
+      fakes.modelAsked.push(String(input));
       const reply = fakes.modelReplies.shift();
-      if (reply === undefined) {
-        fakes.problems.push('The on-device model was asked more often than the spec answered');
-        throw new DOMException('No answer set by the spec', 'NotSupportedError');
+      if (reply !== undefined) return Promise.resolve(reply);
+      if (fakes.modelWhenNoReply === 'fail') {
+        return Promise.reject(new DOMException('The model failed', 'UnknownError'));
       }
-      return reply;
+      if (fakes.modelWhenNoReply === 'problem') {
+        fakes.problems.push('The on-device model was asked more often than the spec answered');
+        return Promise.reject(new DOMException('No answer set by the spec', 'NotSupportedError'));
+      }
+      return new Promise<string>((resolve, reject) => {
+        const entry = {
+          answer: (text: string) => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve(text);
+          },
+        };
+        const onAbort = () => {
+          const at = waitingPrompts.indexOf(entry);
+          if (at >= 0) waitingPrompts.splice(at, 1);
+          fakes.modelAborted += 1;
+          reject(signal?.reason);
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+        waitingPrompts.push(entry);
+      });
     }
 
     destroy(): void {
       if (this.destroyed) return;
       this.destroyed = true;
-      fakes.modelSessions.destroyed += 1;
+      openModel.delete(this);
+      if (this.primed) fakes.modelSessions.destroyed += 1;
     }
   }
   const FakeLanguageModel = {
     availability: async () => fakes.modelAvailability,
-    create: async () => {
+    create: async (options?: { initialPrompts?: { content: string }[] }) => {
       if (fakes.modelAvailability !== 'available') {
+        // In Chrome, creating a session of a model not downloaded starts its download.
+        fakes.problems.push('The game started a download of the on-device model');
         throw new DOMException('The model is not available', 'NotSupportedError');
       }
-      fakes.modelSessions.created += 1;
-      return new FakeLanguageModelSession();
+      for (const message of options?.initialPrompts ?? []) fakes.modelAsked.push(message.content);
+      return new FakeLanguageModelSession(true);
     },
   };
-  Object.defineProperty(window, 'LanguageModel', {
+  fakes.modelReply = (text: string) => {
+    const entry = waitingPrompts.shift();
+    entry?.answer(text);
+    return entry ? 1 : 0;
+  };
+  fakes.modelWaiting = () => waitingPrompts.length;
+  fakes.modelOpen = () => openModel.size;
+  let availability: ModelAvailability = 'unavailable';
+  const defineModel = () => {
+    if (availability === 'missing') {
+      delete (window as unknown as Record<string, unknown>)['LanguageModel'];
+      return;
+    }
+    Object.defineProperty(window, 'LanguageModel', {
+      configurable: true,
+      writable: true,
+      value: FakeLanguageModel,
+    });
+  };
+  defineModel();
+  Object.defineProperty(fakes, 'modelAvailability', {
+    get: () => availability,
+    set: (value: ModelAvailability) => {
+      availability = value;
+      defineModel();
+    },
+  });
+
+  // ---- WebGL ------------------------------------------------------------------------------
+  const contexts: WebGLRenderingContext[] = [];
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
     configurable: true,
     writable: true,
-    value: FakeLanguageModel,
+    value: function (this: HTMLCanvasElement, kind: string, options?: unknown) {
+      const webgl = kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl';
+      if (webgl && !fakes.webglSupported) return null;
+      const context = getContext.call(this, kind, options);
+      if (webgl && context && !contexts.includes(context as WebGLRenderingContext)) {
+        contexts.push(context as WebGLRenderingContext);
+      }
+      return context;
+    },
   });
+  fakes.openContexts = () => contexts.filter((context) => !context.isContextLost()).length;
+
+  // ---- Sound ------------------------------------------------------------------------------
+  // A sound "plays" by being recorded; the browser never makes a noise or asks for a touch.
+  const audios: HTMLAudioElement[] = [];
+  const NativeAudio = window.Audio;
+  class CountedAudio extends NativeAudio {
+    constructor(src?: string) {
+      super(src);
+      audios.push(this);
+    }
+  }
+  Object.defineProperty(window, 'Audio', {
+    configurable: true,
+    writable: true,
+    value: CountedAudio,
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+    configurable: true,
+    writable: true,
+    value: function (this: HTMLMediaElement) {
+      const file = (this.getAttribute('src') ?? '').split('/').pop() ?? '';
+      fakes.played.push(file.replace(/\.[a-z0-9]+$/, ''));
+      return Promise.resolve();
+    },
+  });
+  fakes.openSounds = () => audios.filter((audio) => audio.getAttribute('src')).length;
 }

@@ -1,0 +1,168 @@
+// The podium block of docs/design-system/assets/components.css: the headline, the cheer and the
+// steps. The list is in place order and drawn 2nd, 1st, 3rd through `order`. The places rise in
+// turn, third, second, first, each in under 300 ms; reduced motion fades them.
+:host {
+  display: block;
+}
+
+.podium__headline {
+  font: var(--text-h1);
+  text-align: center;
+}
+
+.podium__cheer {
+  font: var(--text-body-lg);
+  color: var(--color-fg-muted);
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+.podium__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-8);
+}
+
+.podium__steps--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 28rem;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.podium__place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  order: 1;
+  animation: rise var(--duration-base) var(--ease-standard) 250ms backwards;
+}
+
+.podium__place--first {
+  order: 2;
+  animation-delay: 500ms;
+}
+
+.podium__place--third {
+  order: 3;
+  animation-delay: 0ms;
+}
+
+.podium__picture {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 10rem;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--kid);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.podium__place--first .podium__picture {
+  max-width: 14rem;
+}
+
+.podium__step {
+  width: 100%;
+  height: 6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-3) var(--space-2) 0;
+  border-radius: var(--radius-md);
+  background: var(--kid-tag-bg);
+  color: var(--kid-tag-fg);
+}
+
+.podium__place--first .podium__step {
+  height: 9rem;
+}
+
+.podium__place--third .podium__step {
+  height: 4.5rem;
+  padding-top: var(--space-1);
+}
+
+.podium__rank {
+  font: var(--text-h1);
+  line-height: 1;
+}
+
+.podium__name {
+  max-width: 100%;
+  font: var(--text-label);
+  font-family: var(--font-family-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: var(--space-1);
+}
+
+@media (min-width: 36rem) {
+  .podium__headline {
+    font: var(--text-display);
+  }
+
+  .podium__steps {
+    gap: var(--space-4);
+  }
+
+  .podium__step {
+    height: 8rem;
+  }
+
+  .podium__place--first .podium__step {
+    height: 11rem;
+  }
+
+  .podium__place--third .podium__step {
+    height: 6rem;
+    padding-top: var(--space-3);
+  }
+
+  .podium__rank {
+    font: var(--text-display);
+    line-height: 1;
+  }
+
+  .podium__name {
+    font-size: var(--font-size-lg);
+  }
+}
+
+@media (min-width: 62rem) {
+  .podium__headline,
+  .podium__cheer {
+    text-align: left;
+  }
+}
+
+@media (min-width: 75rem) {
+  .podium__headline {
+    font: var(--text-hero);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  // The durations drop under reduced motion; the quick fade keeps its 200 ms (ADR 0029).
+  .podium__place {
+    animation-name: fade-in;
+    animation-duration: var(--duration-fade);
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

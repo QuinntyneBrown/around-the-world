@@ -1,0 +1,28 @@
+// The stack block of docs/design-system/assets/components.css, on the host element.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+:host(.stack--sm) {
+  gap: var(--space-2);
+}
+
+:host(.stack--lg) {
+  gap: var(--space-6);
+}
+
+:host(.stack--center) {
+  align-items: center;
+  text-align: center;
+}
+
+:host(.stack--middle) {
+  justify-content: center;
+}
+
+:host(.stack--flush) {
+  gap: var(--space-0);
+}

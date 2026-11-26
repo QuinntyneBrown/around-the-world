@@ -76,16 +76,20 @@ class Passport {
 class SoloGame {
   +tour: Signal<TourState>
   +continue(): void
-  -startTour(): void
-  -onDuelDecided(winner: PlayerId): void
+  +watchScreen(listener): () => void
+  -showMove(move: TourMove): void
+  -watch(): void
+}
+class ClassmatesDuel {
+  +play(nextCard, answerers, cardMs): ClassmatesResult | null
 }
 class WorldMapPage {
   -session: GameSession
-  +onMessageStayed(): void
-  +onBackToTheCard(): void
+  #backToTheCard(): void
 }
 
 SoloGame *-- Tour
+SoloGame ..> ClassmatesDuel : works out the classmates' duels
 Tour *-- "1" Standings
 Tour *-- "1 per player" Passport
 Tour ..> TourMove : returns

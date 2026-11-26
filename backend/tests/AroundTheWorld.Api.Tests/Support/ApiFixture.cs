@@ -1,8 +1,13 @@
+using AroundTheWorld.Application.Rooms;
+using AroundTheWorld.Application.Rooms.DeleteIdleRooms;
+using AroundTheWorld.Domain.Rooms;
 using AroundTheWorld.Infrastructure.Persistence;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,16 +22,36 @@ namespace AroundTheWorld.Api.Tests.Support;
 /// test advances instead of sleeping, and real SignalR clients connected to the test server.
 /// No real database, no network and no Azure SignalR Service (AGENTS.md, Backend tests).
 /// </summary>
-public sealed class ApiFixture : WebApplicationFactory<Program>
+public class ApiFixture : WebApplicationFactory<Program>
 {
     private readonly string _storeName = $"room-store-{Guid.NewGuid():N}";
+
+    private readonly SweepWatcher _sweeps = new();
+
+    /// <summary>
+    /// Completes when the idle rooms have been swept at that time or later, so a test awaits the
+    /// sweep after advancing <see cref="Clock"/> instead of sleeping; it fails after 10 seconds,
+    /// naming the last sweep that did arrive.
+    /// </summary>
+    public Task SweepAt(DateTimeOffset at) => _sweeps.WaitForAsync(at, TimeSpan.FromSeconds(10));
 
     /// <summary>The clock of the backend under test. Advance it; never sleep.</summary>
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 1, 5, 9, 0, 0, TimeSpan.Zero));
 
+    /// <summary>
+    /// Whether making a room is limited as in production. Other tests make rooms freely, so a
+    /// test of another rule is never refused by the limit (<see cref="ThrottledApiFixture"/>).
+    /// </summary>
+    protected virtual bool ThrottledAsInProduction => false;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        if (!ThrottledAsInProduction)
+        {
+            builder.UseSetting("RateLimits:MakeRoom:PermitLimit", "1000");
+        }
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<AppDbContext>>();
@@ -35,8 +60,22 @@ public sealed class ApiFixture : WebApplicationFactory<Program>
 
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(Clock);
+
+            services.AddSingleton(_sweeps);
+            services.AddTransient<IPipelineBehavior<DeleteIdleRoomsCommand, int>, SweepSignal>();
         });
     }
+
+    /// <summary>
+    /// The same backend, store and clock, whose code generator draws these codes in order and
+    /// then the last one again, so a test can draw a code that is already in use.
+    /// </summary>
+    public WebApplicationFactory<Program> WithCodes(params string[] codes) =>
+        WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IRoomCodeGenerator>();
+            services.AddSingleton<IRoomCodeGenerator>(new ScriptedCodes(codes));
+        }));
 
     /// <summary>
     /// A real SignalR client connected to a hub of the test server over WebSockets, the hub's
@@ -54,4 +93,73 @@ public sealed class ApiFixture : WebApplicationFactory<Program>
                         Server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken));
             })
             .Build();
+}
+
+/// <summary>The backend with the rate limits of production: their defaults, from no setting (L2-045).</summary>
+public sealed class ThrottledApiFixture : ApiFixture
+{
+    protected override bool ThrottledAsInProduction => true;
+}
+
+/// <summary>A code generator that draws the codes it was given, in order, then the last again.</summary>
+internal sealed class ScriptedCodes(IReadOnlyList<string> codes) : IRoomCodeGenerator
+{
+    private int _next;
+
+    public RoomCode Draw() => RoomCode.From(codes[Math.Min(Interlocked.Increment(ref _next) - 1, codes.Count - 1)]);
+}
+
+/// <summary>Records each sweep of idle rooms the backend finished, by the time it swept at.</summary>
+internal sealed class SweepWatcher
+{
+    private readonly Lock _gate = new();
+    private readonly List<(DateTimeOffset At, TaskCompletionSource Done)> _waiting = [];
+    private DateTimeOffset? _last;
+
+    public async Task WaitForAsync(DateTimeOffset at, TimeSpan timeout)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (_last >= at)
+            {
+                return;
+            }
+
+            _waiting.Add((at, done));
+        }
+
+        try
+        {
+            await done.Task.WaitAsync(timeout, TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"No sweep at {at:O} arrived; the last was at {(_last is { } last ? last.ToString("O") : "none")}.");
+        }
+    }
+
+    public void Swept(DateTimeOffset at)
+    {
+        List<TaskCompletionSource> ready;
+        lock (_gate)
+        {
+            _last = _last is { } last && last > at ? last : at;
+            ready = [.. _waiting.Where(waiter => waiter.At <= at).Select(waiter => waiter.Done)];
+            _waiting.RemoveAll(waiter => waiter.At <= at);
+        }
+
+        ready.ForEach(done => done.TrySetResult());
+    }
+}
+
+/// <summary>Tells the <see cref="SweepWatcher"/> once a sweep of idle rooms has been saved.</summary>
+internal sealed class SweepSignal(SweepWatcher sweeps) : IPipelineBehavior<DeleteIdleRoomsCommand, int>
+{
+    public async Task<int> Handle(DeleteIdleRoomsCommand request, RequestHandlerDelegate<int> next, CancellationToken cancellationToken)
+    {
+        var deleted = await next(cancellationToken);
+        sweeps.Swept(request.Now);
+        return deleted;
+    }
 }

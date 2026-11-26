@@ -1,0 +1,17 @@
+// The cast (docs/design-system/assets/components.css): put data-kid on any element to give it
+// that kid's colours as the custom properties every component reads. Tokens by role only.
+@each $kid in zuri, kenji, nia, milo, pip {
+  [data-kid='#{$kid}'] {
+    --kid: var(--color-kid-#{$kid});
+    --kid-deep: var(--color-kid-#{$kid}-deep);
+    --kid-tag-bg: var(--color-kid-#{$kid}-tag-bg);
+    --kid-tag-fg: var(--color-kid-#{$kid}-tag-fg);
+  }
+}
+
+[data-kid='classmate'] {
+  --kid: var(--color-classmate);
+  --kid-deep: var(--color-classmate);
+  --kid-tag-bg: var(--color-classmate-tag-bg);
+  --kid-tag-fg: var(--color-classmate-tag-fg);
+}

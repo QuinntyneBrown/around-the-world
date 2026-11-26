@@ -1,0 +1,67 @@
+// Pick Your Kid's own layout: the kid-stage of docs/design-system/assets/components.css. The
+// chosen kid comes forward with a short fade (a fade only with reduced motion).
+.kid-stage,
+.kid-stage__kid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-5);
+}
+
+.kid-stage__kid {
+  width: 100%;
+  animation: come-forward var(--duration-base) var(--ease-enter);
+}
+
+.kid-stage__lines {
+  width: 100%;
+}
+
+.kid-stage__name {
+  font: var(--text-h1);
+}
+
+.kid-stage__tagline {
+  font: var(--text-h4);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-fg-muted);
+  margin-top: var(--space-1);
+}
+
+.kid-stage__bio {
+  font: var(--text-body);
+  color: var(--color-fg-muted);
+  max-width: 24rem;
+  margin: var(--space-3) auto 0;
+}
+
+@media (min-width: 36rem) {
+  .kid-stage__name {
+    font: var(--text-display);
+  }
+
+  .kid-stage__bio {
+    font: var(--text-body-lg);
+  }
+}
+
+@keyframes come-forward {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kid-stage__kid {
+    animation-name: fade-in;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

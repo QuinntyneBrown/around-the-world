@@ -1,0 +1,15 @@
+// The bean of docs/design-system/assets/components.css. These are picture colours: the
+// outline and the art palette do not change with the theme; the body is the kid's colour.
+:host {
+  display: contents;
+}
+
+.bean-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.bean-icon--lg {
+  width: 4rem;
+  height: 4rem;
+}

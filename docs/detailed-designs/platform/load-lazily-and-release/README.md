@@ -76,8 +76,10 @@ The slice is not built yet. The design introduces the parts below.
 - **The dialogs** — Settings, Pause and Leave Game are each reached through a dynamic
   `import()` that runs when the button that opens the dialog is pressed. The CDK Dialog and
   the three dialogs are therefore in no initial chunk, and Settings is not in Home's chunk.
-- **`RoomsApi`** — the HTTP client that makes and joins a room uses Angular's `HttpClient`, has
-  no SignalR dependency, and is bound in `app.config.ts`.
+- **`RoomsApi`** — the HTTP client that makes and joins a room, `FetchRoomsApi`, uses the
+  browser's `fetch`, has no SignalR dependency, and is bound by the route of Solo Or Friends:
+  Angular's `HttpClient`, even bound only by a lazy route, moved 25 kB into the initial bundle
+  (`docs/adr/0031-making-a-room.md`).
 
 How the `api` and `domain` libraries expose `SignalRRoomConnection` and `classmates/` as
 separately importable entry points is `<TO SUPPLY>`.
@@ -94,8 +96,10 @@ game's resources stay.
   it when destroyed, so the microphone is released while World Map is shown.
 - **`ClassroomRenderer.dispose()`** — owned by the page. `ThreeClassroomRenderer` cancels its
   `requestAnimationFrame` loop, then disposes every geometry, material, texture and render
-  target, and the renderer. `HomePage`, `DuelPage` and `WorldMapPage` are the three pages that
-  host the classroom (`L2-036` criterion 6), and each calls it when destroyed. The `world`
+  target, and the renderer, and loses its WebGL context. `HomePage`, `DuelPage` and
+  `WorldMapPage` are the three pages that host the classroom (`L2-036` criterion 6), each on a
+  `<canvas atwClassroom>` whose directive calls it when the page is destroyed, and when a
+  renderer arrives after the page is gone (`docs/adr/0028`). The `world`
   chunk stays loaded, so the next page that hosts the classroom imports nothing again.
 - **`OnDeviceModelSession.destroy()`** — owned by the tour. `SoloGame` opens the classmates'
   model sessions when a solo tour starts and keeps them while World Map is shown between the

@@ -16,25 +16,32 @@ skinparam package {
 }
 actor "Child" as child
 box "Frontend — game application" #E0F2FE
+  participant "GameSetupPage" as setup
   participant "micCheckGuard" as guard
   participant "MicCheckPage" as page
   participant "WayOfAnswering" as way
   participant "DuelPage" as duel
 end box
 box "Frontend — domain library" #E0F2FE
-  participant "SpeechVoiceAnswer\n(VoiceAnswer)" as voice
+  participant "SoloGame\n(GameSession)" as solo
+  participant "LazyVoiceAnswer and\nSpeechVoiceAnswer (VoiceAnswer)" as voice
 end box
 participant "Speech recognition\n(browser)" as sr
-child -> guard : A game is about to begin: "Go!" in a solo game, or the\nhost's "Start the race" on each device (L2-012 criterion 9)
-guard -> way : micCheckNeeded()
-alt no speech recognition (L2-012 criterion 5)
-  way --> guard : false, way is numberPad
-  guard -> duel : Redirect, Mic Check is skipped
-else Mic Check done in this visit (L2-012 criterion 6)
-  way --> guard : false, way as chosen
-  guard -> duel : Redirect, Mic Check is not shown again
+child -> setup : "Go!" in a solo game (the host's "Start the race"\non each device in a game with friends, L2-012 criterion 9)
+setup -> way : micCheckNeeded()
+alt no speech recognition on the device (L2-012 criterion 5)
+  way --> setup : false, way is numberPad
+  setup -> solo : start(setup), the first card is dealt
+  setup -> duel : Open Duel, Mic Check is skipped
+else Mic Check done in this visit, or the number pad kept (L2-012 criteria 6 and 13)
+  way --> setup : false
+  setup -> solo : start(setup), the first card is dealt
+  setup -> duel : Open Duel, Mic Check is not shown
 else Mic Check needed
-  way --> guard : true
+  way --> setup : true
+  setup -> solo : start(setup, micCheck), no card is dealt yet
+  setup -> guard : Open /mic
+  guard -> solo : screen() is "mic-check"
   guard -> page : Open Mic Check
   page --> child : Asks to turn on the mic; "your voice is never\nsaved or sent to anyone" (L2-012 criterion 1)
   alt "Turn on mic", allowed (L2-012 criterion 2)
@@ -44,9 +51,10 @@ else Mic Check needed
     page --> child : "Say yes to the mic", the button is busy:\n"Waiting for the mic…" (L2-012 criterion 10)
     sr --> voice : Allowed
     voice --> page : allowed
-    page -> voice : start()
+    page -> voice : listen(listener), start()
     page --> child : Listening: shout "Ready!"
-    opt nothing heard after a while (L2-012 criterion 11)
+    opt the browser reports no speech (L2-012 criterion 11)
+      voice --> page : noSpeech
       page --> child : "Bolt didn't catch that", "Try again"
       child -> page : Choose "Try again"
       page --> child : Listening again
@@ -56,7 +64,7 @@ else Mic Check needed
     voice --> page : heardSpeech
     page --> child : Heard, "Let's go!" is offered
     child -> page : Choose "Let's go!"
-    page -> way : finishMicCheck(voice), the way is kept on the device (L2-015 criterion 4)
+    page -> way : finishMicCheck(heard), voice is kept on the device (L2-015 criterion 4)
   else "Turn on mic", refused (L2-012 criteria 3 and 7)
     child -> page : Choose "Turn on mic"
     page -> voice : requestMicrophone()
@@ -65,19 +73,20 @@ else Mic Check needed
     voice --> page : refused
     page --> child : "Bolt can't hear you", ask a grown-up;\n"Use number pad" is the only choice besides Back
     child -> page : Choose "Use number pad"
-    page -> way : finishMicCheck(numberPad)
+    page -> way : finishMicCheck(refused), the number pad for this visit
   else speech recognition fails on the device (L2-012 criterion 12)
     voice --> page : failed
     page --> child : Alert "Bolt's ears aren't working";\n"Use number pad" is the only choice besides Back
     child -> page : Choose "Use number pad"
-    page -> way : finishMicCheck(numberPad)
+    page -> way : finishMicCheck(failed), the number pad for this visit
   else "Too noisy? Tap answers instead" (L2-012 criterion 4)
     child -> page : Choose it while asking, waiting or listening
-    page -> way : finishMicCheck(numberPad)
+    page -> way : finishMicCheck(numberPad), the number pad is kept on the device
   end
   page -> voice : stop(), release the microphone (L2-040 criterion 2)
   voice -> sr : Stop recognition
-  page -> duel : Open Duel with the chosen way
+  page -> solo : continue(): the first card is dealt and its time starts (L2-012 criterion 8)
+  solo --> duel : The game moves to Duel, which opens
 end
-duel --> child : The first flash card appears and its time starts now (L2-012 criterion 8)
+duel --> child : The first flash card appears
 @enduml

@@ -26,7 +26,14 @@ has its route here and is designed by `platform/operate-backend` (`L2-054` crite
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
+Journey 02 built the routes `/`, `/kid` and `/play`, and Home without its corner buttons.
+Journey 03 built Solo Or Friends and the solo group with `/setup` and `/duel`, guarded by
+`inGameGuard`; Duel shows its loading state until journey 04 deals the first flash card
+(`docs/adr/0016-solo-game-route-group.md`). The rest of the slice is not built yet. The sound button arrives with journey 10, the
+settings button with journey 07, and Home's error state with the 3D classroom in journey 09
+(`docs/adr/0013-pictures-arriving-and-failing.md`). Journey 08 adds Not Found, Something Went
+Wrong, and Back during a game (`docs/adr/0027-pausing-leaving-and-recovering.md`). The components below are the ones the
+design introduces. The slice
 runs wholly on the device and has no backend part. The routes of a game with friends lead into
 screens that call `AroundTheWorld.Api`; those calls belong to the `rooms` subsystem.
 
@@ -39,23 +46,26 @@ those `docs/mocks/manifest.json` gives; no requirement fixes them.
 | `/` | `HomePage` | opening the game; "Home" on the Podium, on Not Found and on Something Went Wrong | no Back | none |
 | `/kid` | `PickYourKidPage` | "Play" on Home with no kid kept; "Change kid" on Home | Home | none |
 | `/play` | `SoloOrFriendsPage` | "I'm {kid}!"; "Play" or "Play again" on Home with a kid kept; "Play with friends" on the Podium | Pick Your Kid | none |
-| `/setup` (solo) | `GameSetupPage` | "Play solo"; "Play solo instead" on Room | Solo Or Friends | none |
+| `/setup` (solo group) | `GameSetupPage` | "Play solo"; "Play solo instead" on Room | Solo Or Friends | none |
 | `/room` | `RoomPage` | "Join a room"; a room's link | Solo Or Friends | none |
 | `/room/:code` | `LobbyPage` | "Make a room"; "Join" on Room; "Play again" on the Podium in a game with friends | Solo Or Friends | `inRoomGuard` |
 | `/setup` (room group) | `GameSetupPage` for the host | "Change" in the Lobby | the Lobby | `inRoomGuard` |
 | `/mic` | `MicCheckPage` | "Go!" in a solo game; "Start the race" in a room | Game Setup in a solo game; the Lobby in a game with friends | `inGameGuard` |
-| `/duel`, `/map`, `/podium` | `DuelPage`, `WorldMapPage`, `PodiumPage` | a game starting | no Back | `inGameGuard` |
-| `/error` | `SomethingWentWrongPage` | a failure of the game itself | no Back | none |
+| `/duel`, `/map`, `/podium` | `DuelPage`, `WorldMapPage`, `PodiumPage` | a game starting | no Back; the browser's Back pauses a game in progress on Duel and World Map, and opens Game Setup once the tour is over | `inGameGuard`; `pauseOnBackGuard` (deactivate) on Duel and World Map |
+| `/error` | `SomethingWentWrongPage` | a failure of the game itself, opened by `GameErrorHandler` without changing the address | no Back | none |
 | `/**` | `NotFoundPage` | an address that leads to no screen | no Back | none |
 
 The column "Back opens" is `L2-030` criterion 8. Mic Check, Duel, World Map and the Podium are
 the four game screens; the solo group and the room group each load them. `/setup`, `/mic`,
-`/duel`, `/map` and `/podium` each serve a solo game and a game with friends; how the router
-chooses between the two groups for one path is `<TO SUPPLY>`. The address of a room's link is
+`/duel`, `/map` and `/podium` each serve a solo game and a game with friends; the router
+chooses between the two groups with `canMatch`: the room group matches when the visit holds a
+room, and the solo group otherwise (`docs/adr/0016-solo-game-route-group.md`). The address of a room's link is
 designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo game only.
 
 - **Solo group and room group** — two lazy parent routes that load the same four game
-  screens. "Go!" on Game Setup enters the solo group. The solo group provides `SoloGame` behind `GAME_SESSION`; the room group provides
+  screens. The solo group also holds the solo Game Setup, so "Go!" starts the game on the
+  group's own `GAME_SESSION` and then opens the first game screen. `provideRouter` takes
+  `withAutoCleanupInjectors()`, so leaving a group destroys its injector. The solo group provides `SoloGame` behind `GAME_SESSION`; the room group provides
   `FriendsGame` behind `GAME_SESSION` and binds `ROOM_CONNECTION`. Duel, World Map and Podium
   read `GAME_SESSION` and do not know which kind of game is played. A child who plays only a
   solo game never loads the room group, so the SignalR client is never downloaded (`L2-047`
@@ -72,17 +82,19 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
 - **`GameSession`** (`GAME_SESSION`, in `api`) — contract of a game in progress. This slice
   reads three members: `hasGame`, `screen` (a signal naming the game screen the game is at:
   Mic Check, Duel, World Map or Podium) and `start(setup)`.
-- **`GameScreenNavigator`** — service provided in each game group. It watches
-  `GameSession.screen` and navigates to the matching route. It releases its effect with the
-  group. The game, not the navigator, decides when `screen` changes:
+- **`GameScreenNavigator`** — service provided in each game group and created with it. It
+  listens to `GameSession.watchScreen` and navigates to the matching route with `replaceUrl`,
+  and stops listening when the group is destroyed; it uses no effect, so no framework code joins
+  `main` (`docs/adr/0023-game-screens-follow-the-session.md`). The game, not the navigator, decides when `screen` changes:
   - Mic Check when needed and then Duel when the first duel is ready (`L2-030` criterion 3).
     When Mic Check is needed is decided by `answering/check-mic` (`L2-012`). In a game with
     friends each player is shown Mic Check on their own device after the host chooses "Start
     the race" (`L2-012` criterion 9).
   - World Map after every decided duel, whoever won it (`L2-030` criterion 4). After the
     player's win, "You got it!" is shown, the passport stamp then stands in place of the
-    flash card, and World Map opens (`L2-033` criterion 7). How long "You got it!" and the
-    passport stamp each stay is `<TO SUPPLY>`. After the player's loss, Duel stays until the
+    flash card, and World Map opens (`L2-033` criterion 7). "You got it!" stays 1 second and the
+    passport stamp 1.2 seconds (`docs/adr/0022-moving-round-the-ring.md`); after a win as the
+    desk holder World Map opens with no stamp. After the player's loss, Duel stays until the
     child chooses the pill "You sit at {country} · {rival} travels on", the only action on
     the screen (`L2-033` criterion 8). World Map shows the traveller hopping on, or the
     traveller sitting down and the desk holder travelling on.
@@ -104,7 +116,8 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
   opens Solo Or Friends with the setup unchanged (`L2-030` criterion 6). The code typed on
   Room is kept for the visit by the `rooms` subsystem.
 - **`Visit`** — in-memory state provided in root: `tourFinished`, set when a Podium is shown.
-  It is never written to the device (`L2-015` criterion 4).
+  It is never written to the device (`L2-015` criterion 4). Its contract and token (`Visit`, `VISIT`) are in
+  `api`; `game` binds the in-memory `VisitState`.
 - **Back** — each screen from Pick Your Kid to Mic Check has a top bar: an icon button
   labelled "Back", a centred title and an empty right slot. The titles are "Pick your kid",
   "Who's playing?" (Solo Or Friends), "Join a room" (Room), "Room" (the Lobby), "Set up your
@@ -114,10 +127,20 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
   World Map, the Podium, Not Found and Something Went Wrong have no top bar. World Map's
   header holds "Back to the card", which belongs to `tour/travel-round-ring`. Leaving Duel is
   handled by Pause and Leave, which belong to `tour/play-duel` (`L2-033` criterion 4).
+- **`pauseOnBackGuard`** — functional `CanDeactivate` guard on Duel and World Map. While a
+  solo game is in progress it refuses a navigation the browser started (`popstate`), pauses the
+  game and opens the Pause dialog of `tour/play-duel`, exactly as Pause does (`L2-030`
+  criterion 10). A navigation the game or a button starts is never held, nor is any once the
+  tour is over. `provideRouter` takes `withRouterConfig({ canceledNavigationResolution:
+  'computed' })`, so a refused Back leaves the browser's history as it was
+  (`docs/adr/0027-pausing-leaving-and-recovering.md`). Back from the Podium opens Game Setup,
+  where "Go!" starts a new game with the setup shown.
 - **`NotFoundPage`** — page behind the path `/**`. It reads "This desk isn't on the map" and
   "That page doesn't exist. Let's get you back to the classroom.", and offers one way on, the
   link "Home" (`L2-030` criterion 9). It shows no classroom and has no loading, empty or
-  error state.
+  error state. It composes `Notice` from `components` (the globe, the title, the text and the
+  action) and is the last route, so an unknown address loads only its chunk and, to find no
+  match, the solo group's route table.
 - **`SoloPathPreloading`** — router `PreloadingStrategy`. Once Home is shown and the browser
   is idle, it preloads the chunks of the routes marked as on the way to the first solo duel:
   pick your kid, solo or friends, game setup and the solo group. It never preloads the room
@@ -140,13 +163,15 @@ Home:
     and get a game name." in its place. The chip and that line belong to `player/pick-kid`
     (`L2-013` criteria 4 and 5).
   - *Corner buttons.* The sound button and the settings button sit over the classroom at the
-    top right. The sound button calls `Sound.setMuted` through the `SOUND` token. It exposes
+    top right. The sound button calls `PlayerChoices.setSoundMuted`, so Home loads no sound
+    code (`docs/adr/0029-motion-and-sound.md`). It exposes
     the mute with `aria-pressed`, and its label says which it will do: "Mute sound" while
     sound is on and "Turn sound on" while it is muted (`L2-032` criterion 3). Sound itself
     belongs to `classroom/play-motion-and-sound`. The settings button is labelled "Settings"
     and opens `SettingsDialog`.
-  - *Loading.* While the kept kid and the classroom's picture are arriving, skeletons in
-    their shape stand in and a status reads "Getting your kid…". "Play" can be chosen
+  - *Loading.* While the kept kid's picture and the classroom's picture
+    (`img/scene-classroom.jpg`, until journey 09 draws the classroom) are arriving through
+    `PICTURE_LOADER`, skeletons in their shape stand in and a status reads "Getting your kid…". "Play" can be chosen
     meanwhile (`L2-031` criterion 4).
   - *No 3D classroom.* When the classroom cannot be drawn, its still picture stays and a
     status under the button reads "The 3D classroom is having a rest" and "You're seeing a
@@ -160,8 +185,8 @@ Home:
   - *Content.* The title "Settings", a close button labelled "Close", two switches, the
     button "Done" and the line "Kept on this device only. No account, ever." Each switch is a
     `Switch` from `components` with the role `switch`, and shows "On" or "Off" in words.
-  - *"Sound".* It reads "Pops, chimes and jingles." and calls `Sound.setMuted`, as the sound
-    button does.
+  - *"Sound".* It reads "Pops, chimes and jingles." and calls `PlayerChoices.setSoundMuted`,
+    as the sound button does. It comes first, above "Answer by shouting".
   - *"Answer by shouting".* It reads "Off means you tap answers on the number pad." and sets
     `PlayerChoices.wayOfAnswering` to `voice` or `numberPad`. When `VoiceAnswer.available` is
     false (`answering/answer-by-voice`), the switch is off and `disabled` and reads "This
@@ -172,8 +197,10 @@ Home:
   - *Widths.* The dialog is a sheet from the bottom below 576 px and a centred card from
     576 px.
   - Whether Settings stays, or the button goes and sound is the one corner button, is to
-    confirm (`L2-032` criterion 1). What "Answer by shouting" set to off does to Mic Check on
-    a later visit is `<TO SUPPLY>`.
+    confirm (`L2-032` criterion 1). "Answer by shouting" set to off keeps the number pad, so a
+    later visit skips Mic Check until it is switched on (`L2-012` criterion 13, ADR 0025).
+  - Until journey 10 builds sound, the dialog shows "Answer by shouting" alone; "Sound" joins
+    it with that journey.
 
 The five choices of a new child to the first solo duel (`L2-031` criteria 1 and 2) are: "Play"
 on Home, the confirm button for the kid offered on Pick Your Kid, "Play solo" on Solo Or
@@ -184,7 +211,8 @@ flash card appears, and its time starts, when Mic Check is left (`L2-012` criter
 criterion 4, and the chunks of the four screens after it are preloaded while the child reads
 Home. The 3D classroom and the classmates' model never hold a screen back (`L2-036`
 criterion 2, `L2-021` criterion 4). The network profile that stands for "a typical school
-connection" in the acceptance test is `<TO SUPPLY>`.
+connection" in the acceptance test is Chrome's network emulation at 10 Mbit/s down, 5 Mbit/s
+up and 40 ms latency, applied through the DevTools protocol; journey 18 writes that test.
 
 The screens follow the mocks `docs/mocks/pages/home/` (states `default`, `empty`, `loading`,
 `error`, `played`, `muted`), `docs/mocks/dialogs/settings/` (states `default`, `muted`,

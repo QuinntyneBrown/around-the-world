@@ -1,0 +1,23 @@
+<p class="text-sm text-muted" [id]="labelId">Your game name</p>
+@if (loading()) {
+  <div class="nickname"><atw-skeleton shape="title" /></div>
+} @else {
+  <div class="nickname">
+    <p class="nickname__value" aria-live="polite" [attr.aria-labelledby]="labelId + ' ' + valueId">
+      <span [id]="valueId">{{ value() }}</span>
+    </p>
+    <button
+      atw-toy-button
+      type="button"
+      variant="paper"
+      size="md"
+      icon="dice"
+      [wideLabelOnly]="true"
+      aria-label="New name"
+      (click)="newName.emit()"
+    >
+      New name
+    </button>
+  </div>
+  <p class="hint text-sm">No real names here, so everyone stays safe.</p>
+}
