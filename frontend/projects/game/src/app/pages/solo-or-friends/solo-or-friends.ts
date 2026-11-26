@@ -31,6 +31,7 @@ import {
   ToyButton,
 } from '@atw/components';
 import { KIDS, NicknameGenerator } from '@atw/domain';
+import { warmSoloGame } from '../../games/warm-solo-game';
 import { roomRefusal, type RoomRefusal } from './room-refusal';
 
 /**
@@ -99,6 +100,7 @@ export class SoloOrFriendsPage {
         this.arriving.signal,
       )
       .then((arrival) => this.pictures.set(arrival));
+    void warmSoloGame();
   }
 
   /** "Make a room", and "Try again" after a failure: the kid and the nickname's indexes only. */

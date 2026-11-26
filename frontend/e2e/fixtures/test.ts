@@ -78,11 +78,11 @@ export interface FakeModel {
 }
 
 export interface FakeBackend {
-  /** Answers `method path` (e.g. `POST /api/rooms`) with a JSON body and a status. */
+  /** Answers `method path` (e.g. `POST /api/rooms`) with a JSON body and a status, from now on. */
   answer(method: string, path: string, body?: Json, status?: number): void;
   /** Holds the answers to `method path` until the returned function is called. */
   holdBack(method: string, path: string): () => void;
-  /** `method path` gets no response at all, as when the backend cannot be reached. */
+  /** `method path` gets no response at all, as when the backend cannot be reached, until answered. */
   unreachable(method: string, path: string): void;
   /** Every API request the game sent, in order, with its JSON body. */
   requests(): { method: string; path: string; body: Json }[];
@@ -253,7 +253,9 @@ class BackendFixtures implements FakeBackend {
   readonly hubs = new Map<string, (socket: WebSocketRoute) => void>();
 
   answer(method: string, path: string, body: Json = null, status = 200): void {
-    this.answers.set(`${method.toUpperCase()} ${path}`, { body, status });
+    const key = `${method.toUpperCase()} ${path}`;
+    this.unreachables.delete(key);
+    this.answers.set(key, { body, status });
   }
 
   holdBack(method: string, path: string): () => void {

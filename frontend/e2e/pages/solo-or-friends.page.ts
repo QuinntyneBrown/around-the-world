@@ -48,6 +48,11 @@ export class SoloOrFriendsPage {
     await this.playSolo.click();
   }
 
+  /** Waits until the screen has fetched all it fetches on opening, the solo game's code too. */
+  async settle(): Promise<void> {
+    await this.page.waitForLoadState('networkidle');
+  }
+
   async chooseMakeRoom(): Promise<void> {
     await this.makeRoom.click();
   }
