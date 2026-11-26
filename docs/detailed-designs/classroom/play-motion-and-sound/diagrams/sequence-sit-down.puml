@@ -16,38 +16,24 @@ skinparam package {
 }
 actor "Child" as actor
 box "Frontend — game" #E0F2FE
-  participant "SoloGame or FriendsGame" as session
-  participant "MomentPlayer" as player
+  participant "SoloGame" as session
   participant "DuelPage" as duel
   participant "WorldMapPage" as map
-end box
-box "Frontend — domain" #E0F2FE
-  participant "MomentPlan" as plan
 end box
 box "Frontend — world" #E0F2FE
   participant "ThreeClassroomRenderer" as renderer
 end box
-session --> player : Moment duelLost: the rival answered first
-player -> plan : for(duelLost, reduced)
-plan --> player : Row: no sound, so close
-player -> renderer : play(kid, soClose)
-player -> duel : Show "{rival} said {answer} first. So close!"
-duel --> actor : No red screen, no buzzer (L2-038 criterion 3)
+session --> duel : Duel lost: the rival answered first; no moment, so no sound
+duel -> renderer : show(state): the kid plays soClose
+duel --> actor : "{rival} said {answer} first. So close!"; no red screen, no buzzer (L2-038 criterion 3)
 actor -> duel : Choose "You sit at {country} · {rival} travels on" (L2-033 criterion 8)
-duel -> session : Continue
-session --> player : World Map opens; moment travellerSitsDown
+duel -> session : continue()
+session --> map : World Map opens on the move
+map -> renderer : show(state): the beaten traveller at the desk, the desk holder hops on
 alt full motion
-  player -> renderer : Traveller sits down, desk holder stands up
-  renderer --> actor : The traveller sits down and the desk holder stands up, in about half a second
-  player -> map : Show "So close! You sit down at {country}" (L2-034 criterion 4)
-  player -> renderer : play(new traveller, hop)
-  renderer --> actor : New traveller hops on, in about 1 second
-  renderer --> player : Arrived
+  renderer --> actor : The new traveller hops along the path in 1 second
 else the device asks for reduced motion
-  player -> renderer : show(new positions), no animation
-  player -> map : Fade to the new positions and show the message
-  map --> actor : Fade of no more than 200 ms (L2-038 criterion 4)
+  renderer --> actor : A fade of 200 ms to the new positions (L2-038 criterion 4)
 end
-player --> session : Message has stayed about 1.6 seconds
-session --> actor : The next duel follows (L2-034 criterion 9)
+map --> actor : "So close! You sit down at {country}" (L2-034 criterion 4)
 @enduml

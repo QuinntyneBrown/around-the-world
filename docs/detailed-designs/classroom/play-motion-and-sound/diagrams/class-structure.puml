@@ -14,14 +14,7 @@ skinparam class {
 title Class structure — Play motion and sound
 
 enum GameMoment {
-  cardShown
-  keyPressed
   answerCorrect
-  wrongAnswer
-  duelWon
-  duelLost
-  travellerHopsOn
-  travellerSitsDown
   countryReached
 }
 enum SoundId {
@@ -29,59 +22,51 @@ enum SoundId {
   chime
   jingle
 }
+interface GameSession {
+  +watchMoments(listener: (moment: GameMoment) => void): () => void
+}
+class SoloGame {
+  -moments: Set<listener>
+  -report(moment: GameMoment): void
+}
 interface Sound {
-  +muted: Signal<boolean>
   +play(sound: SoundId): void
-  +setMuted(muted: boolean): void
 }
 class BrowserSound {
-  -unlocked: boolean
-  +muted: Signal<boolean>
+  -players: Map<SoundId, HTMLAudioElement> | null
   +play(sound: SoundId): void
-  +setMuted(muted: boolean): void
-  -unlockOnFirstTouch(): void
+  -touched(): boolean
   -release(): void
-}
-interface MotionPreference {
-  +reduced: Signal<boolean>
-}
-class BrowserMotionPreference {
-  +reduced: Signal<boolean>
-  -release(): void
-}
-class MomentPlan <<helper>> {
-  +for(moment: GameMoment, reduced: boolean): MomentRow
-}
-class MomentRow {
-  +sound: SoundId | null
-  +animations: KidAnimation[]
-  +effect: ScreenEffect
-  +lastsMs: number
-}
-class MomentPlayer {
-  +effect: Signal<ScreenEffect>
-  +arrived: Signal<boolean>
-  -timers: Set<number>
-  -carryOut(row: MomentRow): void
-  -release(): void
-}
-interface ClassroomRenderer {
-  +play(kid: KidId, animation: KidAnimation): Promise<void>
-  +show(state: ClassroomState): void
 }
 interface PlayerChoices {
   +soundMuted: Signal<boolean>
   +setSoundMuted(muted: boolean): void
 }
+class StoredPlayerChoices
+class MomentSounds {
+  -stop: () => void
+}
+class DuelPage {
+  #press(key: PadKey): void
+}
+class HomePage {
+  #muted: Signal<boolean>
+  #toggleSound(): void
+}
+class SettingsDialog {
+  #soundOn: Signal<boolean>
+  #turnSound(on: boolean): void
+}
 
+GameSession <|.. SoloGame
 Sound <|.. BrowserSound
-MotionPreference <|.. BrowserMotionPreference
-BrowserSound --> PlayerChoices : keeps mute
-MomentPlan ..> MomentRow : returns
-MomentPlan ..> GameMoment
-MomentRow --> SoundId
-MomentPlayer ..> MomentPlan : looks up
-MomentPlayer --> Sound : plays
-MomentPlayer --> MotionPreference : reads
-MomentPlayer --> ClassroomRenderer : animates
+PlayerChoices <|.. StoredPlayerChoices
+SoloGame ..> GameMoment : reports
+BrowserSound --> PlayerChoices : reads the mute
+BrowserSound ..> SoundId
+MomentSounds --> GameSession : watches moments
+MomentSounds --> Sound : plays chime, jingle
+DuelPage --> Sound : plays pop
+HomePage --> PlayerChoices : sound button
+SettingsDialog --> PlayerChoices : "Sound" switch
 @enduml

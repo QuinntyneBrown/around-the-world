@@ -26,120 +26,126 @@ feature decides what plays at each moment and for how long.
 
 ## Description
 
-The slice is not built yet; the components below are the ones the design introduces. The slice
-runs wholly on the device and has no backend part. In a game with friends the moments arrive
-from the server through `GameSession`; what plays for a moment is decided on each device.
+The slice runs wholly on the device and has no backend part. In a game with friends the moments
+arrive from the server through `GameSession`; what plays for a moment is decided on each device.
+Most of the motion is the state the screens already show, played by each presentation
+component's own stylesheet and by the classroom's renderer; the sound is played by one service
+for the two moments the game reports, and by Duel for a key of the number pad
+(`docs/adr/0029-motion-and-sound.md`).
 
 Contracts and types in the `api` library (`@atw/api`):
 
-- **`GameMoment`** — what just happened, as the game reports it: `cardShown`, `keyPressed`,
-  `answerCorrect`, `wrongAnswer`, `duelWon`, `duelLost`, `travellerHopsOn`,
-  `travellerSitsDown` and `countryReached`. `duelWon` and `duelLost` are the device's own
-  player's duel on Duel. `travellerHopsOn` and `travellerSitsDown` are what World Map shows
-  after any decided duel, a duel between two classmates included (`L2-034` criterion 7).
-  `GameSession` exposes the latest moment as a signal.
-- **`Sound`** (`SOUND`) — contract with `play(sound: SoundId): void`, `muted: Signal<boolean>`
-  and `setMuted(muted: boolean): void`. `SoundId` is `pop`, `chime` or `jingle`. The sound
-  button on Home and the "Sound" switch of the Settings dialog both call `setMuted`
-  (`L2-032` criteria 3 and 4); `player/find-way-through-screens` designs both.
-- **`MotionPreference`** (`MOTION_PREFERENCE`) — contract with `reduced: Signal<boolean>`.
-- **`ClassroomRenderer`** — described in `classroom/draw-classroom`; this slice calls
-  `play(kid, animation)`.
+- **`GameMoment`** — a moment of the game that makes a sound: `answerCorrect`, when the
+  device's own player's right answer wins their duel, and `countryReached`, when the device's
+  own player hops on and their passport is stamped (`L2-039` criterion 1). A lost duel, a wrong
+  answer and a classmate's answer are no moment. `GameSession.watchMoments(listener)` calls the
+  listener for each, and returns a function that stops it, as `watchScreen` does
+  (`docs/adr/0023-game-screens-follow-the-session.md`).
+- **`Sound`** (`SOUND`) — contract with `play(sound: SoundId): void`. `SoundId` is `pop`,
+  `chime` or `jingle`.
+- **`PlayerChoices`** — keeps the mute as `soundMuted: Signal<boolean>` and
+  `setSoundMuted(muted: boolean): void`, with the rest of the record on the device (`L2-015`
+  criteria 3 and 4). The record's `soundMuted` field is kept only once the child has changed
+  it. The sound button on Home and the "Sound" switch of the Settings dialog both call
+  `setSoundMuted` (`L2-032` criteria 3 and 4), so neither loads any sound code.
 
-In the `domain` library (`@atw/domain`), folders `sound/` and `motion/`, which the first
-change of this slice adds:
+In the `domain` library (`@atw/domain`), folder `sound/`:
 
-- **`BrowserSound`** — implementation of `Sound`, shared by the whole application.
-  - *Mute.* It reads `soundMuted` from `PlayerChoices` and writes it back on `setMuted`, so
-    the mute is as the child left it on return (`L2-015` criterion 3). `play` does nothing
-    while muted (`L2-039` criterion 2).
-  - *First touch.* It starts locked. `play` does nothing until the child has touched the
-    page: the first pointer or key event unlocks sound, and the listener for it is then
-    removed (`L2-039` criterion 3).
-  - *Release.* It releases its audio resources and listeners when destroyed.
-  - How the three sounds are made (recorded files from the game's own origin, or
-    synthesized), and their length and loudness, are `<TO SUPPLY>`.
-- **`BrowserMotionPreference`** — implementation of `MotionPreference`. It reads the
-  `prefers-reduced-motion` media query, follows changes to it, and removes its listener when
-  destroyed.
-- **`MomentPlan`** — pure helper with one table: for each `GameMoment`, the sound, the kid
-  animations and the screen effect to play, in a full and a reduced form. It holds no timer
-  and touches no browser interface, so a unit test covers it one row for each case.
+- **`BrowserSound`** — implementation of `Sound`, bound in the solo group.
+  - *Mute.* `play` does nothing while `PlayerChoices.soundMuted` is true (`L2-039`
+    criterion 2).
+  - *First touch.* `play` does nothing until the child has touched the page, as
+    `navigator.userActivation.hasBeenActive` records it: the first touch, click or key press
+    (`L2-039` criterion 3). Where the browser lacks it, the browser's own autoplay rule refuses
+    a sound until a touch, and a refused `play()` is ignored.
+  - *Loading.* It makes one `HTMLAudioElement` for each of the three sounds on the first sound
+    it plays, so nothing is fetched before a sound is due, and none while muted. A sound that
+    plays again starts from its beginning.
+  - *Release.* When the solo group is destroyed it pauses each element, removes its source and
+    calls `load()`, so the browser lets the audio go (`L2-048` criterion 3).
+  - *The sounds.* `sounds/pop.wav` (one 80 ms tone falling from 880 Hz to 660 Hz, at a quarter
+    of full loudness), `sounds/chime.wav` (two notes, C6 then E6, over 400 ms, at a third) and
+    `sounds/jingle.wav` (four rising notes, C5, E5, G5 and C6, over 750 ms, at a third), on the
+    game's own origin: 16-bit mono WAV at 16 kHz, about 39 kB together, made by
+    `frontend/tools/make-sounds.mjs` from sine tones with a soft attack and an exponential
+    fall. None is harsh and none is a buzzer.
 
-| Moment | Screen | Sound | Full motion | Reduced motion |
-|--------|--------|-------|-------------|----------------|
-| `keyPressed` | Duel | pop | none | none |
-| `cardShown` | Duel | none | flash card flips in within 300 ms (`L2-038` criterion 2) | no flip; a fade of no more than 200 ms |
-| `answerCorrect` | Duel | chime | none | none |
-| `wrongAnswer` | Duel | none | flash card shakes once, for 300 ms, is outlined and reads "Not {answer}! Frozen for a sec…" (`L2-004` criterion 5) | no shake; the outline and the words alone |
-| `duelWon` | Duel | none | flash card reads "= {answer}" and "You got it!", and the kid plays `winCheer`; the passport stamp then lands in about 250 ms in place of the flash card, and World Map opens (`L2-033` criterion 7, `L2-038` criteria 1 and 5) | the same, with no movement and no tilt on the stamp |
-| `duelLost` | Duel | none | kid plays `soClose`; the flash card reads "{rival} said {answer} first. So close!" and stays until the child chooses the pill "You sit at {country} · {rival} travels on" (`L2-033` criteria 3 and 8, `L2-038` criterion 3) | the same, with no movement |
-| `travellerHopsOn` | World Map | none | the kid plays `hop`: it moves along the dotted path to the next desk in about 1 second, and no more than 1.5 (`L2-038` criterion 1) | the kid fades from one desk to the next in 200 ms, and nothing moves across the screen |
-| `travellerSitsDown` | World Map | none | the traveller sits down and the desk holder stands up, in about half a second; the new traveller then travels on as in `travellerHopsOn` (`L2-034` criterion 4) | the new positions are shown after a fade of no more than 200 ms |
-| `countryReached` | World Map | jingle | a message names the country and stays for about 1.6 seconds, and Duel then returns (`L2-034` criteria 3 and 9) | the same; the message appears with no movement |
-
-  `duelLost` and `wrongAnswer` play no sound: no buzzer exists in the game (`L2-038`
-  criterion 3). A hop past an empty desk is one hop and keeps the same limit (`L2-002`
-  criterion 4).
-
-  The durations are motion tokens of the design system, in
-  `docs/design-system/tokens/tokens.css`, and a stylesheet names a token, never a number:
-  `--duration-fast` is 120 ms, `--duration-base` 200 ms, `--duration-slow` 320 ms,
-  `--duration-freeze` 1000 ms, `--duration-hop` 1000 ms and `--duration-toast` 1600 ms. A
-  message on World Map and a toast enter in 200 ms, and a dialog in 320 ms. Under reduced
-  motion the duration tokens drop to nothing and `--duration-hop` becomes 200 ms. The timer
-  bar still drains under reduced motion, because it is a clock.
-
-  Two shakes exist (`L2-038` criterion 4). The flash card shakes after a wrong answer, as the
-  table gives. The four boxes of the code on Room shake once, for about 300 ms, when a code is
-  refused (`L2-023`); `CodeBoxes` plays that shake in its own stylesheet, and
-  `rooms/join-room` designs it. The number pad does not shake: it is disabled while the
-  player is frozen (`L2-004` criterion 4). Neither shake plays under reduced motion.
-
-  The passport stamp is a state of Duel, not of World Map. When Duel shows a hop, the stamp
-  stands in place of the flash card: "Passport stamp!", the country reached, its landmark and
-  "{kid} hops to desk {n} of {tour length}" (`L2-038` criterion 5). `StampCard` draws it. The
-  stamp shows after "You got it!" and before World Map opens (`L2-033` criterion 7). How long
-  "You got it!" and the stamp each stay is `<TO SUPPLY>`.
-
-  On the Podium the places rise in turn, third, second, first, each in under 300 ms, and fade
-  in under reduced motion (`L2-038` criterion 6). The `Podium` component plays that in its own
-  stylesheet, and `tour/end-tour` designs the Podium.
+In the `domain` library's `tour/`, **`SoloGame`** reports `answerCorrect` when it decides a duel
+the device's own player won, and `countryReached` when World Map opens on that player's hop.
 
 In the `game` application:
 
-- **`MomentPlayer`** — service provided at the game route. It watches `GameSession`'s latest
-  moment, looks it up in `MomentPlan` with `MotionPreference.reduced`, and carries the row
-  out: `Sound.play`, `ClassroomRenderer.play` for each kid animation, and a state the page
-  binds for the screen effect. It reports when World Map's message has stayed for about
-  1.6 seconds, so Duel returns (`L2-030` criterion 4, `L2-034` criterion 9). Under reduced
-  motion it calls no `hop` animation: the renderer receives the new positions through
-  `show(state)` and the page fades (`L2-038` criterion 4). When the 3D classroom is absent
-  and the still picture stands in, the sound and the interface's own effect still play, and
-  the hop counts as finished after its planned time. It cancels pending timers when the route
-  is destroyed.
+- **`MomentSounds`** — service the solo group provides and starts with the group. It watches
+  `GameSession`'s moments and plays the chime for `answerCorrect` and the jingle for
+  `countryReached`. It stops watching when the group is destroyed.
+- **`DuelPage`** plays the pop for each key of the number pad.
+- **`HomePage`** shows the sound button in the corner beside Settings: the sound icon, "Mute
+  sound" and not pressed while sound is on; the mute icon, "Turn sound on" and pressed while
+  muted (`docs/mocks/pages/home/muted.html`).
+- **`SettingsDialog`** shows the "Sound" switch first ("Pops, chimes and jingles."), on while
+  sound is on (`docs/mocks/dialogs/settings/muted.html`).
 
-In the `components` library (`@atw/components`):
+What plays at each moment:
 
-- **`FlashCardView`** — plays the card flip and the shake in its own stylesheet, the flip
-  within 300 ms. Its stylesheet replaces the flip with a fade of no more than 200 ms and
-  drops the shake under the `prefers-reduced-motion` media query, so the reduced form holds
-  even before any script runs.
-- **`StampCard`** — draws the passport stamp that stands in place of the flash card. The
-  stamp lands in about 250 ms; under reduced motion it appears with no movement and no tilt.
-- **`WorldRing`** and **`PassportView`** — show the kid's new place and the new stamp, with
-  the same media query replacing movement by a fade.
+| Moment | Screen | Sound | Full motion | Reduced motion |
+|--------|--------|-------|-------------|----------------|
+| A key of the number pad | Duel | pop | the key sinks onto its base | the key does not move |
+| A new flash card | Duel | none | the flash card flips in, in 200 ms (`L2-038` criterion 2) | no flip; a fade of 200 ms |
+| A wrong answer | Duel | none | the flash card shakes once, is outlined and reads "Not {answer}! Frozen for a sec…" (`L2-004` criterion 5) | no shake; the card fades back in 200 ms, with the outline and the words |
+| The device's player's right answer (`answerCorrect`) | Duel | chime | the flash card reads "= {answer}" and "You got it!", and the kid plays `winCheer`; after 1 second the passport stamp lands tilted in place of the flash card, and after 1.2 seconds World Map opens (`L2-033` criterion 7, `L2-038` criteria 1 and 5) | the same, with the stamp upright, fading in over 200 ms |
+| A lost duel | Duel | none | the kid plays `soClose`; the flash card reads "{rival} said {answer} first. So close!" and stays until the child chooses the pill "You sit at {country} · {rival} travels on" (`L2-033` criteria 3 and 8, `L2-038` criterion 3) | the same, with no movement |
+| A traveller hops on | World Map | none | the kid hops along the path to the next desk in 1 second (`L2-038` criterion 1) | the kid fades out where it stands and in at the next desk, 200 ms in all, and nothing moves across the screen |
+| A traveller sits down | World Map | none | the beaten traveller is drawn at their desk and the desk holder hops on (`L2-034` criterion 4) | the same, with the fade of a hop |
+| The device's player reaches a new country (`countryReached`) | World Map | jingle | a message names the country and stays for 1.6 seconds, and Duel then returns (`L2-034` criteria 3 and 9) | the same; the message appears with no movement |
+| The Podium opens | Podium | none | the places rise in turn, third, second, first, each in 200 ms (`L2-038` criterion 6) | each place fades in over 200 ms |
 
-No red screen plays anywhere: no component has a full-screen effect for losing.
+A hop past an empty desk is one hop and keeps the same limit (`L2-002` criterion 4). No red
+screen plays anywhere: no component has a full-screen effect for losing.
+
+The durations are motion tokens of the design system, in `docs/design-system/tokens/tokens.css`,
+and a stylesheet names a token, never a number: `--duration-fast` is 120 ms, `--duration-base`
+200 ms, `--duration-slow` 320 ms, `--duration-freeze` 1000 ms, `--duration-hop` 1000 ms,
+`--duration-toast` 1600 ms and `--duration-fade` 200 ms. Under reduced motion the duration
+tokens drop to nothing, `--duration-hop` becomes 200 ms and `--duration-fade` keeps its 200 ms:
+it is the quick fade that stands in for a hop, a card flip, a shake, the stamp landing and the
+Podium rising. The timer bar still drains under reduced motion, because it is a clock.
+
+In the `components` library (`@atw/components`), each component plays its motion in its own
+stylesheet and reads reduced motion from the `prefers-reduced-motion` media query, so the
+reduced form holds before any script runs:
+
+- **`FlashCard`** — flips in on its host in `--duration-base`, and shakes after a wrong answer
+  with a second animation on another property (`translate`), so the shake never replays the
+  flip. Duel makes a new `FlashCard` for each new flash card (an `@for` over the card, tracked
+  by the card), so each card flips in, the one after "Time's up!" included. Under reduced motion
+  the flip is a fade of `--duration-fade` and the shake a fade back from half opacity.
+- **`StampCard`** — lands tilted in about 250 ms; under reduced motion it is upright and fades
+  in over `--duration-fade`.
+- **`Podium`** — the places rise in turn; under reduced motion each fades in over
+  `--duration-fade`.
+- **`IconButton`** and **`Switch`** — the sound button and the "Sound" switch, with the `sound`
+  and `mute` icons of **`Icon`**.
+
+Two shakes exist (`L2-038` criterion 4). The flash card shakes after a wrong answer, as the
+table gives. The four boxes of the code on Room shake once, for about 300 ms, when a code is
+refused (`L2-023`); `CodeBoxes` plays that shake in its own stylesheet, with the same reduced
+fade, and `rooms/join-room` designs it. The number pad does not shake: it is disabled while the
+player is frozen (`L2-004` criterion 4).
+
+In the `world` library (`@atw/world`), **`KidCharacter`** plays the hop: a one-second arc along
+the path, or under reduced motion, read by the renderer from `prefers-reduced-motion` on each
+frame, a fade out where the kid stands and in at the next desk, 200 ms in all. Each kid owns a
+copy of every material of its model, so its fade touches no other kid. When the 3D classroom is
+absent and the still picture stands in, nothing hops, and the sound and the interface's own
+motion still play.
 
 Sound and the voice answer (`L2-039` criterion 4). A sound shall never cause an answer to be
 given. Each of the three sounds plays at a moment when speech recognition is not running. A
 pop plays only while the number pad is the way of answering, when recognition has stopped
-(`L2-011` criterion 1). A chime plays when a duel is decided and a jingle on World Map, and
+(`L2-011` criterion 1). A chime plays once a duel is decided and a jingle on World Map, and
 recognition does not run once a duel is decided or away from the Duel screen (`L2-009`
-criterion 5). `MomentPlayer` therefore plays a chime only after the game reports the duel
-decided. Starting and stopping recognition belongs to `answering/answer-by-voice`. Whether a
-further guard applies (for example echo cancellation on the microphone) is `<TO SUPPLY>`.
+criterion 5). The timing is the guard: no further guard is needed, and the microphone is
+already asked for with echo cancellation (`docs/adr/0029-motion-and-sound.md`).
 
 Motion and sound follow the mocks `docs/mocks/pages/duel/` (states `default`, `right`, `wrong`,
 `wrong-pad`, `lost`, `hop`), `docs/mocks/pages/world-map/` (states `hop`, `sit`),
@@ -176,41 +182,41 @@ to `AroundTheWorld.Api`.
 
 ### Components
 
-`MomentPlayer` reads each moment from `GameSession`, takes the row for it from `MomentPlan`
-and drives `BrowserSound`, the classroom's renderer and the presentation components.
+`MomentSounds` plays a sound for each moment `GameSession` reports, through `BrowserSound`,
+which reads the mute from `StoredPlayerChoices`. The presentation components and the renderer
+play the motion of the state the screens show.
 
 ![C4 component view for playing motion and sound](diagrams/c4-component.png)
 
 ### Class structure
 
-`MomentPlayer` depends on the `Sound`, `MotionPreference` and `ClassroomRenderer` contracts
-and on `MomentPlan`. `BrowserSound` and `BrowserMotionPreference` realize two of them.
+`MomentSounds` depends on the `GameSession` and `Sound` contracts. `BrowserSound` realizes
+`Sound` and reads the mute from `PlayerChoices`; `SoloGame` reports the moments.
 
 ![Class diagram for playing motion and sound](diagrams/class-structure.png)
 
 ### Behaviour — play the hop after a duel is won
 
 The chime plays once the duel is decided. "You got it!" shows, and the passport stamp then
-lands in place of the flash card. World Map then opens, the kid hops to the next desk in about
-1 second, and the message and the jingle follow. Duel returns when the message has stayed for
-about 1.6 seconds. Under reduced motion a fade of 200 ms replaces the hop, and a muted or
-untouched page plays no sound.
+lands in place of the flash card. World Map then opens with the message and the jingle, and the
+kid hops to the next desk in 1 second. Duel returns when the message has stayed for 1.6
+seconds, and the new flash card flips in. Under reduced motion a fade of 200 ms replaces the
+hop, and a muted or untouched page plays no sound.
 
 ![Sequence diagram for playing the hop](diagrams/sequence-play-hop.png)
 
 ### Behaviour — sit down after a duel is lost
 
 Losing plays the "so close" reaction and no sound. Duel stays until the child chooses to go on.
-On World Map the traveller sits down and the desk holder stands up in about half a second, and
-the new traveller travels on.
+On World Map the beaten traveller sits at the desk and the desk holder travels on.
 
 ![Sequence diagram for sitting down after a lost duel](diagrams/sequence-sit-down.png)
 
 ### Behaviour — mute and the first touch
 
-`BrowserSound` stays locked until the child first touches the page, and plays nothing while
-muted. The sound button on Home and the "Sound" switch of the Settings dialog change the mute,
-which is kept on the device. The button's label reads "Mute sound" while sound is on and "Turn
+`BrowserSound` plays nothing until the browser records the child's first touch, and nothing
+while muted. The sound button on Home and the "Sound" switch of the Settings dialog change the
+mute in `StoredPlayerChoices`, which keeps it on the device. The button's label reads "Mute sound" while sound is on and "Turn
 sound on" while it is muted.
 
 ![Sequence diagram for mute and the first touch](diagrams/sequence-mute-and-first-touch.png)
