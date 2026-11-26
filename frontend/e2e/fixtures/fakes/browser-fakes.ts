@@ -387,7 +387,10 @@ export function installBrowserFakes(): void {
   });
 
   // ---- WebGL ------------------------------------------------------------------------------
-  const contexts: WebGLRenderingContext[] = [];
+  // A context the game has released (lost) is let go here too, so the count never holds a
+  // released canvas, and the page it was on, in memory (docs/adr/0038).
+  let contexts: WebGLRenderingContext[] = [];
+  const open = () => (contexts = contexts.filter((context) => !context.isContextLost()));
   const getContext = HTMLCanvasElement.prototype.getContext;
   Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
     configurable: true,
@@ -396,22 +399,24 @@ export function installBrowserFakes(): void {
       const webgl = kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl';
       if (webgl && !fakes.webglSupported) return null;
       const context = getContext.call(this, kind, options);
-      if (webgl && context && !contexts.includes(context as WebGLRenderingContext)) {
+      if (webgl && context && !open().includes(context as WebGLRenderingContext)) {
         contexts.push(context as WebGLRenderingContext);
       }
       return context;
     },
   });
-  fakes.openContexts = () => contexts.filter((context) => !context.isContextLost()).length;
+  fakes.openContexts = () => open().length;
 
   // ---- Sound ------------------------------------------------------------------------------
   // A sound "plays" by being recorded; the browser never makes a noise or asks for a touch.
-  const audios: HTMLAudioElement[] = [];
+  // An audio element the game has let go (no source) is let go here too.
+  let audios: HTMLAudioElement[] = [];
+  const holding = () => (audios = audios.filter((audio) => audio.getAttribute('src')));
   const NativeAudio = window.Audio;
   class CountedAudio extends NativeAudio {
     constructor(src?: string) {
       super(src);
-      audios.push(this);
+      holding().push(this);
     }
   }
   Object.defineProperty(window, 'Audio', {
@@ -428,5 +433,5 @@ export function installBrowserFakes(): void {
       return Promise.resolve();
     },
   });
-  fakes.openSounds = () => audios.filter((audio) => audio.getAttribute('src')).length;
+  fakes.openSounds = () => holding().length;
 }
