@@ -15,7 +15,7 @@ package "Backend — AroundTheWorld.Application" {
   class ErrorCode <<static>> {
     +RoomNotFound = "room_not_found"
     +RoomFull = "room_full"
-    +GameStarted = "game_started"
+    +GameChanged = "game_started"
     +NotHost = "not_host"
   }
   class "Result<T>" as Result {

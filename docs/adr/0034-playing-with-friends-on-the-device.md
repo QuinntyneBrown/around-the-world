@@ -73,7 +73,10 @@ room" and "Your passport is safe here. To play with your friends again, make or 
 and "Play with friends", which opens Solo Or Friends, takes the place of "Play again" (`L2-035`
 criterion 6). "Home" leaves the room.
 
-**The initial budget.** Recorded in the Consequences once measured.
+**The initial budget.** The room group's guard, which now matches the game screens too, adds
+0.15 kB to `main` (252.31 kB to 252.46 kB; 273.13 kB to 273.28 kB in all), measured against the
+base commit. `FriendsGame`, `FriendsView` and the screens' changes stay in the room group's lazy
+chunks. The initial warning stays at 274 kB and the error at 285 kB.
 
 ## Consequences
 

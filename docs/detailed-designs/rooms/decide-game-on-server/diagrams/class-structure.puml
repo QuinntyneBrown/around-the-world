@@ -14,8 +14,11 @@ skinparam class {
 title Class structure — Decide the game on the server
 
 class RoomHub {
+  +SaveSetup(setup: GameSetupDto): Task
+  +StartGame(): Task
   +SubmitAnswer(answer: int): Task
   +PlayAgain(): Task
+  +LeaveRoom(): Task
 }
 class SubmitAnswerCommand {
   +int Answer
@@ -24,12 +27,12 @@ class SubmitAnswerCommandValidator
 class SubmitAnswerCommandHandler {
   +Handle(command: SubmitAnswerCommand): Task
 }
-class EndCardTimeCommand {
-  +Guid RoomId
-  +int CardNumber
+class AdvanceGamesCommand {
+  +DateTimeOffset Now
 }
-class DeleteIdleRoomsCommand
-class PlayAgainCommand
+class AdvanceGamesCommandHandler {
+  +Handle(command: AdvanceGamesCommand): Task<int>
+}
 class PlayAgainCommandHandler {
   +Handle(command: PlayAgainCommand): Task
 }
@@ -39,77 +42,89 @@ class RoomTimers <<hosted service>> {
 class Room {
   +RoomStatus Status
   +GameSetup Setup
+  +RoomGame? Game
+  +DateTimeOffset? GameDueAt
+  +Guid Version
+  +Start(by: RoomPlayer, now): void
+  +Answer(by: RoomPlayer, value: int, at, random): AnswerResult
+  +AdvanceGame(now, random): bool
+  +PlayAgain(now): bool
+  +Leave(player: RoomPlayer, now): bool
+}
+class RoomGame {
+  +GamePhase Phase
   +Tour Tour
-  +DateTimeOffset LastActivityAt
-  +Start(by: Guid, now: DateTimeOffset): void
-  +ReturnToLobby(by: Guid, now: DateTimeOffset): void
+  +Duel? Duel
+  +List<GamePlayer> Players
+  +List<PendingAnswer> Pending
+  +DateTimeOffset? DueAt
+  +Advance(now, random): bool
+  +Answer(player, value, receivedAt, random): AnswerResult
+  +Leave(player: Guid, at): void
 }
 class Tour {
-  +Duel CurrentDuel
-  +Answer(player: Guid, answer: int, receivedAt: DateTimeOffset): AnswerOutcome
-  +EndCardTime(now: DateTimeOffset): void
-  +bool IsOver
+  +List<string?> Holders
+  +string Traveller
+  +int Desk
+  +ApplyDuel(winner: DuelSide, at): TourMove
+  +Ending(at): TourEnding?
 }
 class Duel {
-  +Guid Traveller
-  +Guid DeskHolder
-  +FlashCard Card
-  +Guid? Winner
+  +Card Card
+  +string Traveller
+  +string DeskHolder
+  +Give(player, value, at): AnswerResult
+  +TimeOut(): bool
 }
-class FlashCard {
+class Card {
   +MathsKind Kind
   +int Left
   +int Right
-  +int Answer
+  +Answer(): int
 }
 class FlashCardMaker {
-  +Make(setup: GameSetup, last: FlashCard?): FlashCard
+  +Next(kinds, tables, last: Card?, random): Card
 }
-enum AnswerOutcome {
+enum AnswerResult {
   Ignored
-  Frozen
+  Wrong
   Won
 }
 interface IRoomNotifier {
-  +GameStarted(room: Room): Task
-  +PlayerFrozen(room: Room, player: Guid): Task
-  +DuelDecided(room: Room): Task
-  +FlashCardShown(room: Room): Task
-  +TourEnded(room: Room): Task
-  +RoomClosed(room: Room): Task
-  +RoomChanged(room: Room): Task
+  +RoomChangedAsync(roomId, room: RoomStateDto): Task
+  +GameChangedAsync(roomId, game: GameStateDto): Task
 }
-class FlashCardDto <<sent to players>> {
-  +MathsKind Kind
-  +int Left
-  +int Right
+class GameStateDto <<sent to players>> {
+  +GameDuelDto? Duel
+  +the card without its answer while open
 }
 interface GameSession <<frontend, api>> {
   +duel: Signal<DuelState>
   +tour: Signal<TourState>
   +answer(value: number): void
   +playAgain(): void
-  +leave(): void
+  +leave(): Promise<void>
 }
 class FriendsGame <<frontend, game>>
+class FriendsView <<frontend, game>>
 
 RoomHub ..> SubmitAnswerCommand : sends
 SubmitAnswerCommandValidator ..> SubmitAnswerCommand : validates 0 to 999
 SubmitAnswerCommandHandler ..> SubmitAnswerCommand : handles
 SubmitAnswerCommandHandler --> Room : loads / mutates
 SubmitAnswerCommandHandler ..> IRoomNotifier : announces
-RoomHub ..> PlayAgainCommand : sends
-PlayAgainCommandHandler ..> PlayAgainCommand : handles
 PlayAgainCommandHandler --> Room : loads / mutates
-PlayAgainCommandHandler ..> IRoomNotifier : announces
-RoomTimers ..> EndCardTimeCommand : sends
-RoomTimers ..> DeleteIdleRoomsCommand : sends
-Room *-- "0..1" Tour : one at a time
-Tour *-- "1" Duel : current
-Duel *-- "1" FlashCard
-Tour ..> FlashCardMaker : asks for the next card
-Tour ..> AnswerOutcome : returns
-IRoomNotifier ..> FlashCardDto : sends, without the answer
+RoomTimers ..> AdvanceGamesCommand : sends
+AdvanceGamesCommandHandler ..> AdvanceGamesCommand : handles
+AdvanceGamesCommandHandler --> Room : loads / mutates
+Room *-- "0..1" RoomGame : one at a time
+RoomGame *-- "1" Tour
+RoomGame *-- "0..1" Duel : the last card's
+Duel *-- "1" Card
+RoomGame ..> FlashCardMaker : asks for the next card
+Duel ..> AnswerResult : returns
+IRoomNotifier ..> GameStateDto : sends
 FriendsGame ..|> GameSession
+FriendsGame ..> FriendsView : shows through
 FriendsGame ..> RoomHub : through RoomConnection
 @enduml
