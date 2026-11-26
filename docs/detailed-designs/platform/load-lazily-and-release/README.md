@@ -38,8 +38,9 @@ The slice is not built yet. The design introduces the parts below.
 - **`angular.json` budgets** — the production configuration of `game` declares a budget of type
   `initial` with a `maximumError`. A build whose initial bundle exceeds it fails. CI runs the
   production build, so a change that grows the initial bundle past the budget does not merge.
-  The budget's size is `<TO SUPPLY>`: no requirement states a number. A change that raises it shall state
-  its reason.
+  The budgets are 225 kB (warning) and 250 kB (error) for the `initial` bundle, and 4 kB and
+  8 kB for `anyComponentStyle`, measured raw (`docs/adr/0008-bundle-budgets.md`). A change that
+  raises one shall state its reason.
 
 **A lazy chunk per screen (`L2-047` criterion 2).**
 
@@ -155,7 +156,8 @@ criterion 5 requires a fixed limit and states no number.
 | The server decides an answer within 50 ms at the 95th percentile with 500 rooms of 8 | The handler reads and writes one room. A duration histogram records it (`docs/detailed-designs/platform/operate-backend/`). |
 | The last desk of a 24-desk tour draws within 10% of the first desk's frame rate | The bounded buffers, the disposal of each hop's transient objects and `QualityScaler` keep per-frame work constant. |
 
-Whether the 50 ms target holds depends on the room store's engine, which is `<TO SUPPLY>`. The
+Whether the 50 ms target holds depends on the room store's engine, Azure SQL Database
+(`docs/adr/0009-health-and-migrations.md`), and is measured in journey 17. The
 device and network profile that stand for "a mid-range phone on a 4G connection" in a
 measurement are `<TO SUPPLY>`.
 

@@ -94,9 +94,9 @@ Backend:
 - **`IRoomNotifier`** — port in Application, implemented over `RoomHub`. `RoomChanged` pushes the
   room's new state to every player already in it
   ([`rooms/wait-in-lobby`](../wait-in-lobby/README.md)).
-- **Room store** — reached through `IAppDbContext` with EF Core; its engine is `<TO SUPPLY>`. How
+- **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`). How
   the store refuses the second of two joins that reach a room with 7 players at the same moment
-  is `<TO SUPPLY>` with the engine.
+  is `<TO SUPPLY>`.
 
 Errors are ProblemDetails with a `code`: `room_not_found` with status 404, `room_full` and
 `game_started` with status 409, `rate_limited` with status 429. Whether a 429 carries a `code`,

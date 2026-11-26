@@ -53,9 +53,10 @@ The slice is not built yet. The design introduces the parts below.
   Two instances therefore show one game: either can decide an answer, and both notify the same
   group.
 
-Three points of the two-instance design are `<TO SUPPLY>`:
+The room store's engine is Azure SQL Database, through EF Core's SQL Server provider
+(`docs/adr/0009-health-and-migrations.md`). Two points of the two-instance design are
+`<TO SUPPLY>`:
 
-- the room store's engine;
 - how two instances order two answers to one duel that arrive at the same moment, so that
   exactly one wins (`L2-026` criterion 1);
 - which instance runs a room's clock (a flash card's time, the 30 seconds a spot is saved, the
@@ -76,14 +77,17 @@ criterion 2 allows no such request, and no mock decides between them.
 | `Azure:SignalR:ConnectionString` | Connection to Azure SignalR Service. Absent in a local or test run. |
 | `Frontend:Origin` | Origin of the `game` application, the only origin the CORS policy allows (`L2-044` criterion 4). |
 | Rate limits | Limits on making a room, trying codes, answers and stickers (`L2-045`). The setting names are fixed in `docs/detailed-designs/rooms/guard-room/`. |
-| Room store connection | Connection to the room store. Its form follows the engine, which is `<TO SUPPLY>`. |
+| `ConnectionStrings:RoomStore` | Connection to the room store, an Azure SQL Database. Absent in a local or test run. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Address to which telemetry is exported. |
 
 Each setting is read from configuration supplied by the environment. No setting's value is in
 the source, and a connection string or an access key is supplied as a secret. The change that
-adds a setting documents it in the same change. The document that lists the settings is
-`<TO SUPPLY>`: no operations document exists yet, and the first change that adds a setting adds
-it.
+adds a setting documents it in the same change, in `docs/operations/settings.md`.
+
+**Migrations.** The room store's schema changes only through EF Core migrations, which a
+command applies: `dotnet run --project src/AroundTheWorld.Api -- migrate`, run from `backend/`
+before a new version starts. `Program` runs `RoomStoreMigrator` for that command and exits; the
+API's normal start never migrates (`docs/adr/0009-health-and-migrations.md`).
 
 **Telemetry with nothing about a child (`L2-053` criteria 1 and 2).**
 
@@ -110,7 +114,9 @@ it.
 **Live and ready (`L2-053` criterion 3).**
 
 - **`HealthController`** — exposes `GET /health/live` and `GET /health/ready`, each marked as
-  open to anyone. `Live()` answers 200 with no check: an answer shows the process runs.
+  open to anyone. `Live()` answers 200 with `{"status":"live"}` and no check: an answer shows
+  the process runs. It is the one endpoint that sends no MediatR request, so that a liveness
+  probe depends on nothing but the process (`docs/adr/0009-health-and-migrations.md`).
   `Ready()` sends `CheckReadinessQuery` and answers 200 when ready and 503 when not, with no
   detail of the server.
 - **`CheckReadinessQueryHandler`** — asks each registered `IReadinessProbe` and reports ready

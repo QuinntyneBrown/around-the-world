@@ -93,7 +93,7 @@ Backend:
   joining, the host mark and a `ConnectionToken`.
 - **`ConnectionToken`** — domain value object made for each `RoomPlayer`
   ([`rooms/guard-room`](../guard-room/README.md), `L2-043` criterion 1).
-- **Room store** — reached through `IAppDbContext` with EF Core; its engine is `<TO SUPPLY>`.
+- **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`).
 
 Solo Or Friends shows its two cards stacked below 768 px and side by side from 768 px (`L2-050`
 criterion 6). No mock words a message for any other `code` on Solo Or Friends; the words of that

@@ -103,7 +103,7 @@ Backend:
   [`rooms/decide-game-on-server`](../decide-game-on-server/README.md) describes. When the
   removal leaves no player in the room, the handler deletes the room and everything it held
   (`L2-027` criterion 3).
-- **Room store** — reached through `IAppDbContext` with EF Core; its engine is `<TO SUPPLY>`.
+- **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`).
 
 Tests advance `FakeTimeProvider` past 30 seconds; none sleeps.
 

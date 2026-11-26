@@ -115,7 +115,7 @@ Backend:
 - **`DeleteIdleRoomsCommandHandler`** — deletes each room whose `LastActivityAt` is 10 minutes
   old or more **(to confirm)** and announces `RoomClosed` to it (`L2-027` criterion 4). Each
   handler that acts for a player sets `Room.LastActivityAt`.
-- **Room store** — reached through `IAppDbContext` with EF Core; its engine is `<TO SUPPLY>`.
+- **Room store** — reached through `IAppDbContext` with EF Core; its engine is Azure SQL Database (`docs/adr/0009-health-and-migrations.md`).
   The room and its tour live there, so that two instances of the backend decide the same game
   (`L2-052` criterion 2, `platform/operate-backend`).
 
@@ -146,7 +146,7 @@ the server's time to decide an answer (`L2-049` criterion 3), is what meets the 
 Nine points are undecided:
 
 - How the answers of one room are decided one at a time when they reach two instances of the
-  backend is `<TO SUPPLY>` with the room store's engine. `L2-026` criterion 1 depends on it.
+  backend is `<TO SUPPLY>`. `L2-026` criterion 1 depends on it.
 - Whether the server's `Tour` and `Duel` and the device's share one written rule set, or are two
   implementations kept equal by tests, is `<TO SUPPLY>`.
 - Who may choose "Play again" in a room, and what the other players see until it is chosen, are

@@ -11,7 +11,7 @@ System_Boundary(atw, "Around the World") {
   Container(game, "game", "Angular application", "Maps an error code to words a child understands; solo play needs no backend")
   Container(api1, "AroundTheWorld.Api (instance 1)", "ASP.NET Core, SignalR", "RoomsController, RoomHub, HealthController")
   Container(api2, "AroundTheWorld.Api (instance 2)", "ASP.NET Core, SignalR", "The same service, scaled out")
-  ContainerDb(store, "Room store", "EF Core, engine <TO SUPPLY>", "The one copy of each room that every instance reads")
+  ContainerDb(store, "Room store", "EF Core, Azure SQL Database", "The one copy of each room that every instance reads")
 }
 Rel(child, game, "Uses", "HTTPS")
 Rel(game, api1, "Makes and joins a room; negotiates the connection", "JSON/HTTPS")
