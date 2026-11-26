@@ -45,7 +45,11 @@ error state ("We lost the room") are journey 14's.
   the tour, as their distance travelled of 1 counts it (`L2-007` criterion 7). Every other stamp
   is a desk reached by a hop, and a desk holder's own desk is still no stamp (`L2-003`
   criterion 4). This supersedes ADR 0022's "a player's own desk is not a stamp" for the first
-  traveller only; the stamp on Duel after a hop is unchanged.
+  traveller only; the stamp on Duel after a hop is unchanged. A child who has not sat down so
+  has France and every desk from Japan to the one they stand beside: Egypt, where the first duel
+  is, is reached only by the hop past the last desk. The mocks `podium/second`, `unplaced`,
+  `time-up`, `friends` and `error`, and the Passport page, were redrawn so (they stamped the
+  first n countries).
 - **The headline.** "You went around the world!", or "{name} made it round first!"; on the time
   limit "Time's up! You travelled furthest!" or "Time's up! {name} travelled furthest!", with
   "{n} desks out of {tour length}. {cheer}" under it, n being the winner's distance travelled.
