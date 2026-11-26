@@ -264,3 +264,78 @@ the lessons that fit.
 - *Let a rule with chance take a `RandomSource`* (04, 5): `ClassmatesDuel` takes the agents,
   so its unit tests fix every answer and time.
 
+## Journey 06: Finish the tour on the Podium
+
+**What slowed it.**
+
+- The passport rule of ADR 0022 (a stamp only for a desk reached by a hop) gave a child who went
+  all the way round 11 stamps of 12, while the mocks read "12 of 12 countries". Desk 1, where
+  the tour starts, now counts, as the distance travelled already does (ADR 0024). The mocks had
+  also stamped "the first n countries", which no tour can give, since Egypt, where the first
+  duel is, is reached only by the hop past the last desk; five mocks and the Passport page were
+  redrawn.
+- The design system's Podium page reads the steps in place order while the mocks' markup put
+  2nd first. The mocks now list 1st, 2nd, 3rd and draw 2nd first through CSS `order`.
+- A child placed outside the top three needs three kids to travel further than them, which no
+  spec could drive through the classmates' profiles with `random.always(0)`; it is proved by a
+  unit test of the page, beside the loading state.
+- Probing what the classmates do with a throwaway spec (printing the Podium for several tour
+  lengths and waits) found the deterministic paths for the second-place and Grand tour specs in
+  one run, rather than guessing.
+
+**New lessons.**
+
+1. When a rule fixes a count the mocks show (stamps, places, distances), work one example of the
+   mock through the rule before building: a mock's numbers can be an illustration no game can
+   reach.
+2. A time limit on the game's clock lets a spec end a tour at once with one `clock.pass(ms)`, so
+   the end of a long tour (a Grand tour of 24 desks) costs a spec no more than a short one.
+3. Keep the placing table in one domain method (`Tour.result`) with one unit test per row, and
+   let the screens' filtering (the five kids only) be an argument of it, so World Map and the
+   Podium cannot disagree about a place.
+4. A new game service method that restarts state (`playAgain`) should reuse the start path
+   (`begin`) rather than repeat it, and drop every timer first with the clock's `clear()`.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build;
+  `main` went from 255.44 kB to 255.39 kB.
+- *Check a fake once by hand* (01, 2): the time limit, the long passport, the headline, "Play
+  again" and the Visit hand-over were each broken by hand and failed their specs as expected.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): Podium, Passport and the
+  `ordinal` helper added; Icon (`home`) and Stack (`flush`) extended; each marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0024 fills the design's
+  gaps and supersedes ADR 0022's first-stamp rule.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the Podium is its own
+  13 kB chunk; nothing new reached `main`.
+- *A link or button block is an attribute component* (02, 2): "Play again" is
+  `button[atw-toy-button]` and "Home" `a[atw-toy-button]` with `routerLink`.
+- *Drive states through the fixture* (02, 3): `clock` and `random` drive every ending; nothing
+  new was needed in the fixture.
+- *An unreachable state gets a unit test of the page* (02, 4): the Podium's loading state and a
+  child placed 4th.
+- *Tag one spec per feature `@critical`* (02, 5): the child who goes all the way round.
+- *Put the page in the group that provides its service* (03, 1): the Podium is in the solo
+  group, so "Play again" reaches the same `SoloGame` and "Home" destroys it.
+- *Measure the initial bundle against the base commit* (03, 2): 255.44 kB before, 255.39 kB
+  after.
+- *A group of toggles is one component* (03, 3): not needed.
+- *Prove a hand-over with a unit test* (03, 4): `SoloGame`'s unit tests prove the ending, the
+  result and "Play again".
+- *Drive game time from the wall clock* (04, 1): the time limit is on `GameClock`.
+- *Prefer signals and outputs to `effect()`* (04, 2): the Podium tells `VISIT` from its
+  constructor, with no effect.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the steps are "The top 3".
+- *Let a rule with chance take a `RandomSource`* (04, 5): not needed; the ending has no chance.
+- *Measure a template feature on the chunk table* (05, 1): no `@defer`; the loading state follows
+  the result (ADR 0024).
+- *Let the game service decide when the screen changes* (05, 2): `SoloGame` moves to `podium`
+  after the last message, and the navigator follows.
+- *Draw a picture once in `<defs>`* (05, 3) and *share SVG parts* (05, 4): not needed.
+- *Work out a rule with chance at its start* (05, 5): "Back to the card" ends the tour at once
+  when a classmates' duel played out reaches the time limit.
+

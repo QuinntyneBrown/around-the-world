@@ -27,17 +27,14 @@ end box
 alt Play again in a solo game (L2-035 criterion 3)
   child -> page : Choose "Play again"
   page -> solo : playAgain()
-  solo -> solo : Drop the ended tour and its result
-  solo -> tour : start(the same setup, the same kid)
+  solo -> solo : Drop the ended tour, its timers and its result
+  solo -> tour : start(the same tour length, the same kid's class)
   tour --> solo : A new tour
-  solo --> page : TourState phase duel
-  page -> duel : Navigate to Duel, Mic Check is not shown again (L2-012 criterion 6)
+  solo --> duel : Screen duel, the first flash card (Mic Check is not shown again, L2-012 criterion 6)
   duel --> child : The first flash card of the new tour
 else Home (L2-035 criterion 4)
   child -> page : Choose "Home"
-  page -> solo : leave()
-  solo -> solo : Cancel timers, drop the tour
-  page -> home : Navigate to Home, the game route and SoloGame are destroyed
+  page -> home : Navigate to Home: leaving the solo group destroys SoloGame,\nits tour, its result and every timer
   home --> child : Home, with "Play again" (L2-032 criterion 2)
 end
 @enduml

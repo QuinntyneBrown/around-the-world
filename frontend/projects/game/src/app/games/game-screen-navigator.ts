@@ -3,7 +3,11 @@ import { Router } from '@angular/router';
 import { GAME_SESSION, type GameScreen } from '@atw/api';
 
 /** The route of each game screen built so far (docs/mocks/manifest.json). */
-const PATHS: Partial<Record<GameScreen, string>> = { duel: '/duel', 'world-map': '/map' };
+const PATHS: Partial<Record<GameScreen, string>> = {
+  duel: '/duel',
+  'world-map': '/map',
+  podium: '/podium',
+};
 
 /**
  * Opens the game screen the game is at (docs/detailed-designs/player/find-way-through-screens/).

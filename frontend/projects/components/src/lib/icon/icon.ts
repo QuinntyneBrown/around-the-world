@@ -2,7 +2,17 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /** The icons the screens use so far, named by what they show. */
 export type IconName =
-  'back' | 'check' | 'clock' | 'delete' | 'dice' | 'friends' | 'frozen' | 'info' | 'retry' | 'solo';
+  | 'back'
+  | 'check'
+  | 'clock'
+  | 'delete'
+  | 'dice'
+  | 'friends'
+  | 'frozen'
+  | 'home'
+  | 'info'
+  | 'retry'
+  | 'solo';
 
 /**
  * Icon (docs/design-system/foundations/iconography.html): a round line icon on a 24-unit grid

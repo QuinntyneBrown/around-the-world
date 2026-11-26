@@ -9,7 +9,7 @@ import { inGameGuard } from './in-game.guard';
  * The solo group (docs/adr/0016-solo-game-route-group.md): the solo Game Setup and the game
  * screens, sharing one `SoloGame` behind `GAME_SESSION`, and the navigator that opens the
  * screen the game is at (docs/adr/0023). Leaving the group destroys them, and the game with
- * them. Mic Check and the Podium join with their journeys.
+ * them. Mic Check joins with its journey.
  */
 export const SOLO_GAME_ROUTES: Routes = [
   {
@@ -36,6 +36,12 @@ export const SOLO_GAME_ROUTES: Routes = [
         title: 'World map · Around the World',
         canActivate: [inGameGuard],
         loadComponent: () => import('../pages/world-map/world-map').then((m) => m.WorldMapPage),
+      },
+      {
+        path: 'podium',
+        title: 'Podium · Around the World',
+        canActivate: [inGameGuard],
+        loadComponent: () => import('../pages/podium/podium').then((m) => m.PodiumPage),
       },
     ],
   },
