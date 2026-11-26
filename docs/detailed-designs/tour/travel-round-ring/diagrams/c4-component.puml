@@ -6,9 +6,9 @@ title Components — Travel round the ring
 Person(child, "Child", "The device's player")
 Container_Boundary(game, "game (Angular application and its libraries)") {
   Component(page, "WorldMapPage", "Page, game application", "Shows the ring, the hop after each decided duel, its message and the standings")
-  Component(views, "WorldRing, Standings, MapToast, KidTag", "Presentation, components library", "Draw the desks, the players, the distances travelled and the World Map message")
+  Component(views, "WorldMap, Standings, MapToast, StampCard", "Presentation, components library", "Draw the room, the players and their tags, the distances travelled, the World Map message and the passport stamp")
   Component(session, "GameSession (GAME_SESSION)", "Contract and token, api library", "Publishes TourState and continues after a move")
-  Component(solo, "SoloGame", "Game service, game application", "Starts the tour and applies each duel's result to it")
+  Component(solo, "SoloGame", "Game service, domain tour/", "Starts the tour, applies each duel's result to it, waits on the game's clock and works out the classmates' duels with ClassmatesDuel")
   Component(tour, "Tour", "Rule type, domain tour/", "Owns the ring: the hop, the swap of traveller and desk holder, the empty desks, the distances")
   Component(standings, "Standings", "Rule type, domain tour/", "Orders the players by distance travelled")
   Component(passport, "Passport", "Rule type, domain tour/", "Holds a stamp for each country a player reached")

@@ -37,8 +37,9 @@ the tour ends). The ways of giving an answer are designed in `answering/answer-b
 
 ## Description
 
-The slice is built for a solo duel by journey 04 (`docs/adr/0020-solo-duel-clock-and-states.md`):
-the hop, the passport stamp, the pill to World Map and Pause come with journeys 05 and 08. The
+The slice is built for a solo duel by journey 04 (`docs/adr/0020-solo-duel-clock-and-states.md`),
+and journey 05 adds the passport stamp, the pill to World Map and Duel with the child as the
+desk holder (`docs/adr/0022-moving-round-the-ring.md`); Pause comes with journey 08. The
 parts below are those the design introduces. The design covers a
 solo game, which is decided on the device: the slice has no backend part, and its diagrams show
 frontend libraries only. In a game with friends the server applies the same rules
@@ -153,7 +154,9 @@ larger; its accessible name is "The ring of {tour length} desks: you are at desk
   landmark and "{kid} hops to desk {n} of {tour length}" (`L2-038` criterion 5). The stamp lands
   in about 250 ms.
 - **lost** — "{rival} said {answer} first. So close!" and, under it, the quiet pill "You sit at
-  {country} · {rival} travels on" (`L2-033` criteria 3 and 8). The pill is the only action on
+  {country} · {rival} travels on" (`L2-033` criteria 3 and 8). When the child is the desk
+  holder the pill reads "You keep {country} · {rival} hops on" (`L2-033` criterion 11, mock
+  `kept`). The pill is the only action on
   the screen, and it is drawn so that it does not look like a second answer. No red screen shows
   and no buzzer plays.
 - **timed out** — "Time's up! It was {answer}. Here comes a new card…", for 2 seconds (`L2-005`
@@ -170,10 +173,11 @@ the connection banners belong to a game with friends and are designed in the `ro
 A decided duel leaves the Duel screen in one of two ways:
 
 - When the device's player wins, the right state shows first. `SoloGame` then applies the result
-  to the tour and publishes the `TourMove` in `DuelState.hop`, and the hop state shows the
-  passport stamp. World Map then opens (`L2-033` criterion 7). `SoloGame` sets both waits on
-  `GameClock`; how long "You got it!" and the passport stamp each stay is journey 05's. Until
-  then "You got it!" stays (ADR 0020).
+  to the tour and, after a hop, publishes the `TourMove` in `DuelState.hop`, and the hop state
+  shows the passport stamp. World Map then opens (`L2-033` criterion 7). `SoloGame` sets both
+  waits on `GameClock`: "You got it!" stays 1 second and the stamp 1.2 seconds (ADR 0022). A
+  child who wins as the desk holder walks on with no stamp, so World Map opens after "You got
+  it!" (`L2-033` criterion 10).
 - When the device's player loses, the lost state stays until the child chooses the pill "You
   sit at {country} · {rival} travels on". `DuelPage` then calls `GameSession.continue()`,
   `SoloGame` applies the result to the tour, and World Map opens (`L2-033` criterion 8).
@@ -209,11 +213,10 @@ Decisions and open points:
   `SoloGame` ticks the clock before it takes the child's answer (ADR 0020).
 - A classmate who is not one of the five kids is named "Classmate" on the duel strip and is
   drawn as the plain bean (ADR 0019).
-- Until journey 05, a decided duel stays shown: "You got it!" when the child won, and "{rival}
-  said {answer} first. So close!" when they lost, the live region adding "You sit at
-  {country}." The pill "You sit at {country} · {rival} travels on", the passport stamp, how long
-  each stays, and Duel with the device's player as the desk holder come with World Map
-  (journey 05).
+- Journey 05 ends a decided duel as described above: "You got it!" for 1 second and the stamp
+  for 1.2 seconds after a win, and the pill after a loss (ADR 0022). With the device's player
+  as the desk holder the traveller is on the left of the duel strip and the timer bar is in
+  the traveller's colour (`L2-033` criterion 9, mock `desk-holder`).
 - On a screen under 544 px tall the number pad sits beside the flash card at any width, so both
   are whole on a phone turned on its side.
 - Duel's error state is a game with friends that lost its connection (journey 16); the
@@ -223,7 +226,8 @@ Decisions and open points:
   `<TO SUPPLY>` (journey 14).
 
 The screen follows the mocks `docs/mocks/pages/duel/` (states `default`, `pad`, `pad-typed`,
-`right`, `wrong`, `wrong-pad`, `lost`, `timeout`, `hop`, `long` and `loading`),
+`right`, `wrong`, `wrong-pad`, `lost`, `kept`, `desk-holder`, `timeout`, `hop`, `long` and
+`loading`),
 `docs/mocks/dialogs/pause/` (state `default`) and `docs/mocks/dialogs/leave-game/` (states
 `default` and `busy`).
 

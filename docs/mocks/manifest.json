@@ -211,6 +211,8 @@
         "wrong",
         "wrong-pad",
         "lost",
+        "kept",
+        "desk-holder",
         "timeout",
         "hop",
         "watching",

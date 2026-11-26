@@ -81,17 +81,19 @@ designed in the `rooms` subsystem. The mocks draw Mic Check's Back for a solo ga
 - **`GameSession`** (`GAME_SESSION`, in `api`) — contract of a game in progress. This slice
   reads three members: `hasGame`, `screen` (a signal naming the game screen the game is at:
   Mic Check, Duel, World Map or Podium) and `start(setup)`.
-- **`GameScreenNavigator`** — service provided in each game group. It watches
-  `GameSession.screen` and navigates to the matching route. It releases its effect with the
-  group. The game, not the navigator, decides when `screen` changes:
+- **`GameScreenNavigator`** — service provided in each game group and created with it. It
+  listens to `GameSession.watchScreen` and navigates to the matching route with `replaceUrl`,
+  and stops listening when the group is destroyed; it uses no effect, so no framework code joins
+  `main` (`docs/adr/0023-game-screens-follow-the-session.md`). The game, not the navigator, decides when `screen` changes:
   - Mic Check when needed and then Duel when the first duel is ready (`L2-030` criterion 3).
     When Mic Check is needed is decided by `answering/check-mic` (`L2-012`). In a game with
     friends each player is shown Mic Check on their own device after the host chooses "Start
     the race" (`L2-012` criterion 9).
   - World Map after every decided duel, whoever won it (`L2-030` criterion 4). After the
     player's win, "You got it!" is shown, the passport stamp then stands in place of the
-    flash card, and World Map opens (`L2-033` criterion 7). How long "You got it!" and the
-    passport stamp each stay is `<TO SUPPLY>`. After the player's loss, Duel stays until the
+    flash card, and World Map opens (`L2-033` criterion 7). "You got it!" stays 1 second and the
+    passport stamp 1.2 seconds (`docs/adr/0022-moving-round-the-ring.md`); after a win as the
+    desk holder World Map opens with no stamp. After the player's loss, Duel stays until the
     child chooses the pill "You sit at {country} · {rival} travels on", the only action on
     the screen (`L2-033` criterion 8). World Map shows the traveller hopping on, or the
     traveller sitting down and the desk holder travelling on.

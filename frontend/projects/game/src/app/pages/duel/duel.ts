@@ -7,6 +7,8 @@ import {
   NumberPad,
   Pill,
   Screen,
+  StampCard,
+  TextButton,
   TimerBar,
   WorldRing,
   type DuelHudPlayer,
@@ -20,11 +22,22 @@ import { DuelWords } from './duel-words';
  * the screen without scrolling (L2-033). It shows the duel `GameSession` publishes and gives
  * the child's answer to it; the session decides everything (docs/detailed-designs/tour/
  * play-duel/). Until the first duel is published it is in its loading state (docs/adr/0017).
- * The stamp, the pill to World Map and Pause come with journeys 05 and 08 (docs/adr/0020).
+ * After a hop the passport stamp stands in place of the flash card, and after a lost duel the
+ * quiet pill opens World Map (docs/adr/0022). Pause comes with journey 08.
  */
 @Component({
   selector: 'atw-duel-page',
-  imports: [DuelHud, FlashCard, NumberPad, Pill, Screen, TimerBar, WorldRing],
+  imports: [
+    DuelHud,
+    FlashCard,
+    NumberPad,
+    Pill,
+    Screen,
+    StampCard,
+    TextButton,
+    TimerBar,
+    WorldRing,
+  ],
   templateUrl: './duel.html',
   styleUrl: './duel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,11 +82,34 @@ export class DuelPage {
     const duel = this.duel();
     return duel ? DuelWords.announcement(duel) : '';
   });
+  /** The quiet pill after a lost duel (L2-033 criteria 8 and 11). */
+  protected readonly pill = computed(() => {
+    const duel = this.duel();
+    return duel ? DuelWords.pill(duel) : null;
+  });
+  /** The passport stamp of a hop the child won (L2-033 criterion 7, L2-038 criterion 5). */
+  protected readonly stamp = computed(() => {
+    const duel = this.duel();
+    const hop = duel?.hop;
+    const desk = hop ? this.session.tour()?.desks[hop.to - 1] : undefined;
+    if (!duel || !hop || !desk || duel.traveller.kid === 'classmate') return null;
+    const kid = kidById(duel.traveller.kid).name;
+    return {
+      country: desk.country,
+      landmark: desk.landmark,
+      hop: `${kid} hops to desk ${hop.to} of ${duel.tourLength}`,
+    };
+  });
   protected readonly traveller = computed(() => this.player(this.duel()?.traveller, 'Travelling'));
   protected readonly deskHolder = computed(() => {
     const duel = this.duel();
     return this.player(duel?.deskHolder, `Holds ${duel?.country}`);
   });
+
+  /** The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8). */
+  protected moveOn(): void {
+    this.session.continue();
+  }
 
   /** A key of the number pad: a digit or Delete changes the entry, Go gives it (L2-010). */
   protected press(key: PadKey): void {

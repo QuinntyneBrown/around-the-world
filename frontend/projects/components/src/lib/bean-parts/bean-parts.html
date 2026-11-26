@@ -1,0 +1,59 @@
+<svg:ellipse class="art-shadow" cx="0" cy="1" rx="17" ry="5" />
+@if (kid() === 'zuri') {
+  <svg:g transform="translate(-6 -44) rotate(-18)">
+    <svg:rect class="bean__pencil" x="-2.5" y="-20" width="5" height="18" rx="1" />
+    <svg:rect class="bean__eraser" x="-2.5" y="-24" width="5" height="5" rx="1.5" />
+  </svg:g>
+}
+<svg:rect
+  class="bean__deep"
+  [class.bean__pack--kenji]="kid() === 'kenji'"
+  x="-21"
+  y="-36"
+  width="10"
+  height="22"
+  rx="4.5"
+/>
+<svg:rect class="bean__deep" x="-11" y="-10" width="9" height="10" rx="4" />
+<svg:rect class="bean__deep" x="3" y="-10" width="9" height="10" rx="4" />
+<svg:rect class="bean__body" x="-14" y="-46" width="28" height="40" rx="14" />
+<svg:path class="bean__smile" d="M-11 -14Q0 -8 11 -14" />
+<svg:rect class="bean__visor" x="-3" y="-38" width="19" height="12" rx="6" />
+<svg:rect class="bean__shine" x="3" y="-35.5" width="7" height="3" rx="1.5" />
+@switch (kid()) {
+  @case ('zuri') {
+    <svg:g class="bean__hair">
+      <svg:circle cx="-9" cy="-45" r="5.5" />
+      <svg:circle cx="-1" cy="-48" r="6" />
+      <svg:circle cx="8" cy="-45" r="5.5" />
+    </svg:g>
+  }
+  @case ('kenji') {
+    <svg:g class="bean__line">
+      <svg:circle cx="2.5" cy="-32" r="4.5" />
+      <svg:circle cx="12.5" cy="-32" r="4.5" />
+      <svg:path d="M7 -32h1" />
+    </svg:g>
+  }
+  @case ('nia') {
+    <svg:rect class="bean__white" x="-14" y="-43" width="28" height="6" rx="3" />
+    <svg:rect class="bean__hair" x="-18" y="-41" width="6" height="12" rx="3" />
+  }
+  @case ('milo') {
+    <svg:path class="bean__metal" d="M-14 -40Q-14 -58 0 -58Q14 -58 14 -40Z" />
+    <svg:rect class="bean__metal-light" x="-15" y="-43" width="30" height="6" rx="3" />
+    <svg:g transform="translate(22 -2)">
+      <svg:rect class="bean__metal-light" x="-6" y="-13" width="12" height="10" rx="3" />
+      <svg:circle class="bean__eye" cx="-2" cy="-8" r="1.6" />
+      <svg:circle class="bean__eye" cx="2.5" cy="-8" r="1.6" />
+      <svg:rect class="bean__metal" x="-4" y="-3" width="8" height="4" rx="1.5" />
+      <svg:path class="bean__line" d="M0 -13v-4" />
+    </svg:g>
+  }
+  @case ('pip') {
+    <svg:g transform="translate(6 -62)">
+      <svg:path class="bean__white" d="M-12 2L14 -4L-4 8Z" />
+      <svg:path class="bean__line" d="M-4 8L0 2L14 -4" />
+    </svg:g>
+  }
+}

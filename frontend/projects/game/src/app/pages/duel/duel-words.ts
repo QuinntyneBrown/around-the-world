@@ -41,6 +41,23 @@ export const DuelWords = {
     return duel.role === 'deskHolder' ? duel.traveller.name : duel.deskHolder.name;
   },
 
+  /** Where a lost duel leaves the child: "You sit at Italy", or "You keep Italy" (ADR 0022). */
+  yourDesk(duel: DuelState): string {
+    return duel.role === 'deskHolder' ? `You keep ${duel.country}` : `You sit at ${duel.country}`;
+  },
+
+  /**
+   * The quiet pill after a lost duel, which opens World Map: "You sit at Italy · Nia travels
+   * on", or "You keep Italy · Kenji hops on" for the desk holder (L2-033 criteria 8 and 11).
+   */
+  pill(duel: DuelState): string | null {
+    if (duel.outcome !== 'won' || DuelWords.youWon(duel)) return null;
+    const rival = DuelWords.rival(duel);
+    return duel.role === 'deskHolder'
+      ? `${DuelWords.yourDesk(duel)} · ${rival} hops on`
+      : `${DuelWords.yourDesk(duel)} · ${rival} travels on`;
+  },
+
   /** The line under the sum (L2-004 5, L2-005 2, L2-033 2 and 3). */
   line(duel: DuelState): CardLine {
     if (duel.outcome === 'timedOut') {
@@ -66,7 +83,7 @@ export const DuelWords = {
     if (duel.outcome === 'won') {
       return DuelWords.youWon(duel)
         ? `${sum} is ${duel.answer}. You got it!`
-        : `${DuelWords.rival(duel)} said ${duel.answer} first. You sit at ${duel.country}.`;
+        : `${DuelWords.rival(duel)} said ${duel.answer} first. ${DuelWords.yourDesk(duel)}.`;
     }
     if (duel.frozen) return `Not ${duel.wrongAnswer}. Frozen for one second.`;
     return `New card: ${sum}.`;
