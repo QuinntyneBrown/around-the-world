@@ -13,6 +13,8 @@ import { installBrowserFakes, type MicrophoneSetting } from './fakes/browser-fak
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
  * - `classroom`: the 3D classroom's scenes on localhost, held back or refused when a spec asks,
  *   WebGL taken away, and the WebGL contexts still open (docs/adr/0028);
+ * - `sound`: the sounds the game played, never heard, and its audio elements still open
+ *   (docs/adr/0029);
  * - `clock`: the game's clock, held still and moved on by the spec (docs/adr/0020);
  * - `random`: `Math.random`, fixed by the spec so a classmate answers as it needs (ADR 0020).
  *
@@ -66,6 +68,7 @@ export interface KeptRecord {
   nickname?: { adjective: number; animal: number } | null;
   setup?: { kinds: string[]; tables: number[]; tourLength: number; cardSpeed: string } | null;
   wayOfAnswering?: 'voice' | 'numberPad';
+  soundMuted?: boolean;
 }
 
 export interface FakeDevice {
@@ -97,6 +100,13 @@ export interface FakeClassroom {
   openContexts(): Promise<number>;
 }
 
+export interface FakeSound {
+  /** The sounds the game played, in order, by name: `pop`, `chime`, `jingle` (L2-039). */
+  played(): Promise<string[]>;
+  /** How many audio elements the game made and has not let go (L2-048 criterion 3). */
+  openSounds(): Promise<number>;
+}
+
 export interface FakeClock {
   /** Holds the game's clock still (the page's `Date.now`); the browser's timers keep running. */
   hold(): Promise<void>;
@@ -126,6 +136,7 @@ interface Fixtures {
   device: FakeDevice;
   pictures: FakePictures;
   classroom: FakeClassroom;
+  sound: FakeSound;
   voice: FakeVoice;
   microphone: FakeMicrophone;
   model: FakeModel;
@@ -357,6 +368,13 @@ export const test = base.extend<Fixtures>({
       holdBack: () => pictures.holdBack(CLASSROOM_SCENES),
       refuse: () => pictures.refuse(CLASSROOM_SCENES),
       openContexts: () => page.evaluate(() => window.__atwFakes.openContexts()),
+    });
+  },
+
+  sound: async ({ page }, use) => {
+    await use({
+      played: () => page.evaluate(() => [...window.__atwFakes.played]),
+      openSounds: () => page.evaluate(() => window.__atwFakes.openSounds()),
     });
   },
 

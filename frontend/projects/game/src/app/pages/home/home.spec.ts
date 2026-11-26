@@ -26,6 +26,8 @@ describe('HomePage', () => {
       changeSetup: () => undefined,
       wayOfAnswering: signal('voice'),
       changeWayOfAnswering: () => undefined,
+      soundMuted: signal(false),
+      setSoundMuted: () => undefined,
     };
     TestBed.configureTestingModule({
       providers: [

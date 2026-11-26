@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import {
   GAME_SESSION,
+  SOUND,
   WAY_OF_ANSWERING,
   type AnswerWay,
   type DuelState,
@@ -52,7 +53,8 @@ import { DuelWords } from './duel-words';
  * Pause stops the game's clock and opens its dialog, whose code loads on the first press; while
  * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md). The 3D classroom is
  * drawn behind the scrim once it arrives, the duellists thinking, then cheering or "so close";
- * the still picture stays on a device that cannot draw it (docs/adr/0028).
+ * the still picture stays on a device that cannot draw it (docs/adr/0028). A key of the number
+ * pad pops, and each new flash card flips in (docs/adr/0029-motion-and-sound.md).
  */
 @Component({
   selector: 'atw-duel-page',
@@ -78,6 +80,7 @@ import { DuelWords } from './duel-words';
 export class DuelPage {
   private readonly session = inject(GAME_SESSION);
   private readonly way = inject(WAY_OF_ANSWERING);
+  private readonly sound = inject(SOUND);
   private readonly injector = inject(EnvironmentInjector);
 
   /** Pause in a solo game; a game with friends offers Leave in its place (L2-033 criterion 4). */
@@ -221,8 +224,9 @@ export class DuelPage {
     this.way.use(way);
   }
 
-  /** A key of the number pad: a digit or Delete changes the entry, Go gives it (L2-010). */
+  /** A key of the number pad pops; a digit or Delete changes the entry, Go gives it (L2-010). */
   protected press(key: PadKey): void {
+    this.sound.play('pop');
     const entry = this.entry();
     if (key === 'delete') return this.type(NumberEntry.removeLast(entry));
     if (key !== 'go') return this.type(NumberEntry.add(entry, key));

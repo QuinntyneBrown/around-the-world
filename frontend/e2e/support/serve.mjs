@@ -24,6 +24,7 @@ const types = {
   '.woff2': 'font/woff2',
   '.glb': 'model/gltf-binary',
   '.txt': 'text/plain; charset=utf-8',
+  '.wav': 'audio/wav',
 };
 
 createServer((request, response) => {

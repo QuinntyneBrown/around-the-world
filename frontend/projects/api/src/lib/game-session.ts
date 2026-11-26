@@ -6,6 +6,13 @@ import { type TourResult, type TourState } from './tour';
 /** The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/). */
 export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium';
 
+/**
+ * A moment of the game that makes a sound (docs/adr/0029-motion-and-sound.md): the device's own
+ * player's right answer wins their duel (`answerCorrect`), or they hop on and their passport is
+ * stamped (`countryReached`). A lost duel, a wrong answer and a classmate's answer are none.
+ */
+export type GameMoment = 'answerCorrect' | 'countryReached';
+
 /** Whether a game is played on the device against classmates, or in a room with friends. */
 export type GameKind = 'solo' | 'friends';
 
@@ -63,6 +70,11 @@ export interface GameSession {
    * stops it (docs/adr/0023-game-screens-follow-the-session.md).
    */
   watchScreen(listener: (screen: GameScreen) => void): () => void;
+  /**
+   * Calls the listener at each moment that makes a sound (L2-039 criterion 1); returns a
+   * function that stops it (docs/adr/0029-motion-and-sound.md).
+   */
+  watchMoments(listener: (moment: GameMoment) => void): () => void;
 }
 
 export const GAME_SESSION = new InjectionToken<GameSession>('GAME_SESSION');

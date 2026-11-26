@@ -4,6 +4,7 @@ import {
   type DeskState,
   type DuelState,
   type Duellist,
+  type GameMoment,
   type GameScreen,
   type GameSession,
   type GameSetup,
@@ -73,6 +74,7 @@ export class SoloGame implements GameSession {
   private readonly ended = signal<TourResult | null>(null);
   private readonly current = signal<GameScreen | null>(null);
   private readonly listeners = new Set<(screen: GameScreen) => void>();
+  private readonly momentListeners = new Set<(moment: GameMoment) => void>();
   private readonly held = signal(false);
   private readonly clock = new GameClock(() => Date.now());
   private ticking: ReturnType<typeof setInterval> | null = null;
@@ -267,6 +269,11 @@ export class SoloGame implements GameSession {
     return () => this.listeners.delete(listener);
   }
 
+  watchMoments(listener: (moment: GameMoment) => void): () => void {
+    this.momentListeners.add(listener);
+    return () => this.momentListeners.delete(listener);
+  }
+
   /** Starts the next duel: one the child is in on Duel, or the classmates' on World Map. */
   private next(): void {
     const rules = this.rules;
@@ -371,6 +378,8 @@ export class SoloGame implements GameSession {
     this.lostInARow = youWon ? 0 : this.lostInARow + 1;
     this.publish(playing);
     if (!youWon) return;
+    // The child's right answer won the duel: the chime's moment (docs/adr/0029).
+    this.report('answerCorrect');
     playing.timers.push(
       this.clock.after(RIGHT_MS, () => {
         const move = this.apply(playing);
@@ -402,6 +411,8 @@ export class SoloGame implements GameSession {
     this.phase = this.ending ? 'over' : 'moving';
     this.publishTour();
     this.show('world-map');
+    // The child hopped on and their passport is stamped: the jingle's moment (docs/adr/0029).
+    if (move.kind === 'hop' && move.traveller === YOU) this.report('countryReached');
     this.waiting = this.clock.after(MESSAGE_MS, () => (this.ending ? this.finish() : this.next()));
   }
 
@@ -484,6 +495,10 @@ export class SoloGame implements GameSession {
     if (this.current() === screen) return;
     this.current.set(screen);
     for (const listener of [...this.listeners]) listener(screen);
+  }
+
+  private report(moment: GameMoment): void {
+    for (const listener of [...this.momentListeners]) listener(moment);
   }
 
   /** Publishes the duel as the Duel screen shows it. */
@@ -573,6 +588,7 @@ export class SoloGame implements GameSession {
     this.ticking = null;
     this.clock.clear();
     this.listeners.clear();
+    this.momentListeners.clear();
     this.playing = null;
   }
 }

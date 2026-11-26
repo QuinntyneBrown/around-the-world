@@ -1,6 +1,9 @@
 import { expect, test } from '../fixtures/test';
 import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
+import { HomePage } from '../pages/home.page';
+import { PauseDialog } from '../pages/pause.dialog';
+import { WorldMapPage } from '../pages/world-map.page';
 import { named } from '../support/motion';
 
 /**
@@ -105,5 +108,97 @@ test.describe('Motion', () => {
     expect(named(stamp, 'stamp-in')).toBeUndefined();
     expect(named(stamp, 'fade-in')?.ms).toBeGreaterThan(0);
     expect(named(stamp, 'fade-in')?.ms).toBeLessThanOrEqual(200);
+  });
+});
+
+test.describe('Sound', () => {
+  test('with sound on, a key pops, a right answer chimes and a new country jingles', async ({
+    page,
+    device,
+    clock,
+    sound,
+  }) => {
+    // Given a child at the first duel with sound on, the clock held
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+    const keys = String(answer).length + 1;
+
+    // When the child presses the digits of the answer and Go
+    await duel.answerWithPad(answer);
+
+    // Then each key pops, and the right answer chimes once the duel is decided
+    await expect(duel.result).toHaveText(`= ${answer} You got it!`);
+    await expect.poll(() => sound.played()).toEqual([...Array(keys).fill('pop'), 'chime']);
+
+    // When the stamp has shown and World Map opens on the hop to Japan
+    await clock.pass(1000);
+    await expect(duel.stampCountry).toHaveText('Japan');
+    await clock.pass(1200);
+    const map = new WorldMapPage(page);
+    await expect(map.message).toHaveText('You walk on to Japan!');
+
+    // Then a short jingle plays for the new country
+    await expect
+      .poll(() => sound.played())
+      .toEqual([...Array(keys).fill('pop'), 'chime', 'jingle']);
+  });
+
+  test('a wrong answer and a lost duel play no sound: no buzzer', async ({
+    page,
+    device,
+    clock,
+    random,
+    sound,
+  }) => {
+    // Given a child at the first duel against Kenji, who answers right and fast
+    await device.keeps(ZURI);
+    await random.always(0);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    const { answer } = await duel.card();
+
+    // When the child gives a wrong answer with one key and Go, and Kenji then answers first
+    await duel.answerWithPad(answer === 1 ? 2 : 1);
+    await clock.pass(5000);
+    await expect(duel.result).toHaveText(`Kenji said ${answer} first. So close!`);
+
+    // And the child chooses the pill, and World Map shows them sitting down
+    await duel.sitPill.click();
+    const map = new WorldMapPage(page);
+    await expect(map.message).toHaveText('So close! You sit down at Egypt');
+
+    // Then only the two keys popped: the wrong answer and the lost duel made no sound
+    expect(await sound.played()).toEqual(['pop', 'pop']);
+  });
+
+  test('leaving the game lets every sound go', async ({ page, device, clock, sound }) => {
+    // Given a child who has heard a pop in a duel
+    await device.keeps(ZURI);
+    await clock.hold();
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.chooseGo();
+    const duel = new DuelPage(page);
+    await duel.card();
+    await duel.pressDigits(1);
+    await expect.poll(() => sound.played()).toEqual(['pop']);
+    expect(await sound.openSounds()).toBeGreaterThan(0);
+
+    // When the child pauses and goes home
+    await duel.pause.click();
+    const paused = new PauseDialog(page);
+    await paused.goHome.click();
+    await expect(new HomePage(page).play).toBeVisible();
+
+    // Then no audio element holds a sound any more (L2-048 criterion 3)
+    expect(await sound.openSounds()).toBe(0);
   });
 });

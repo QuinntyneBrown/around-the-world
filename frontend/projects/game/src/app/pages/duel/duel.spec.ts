@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   CLASSROOM_RENDERER,
   GAME_SESSION,
+  SOUND,
   WAY_OF_ANSWERING,
   type DuelState,
   type GameSession,
@@ -29,6 +30,7 @@ describe('DuelPage', () => {
       continue: () => undefined,
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
+      watchMoments: () => () => undefined,
       kind: 'solo',
       paused: signal(false),
       pause: () => undefined,
@@ -38,6 +40,8 @@ describe('DuelPage', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: GAME_SESSION, useValue: session },
+        // Sound is the behaviour specs' business; here every sound is silent.
+        { provide: SOUND, useValue: { play: () => undefined } },
         // The 3D classroom is the behaviour specs' business; here it never arrives.
         { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
         // The number pad is the way of answering, so nothing listens.
@@ -103,6 +107,8 @@ describe('DuelPage', () => {
       TestBed.configureTestingModule({
         providers: [
           { provide: GAME_SESSION, useValue: session },
+          // Sound is the behaviour specs' business; here every sound is silent.
+          { provide: SOUND, useValue: { play: () => undefined } },
           { provide: CLASSROOM_RENDERER, useValue: () => new Promise(() => undefined) },
           {
             provide: WAY_OF_ANSWERING,

@@ -197,6 +197,45 @@ describe('SoloGame', () => {
     expect(screens).toEqual(['world-map', 'duel']);
   });
 
+  it('reports a correct answer when the child wins, and a new country when World Map opens on their hop (L2-039 1)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const game = await started();
+    const moments: string[] = [];
+    game.watchMoments((moment) => moments.push(moment));
+    game.answer(answerOf(game) + 1);
+    expect(moments).toEqual([]);
+    vi.advanceTimersByTime(1000);
+    game.answer(answerOf(game));
+    expect(moments).toEqual(['answerCorrect']);
+    vi.advanceTimersByTime(RIGHT_MS);
+    expect(moments).toEqual(['answerCorrect']);
+    vi.advanceTimersByTime(STAMP_MS);
+    expect(game.screen()).toBe('world-map');
+    expect(moments).toEqual(['answerCorrect', 'countryReached']);
+  });
+
+  it('reports no moment for a lost duel, a classmates’ duel or a win with no stamp (L2-039 1)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const game = await started();
+    const moments: string[] = [];
+    const stop = game.watchMoments((moment) => moments.push(moment));
+    vi.advanceTimersByTime(5000);
+    game.continue();
+    vi.advanceTimersByTime(MESSAGE_MS + 5000);
+    expect(moments).toEqual([]);
+    game.continue();
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    game.answer(answerOf(game));
+    vi.advanceTimersByTime(RIGHT_MS);
+    // A win as the desk holder: a correct answer, but no stamp and so no new country.
+    expect(game.tour()?.lastMove?.kind).toBe('deskHolderTravels');
+    expect(moments).toEqual(['answerCorrect']);
+    stop();
+    vi.advanceTimersByTime(MESSAGE_MS);
+    game.answer(answerOf(game));
+    expect(moments).toEqual(['answerCorrect']);
+  });
+
   it('waits on a lost duel for the pill, then sits the child down (L2-033 8, L2-003 1)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const game = await started();

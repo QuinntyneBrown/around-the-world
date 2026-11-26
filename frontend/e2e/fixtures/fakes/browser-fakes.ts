@@ -3,7 +3,9 @@
  * the game runs: a speech recognizer that says what the spec tells it to, a microphone whose
  * permission the spec sets, and an on-device model (Chrome's `LanguageModel`) that answers as
  * the spec tells it to. WebGL is Chromium's own (SwiftShader when there is no GPU): the fakes
- * only count the contexts the game opens, and take WebGL away when the spec asks. A use the
+ * only count the contexts the game opens, and take WebGL away when the spec asks. Sound is
+ * never heard: each sound the game plays is recorded by its file's name, and the audio
+ * elements the game makes are counted until it lets them go. A use the
  * spec did not set up is recorded as a problem, and the fixture fails the spec with it.
  *
  * This function is serialised into the page, so it must not close over anything.
@@ -30,6 +32,10 @@ export interface BrowserFakesState {
   webglSupported: boolean;
   /** How many WebGL contexts the game opened that are not lost. */
   openContexts(): number;
+  /** The sounds the game played, in order, by their file's name: `pop`, `chime`, `jingle`. */
+  played: string[];
+  /** How many audio elements the game made that still hold a source. */
+  openSounds(): number;
 }
 
 declare global {
@@ -53,6 +59,8 @@ export function installBrowserFakes(): void {
     openTracks: () => 0,
     webglSupported: true,
     openContexts: () => 0,
+    played: [],
+    openSounds: () => 0,
   };
   Object.defineProperty(window, '__atwFakes', { value: fakes, configurable: false });
 
@@ -287,4 +295,26 @@ export function installBrowserFakes(): void {
     },
   });
   fakes.openContexts = () => contexts.filter((context) => !context.isContextLost()).length;
+
+  // ---- Sound ------------------------------------------------------------------------------
+  // A sound "plays" by being recorded; the browser never makes a noise or asks for a touch.
+  const audios: HTMLAudioElement[] = [];
+  const NativeAudio = window.Audio;
+  class CountedAudio extends NativeAudio {
+    constructor(src?: string) {
+      super(src);
+      audios.push(this);
+    }
+  }
+  Object.defineProperty(window, 'Audio', { configurable: true, writable: true, value: CountedAudio });
+  Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+    configurable: true,
+    writable: true,
+    value: function (this: HTMLMediaElement) {
+      const file = (this.getAttribute('src') ?? '').split('/').pop() ?? '';
+      fakes.played.push(file.replace(/\.[a-z0-9]+$/, ''));
+      return Promise.resolve();
+    },
+  });
+  fakes.openSounds = () => audios.filter((audio) => audio.getAttribute('src')).length;
 }
