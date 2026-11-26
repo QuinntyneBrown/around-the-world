@@ -165,9 +165,9 @@ test.describe('Game Setup', () => {
 
     // Then Times is on, tables 2 to 10 are on, and Plus, Minus and Divide are off
     await expect(setup.kinds).toHaveText(['× Times', '+ Plus', '− Minus', '÷ Divide']);
-    expect(await setup.kindsOnNames()).toEqual(['Times']);
+    await expect.poll(() => setup.kindsOnNames()).toEqual(['Times']);
     await expect(setup.tables).toHaveCount(11);
-    expect(await setup.tablesOnNumbers()).toEqual(DEFAULT_TABLES);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual(DEFAULT_TABLES);
 
     // And the tour is 12 desks, Round the world, and the card speed is Normal, 6 seconds
     await expect(setup.tourLengthChosen).toHaveText('12 desks');
@@ -197,7 +197,7 @@ test.describe('Game Setup', () => {
     for (const kind of ['Plus', 'Minus', 'Divide'] as const) await setup.kind(kind).click();
 
     // Then every kind of maths is on and pressed
-    expect(await setup.kindsOnNames()).toEqual(['Times', 'Plus', 'Minus', 'Divide']);
+    await expect.poll(() => setup.kindsOnNames()).toEqual(['Times', 'Plus', 'Minus', 'Divide']);
     await expect(setup.kind('Divide')).toHaveAttribute('aria-pressed', 'true');
 
     // When the child turns 11 on and 2 off
@@ -207,7 +207,7 @@ test.describe('Game Setup', () => {
     // Then each table says whether it is pressed
     await expect(setup.table(11)).toHaveAttribute('aria-pressed', 'true');
     await expect(setup.table(2)).toHaveAttribute('aria-pressed', 'false');
-    expect(await setup.tablesOnNumbers()).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
 
     // When the child turns Plus off again
     await setup.kind('Plus').click();
@@ -225,7 +225,7 @@ test.describe('Game Setup', () => {
     await setup.easy.click();
 
     // Then tables 2, 3, 4, 5 and 10 are on
-    expect(await setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
 
     // When the child chooses All
     await setup.all.click();
@@ -255,7 +255,7 @@ test.describe('Game Setup', () => {
     // Then the line goes, and Times can be turned off
     await expect(setup.lastKindStatus).toHaveCount(0);
     await setup.kind('Times').click();
-    expect(await setup.kindsOnNames()).toEqual(['Minus']);
+    await expect.poll(() => setup.kindsOnNames()).toEqual(['Minus']);
   });
 
   test('the last times table stays on and Game Setup says why', async ({ page }) => {
@@ -263,7 +263,7 @@ test.describe('Game Setup', () => {
     const setup = new GameSetupPage(page);
     await setup.open();
     for (const table of [2, 3, 4, 5, 6, 8, 9, 10]) await setup.table(table).click();
-    expect(await setup.tablesOnNumbers()).toEqual([7]);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual([7]);
 
     // When the child turns it off
     await setup.table(7).click();
@@ -299,7 +299,7 @@ test.describe('Game Setup', () => {
     await setup.kind('Times').click();
 
     // Then the tables that were on are on again
-    expect(await setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
     await expect(setup.timesOffHint).toHaveCount(0);
   });
 
@@ -370,15 +370,15 @@ test.describe('Game Setup', () => {
     await solo.choosePlaySolo();
 
     // Then Game Setup is as they left it
-    expect(await setup.kindsOnNames()).toEqual(['Times', 'Minus']);
-    expect(await setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
+    await expect.poll(() => setup.kindsOnNames()).toEqual(['Times', 'Minus']);
+    await expect.poll(() => setup.tablesOnNumbers()).toEqual([2, 3, 4, 5, 10]);
     await expect(setup.tourLengthChosen).toHaveText('24 desks');
     await expect(setup.speedChosen).toHaveText('Chill');
 
     // And when they close the game and open Game Setup again, it is as they left it
     await page.reload();
     await expect(setup.tourLengthChosen).toHaveText('24 desks');
-    expect(await setup.kindsOnNames()).toEqual(['Times', 'Minus']);
+    await expect.poll(() => setup.kindsOnNames()).toEqual(['Times', 'Minus']);
   });
 });
 
