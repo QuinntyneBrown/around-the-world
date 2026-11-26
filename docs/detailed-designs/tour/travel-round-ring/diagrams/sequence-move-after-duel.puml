@@ -21,7 +21,7 @@ box "Frontend — game application" #E0F2FE
   participant "SoloGame\n(GameSession)" as solo
 end box
 box "Frontend — components library" #E0F2FE
-  participant "WorldRing, Standings,\nMapToast" as views
+  participant "WorldMap, Standings,\nMapToast" as views
 end box
 box "Frontend — domain library" #E0F2FE
   participant "Tour" as tour
@@ -54,8 +54,10 @@ else deskHolderTravels
   views --> child : Traveller sits, desk holder stands up, about half a second:\n"So close! You sit down at {country}" when the player sits down (L2-034 criterion 4)
   views --> child : The new traveller moves on to the next desk
 end
-page -> page : The message has stayed for about 1.6 s (L2-034 criterion 9),\nor the child chooses "Back to the card" (L2-034 criterion 12)
-page -> solo : continue()
+solo -> solo : The message stays 1.6 s on the game's clock (L2-034 criterion 9)
+opt the child chooses "Back to the card" (L2-034 criterion 12)
+  page -> solo : continue(): the wait ends at once, and while the child is seated\nthe classmates' duels are played out at once
+end
 alt the device's player is in the next duel
   solo --> page : TourState, phase duel, the next DuelState
   page -> duelpage : Duel returns
@@ -63,7 +65,8 @@ alt the device's player is in the next duel
 else a solo game, two classmates duel (L2-034 criterion 7)
   solo --> page : TourState, phase watching
   page --> child : World Map stays, no flash card is shown
-  solo -> tour : applyDuel(winner, now), once the classmates' duel is decided
+  solo -> solo : ClassmatesDuel works out the winner and the time of the first correct answer
+  solo -> tour : applyDuel(winner, now), at that time on the game's clock
   tour --> solo : TourMove
   solo --> page : TourState, phase moving, played as above
 end
