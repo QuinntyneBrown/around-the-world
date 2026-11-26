@@ -725,3 +725,76 @@ the lessons that fit.
   slow, failing and nonsense replies.
 - *Put a browser resource behind a count the fixture can read* (09, 1): `sessions()` counts what
   is still open, proving the release on the Podium and on "Go home".
+
+## Journey 12: Make a room as host
+
+**What slowed it.**
+
+- Angular's `HttpClient`, provided only by Solo Or Friends' lazy route, still moved 25.3 kB of
+  `@angular/common` into `main`; a worktree build of the base commit and the two stats files,
+  compared module by module, found it at once. The game's few JSON requests use `fetch`
+  (`FetchRoomsApi`), and the room group's route and the visit's room cost the last 0.31 kB,
+  which moved the initial warning to 273 kB (ADR 0031).
+- "Play solo works" with no network was not true: offline, the router could not fetch Game
+  Setup's chunk, and then the classmates' agents. Nothing had ever fetched the solo game's
+  code ahead; Solo Or Friends now does (`warmSoloGame`), and the spec plays a card offline.
+- ASP.NET Core's test server does not enforce `[RequestSizeLimit]`, so the 1 KB limit is also
+  read from the declared length by a small middleware, which both hosts share.
+- The rate limit counted every acceptance test's rooms, since the test server has one address:
+  the fixture lifts the limit, and `ThrottledApiFixture` keeps production's.
+- A hosted sweep on `PeriodicTimer` runs after `FakeTimeProvider.Advance` returns, on its own
+  thread; a test awaits a sweep at or after the time it advanced to, through a pipeline
+  behaviour that records each sweep, rather than the first sweep to arrive.
+- The UI for every Solo Or Friends state went in with the first frontend slice, so the
+  rate-limit and error specs were green on their first run; each was broken by hand
+  (`roomRefusal` ignoring `rate_limited`) and failed as expected.
+
+**New lessons.**
+
+1. Before binding a framework service from a lazy route, read the chunk table: shared framework
+   code lands in `main` whichever chunk asks for it, and a platform API (`fetch`) may cost
+   nothing.
+2. A requirement that a screen works offline needs that screen's next code already on the
+   device: drive it with the fixture's `network.offline()` past the first lazy chunk, not just
+   to the banner.
+3. Give a backend acceptance fixture the production limits only in a fixture of its own, so a
+   test of another rule is never refused by them.
+4. Await a background job in a backend test through a pipeline behaviour that records what the
+   job was asked, by the time it was asked at; never the first run after the clock moved.
+5. Give the fixture's `backend` a record of the requests the game sent, so a spec proves that
+   only closed values left the device.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every spec ran against the build,
+  which showed `HttpClient` in `main` at the first build.
+- *Check a fake once by hand* (01, 2): the code generator with no blocked words failed its
+  three cases, a `make-room` limit of 11 failed the rate-limit test, and `roomRefusal` ignoring
+  `rate_limited` failed its spec.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): RoomCode, Summary, PlayerCard,
+  PlayerList and Badge added; Alert (`urgent`, `banner`, `icon`, no title), ModeCard (`note`),
+  PanelHead (`level`), Stack (on `<aside>`) and Icon (crown, wifi off) extended; each marked in
+  `frontend/projects/components/README.md`.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0031 records `fetch` in
+  place of `HttpClient` and the budget.
+- *Mark libraries side-effect free and read the chunk table* (02, 1): the Lobby and Solo Or
+  Friends are their own chunks; `main` went from 251.04 kB to 251.35 kB.
+- *A link or button block is an attribute component* (02, 2): RoomCode on `<section>`, Summary
+  on `<dl>`, PlayerList on `<ul>`, PlayerCard on `<li>` and Badge on `<span>`.
+- *Drive states through the fixture* (02, 3): extended with `backend.holdBack`,
+  `backend.unreachable`, `backend.requests()` and `network`.
+- *Tag one spec per feature `@critical`* (02, 5): a host makes a room and sees its Lobby.
+- *Put the page in the group that provides its service* (03, 1): the visit holds the room, so
+  the Lobby's group needs nothing handed through the router.
+- *Measure the initial bundle against the base commit* (03, 2): a worktree build located the
+  25.3 kB and then the 0.31 kB.
+- *Prefer signals and outputs to `effect()`* (04, 2): the network is a signal over the
+  browser's events; no effect was added.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Check accessible names with `toHaveAccessibleName`* (04, 4): the code ("B O L T") and the
+  count ("1 of 8 players") were paragraphs whose names were lost; both are `role="img"` now,
+  in the mocks too.
+- *Put a browser resource behind a count the fixture can read* (09, 1): not needed; the
+  network listener is released with its route.
