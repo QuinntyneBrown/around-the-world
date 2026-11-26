@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /** The icons the screens use so far, named by what they show. */
 export type IconName =
+  | 'alert'
   | 'back'
   | 'check'
   | 'clock'
@@ -10,11 +11,15 @@ export type IconName =
   | 'dice'
   | 'friends'
   | 'frozen'
+  | 'globe'
   | 'home'
   | 'info'
   | 'keypad'
+  | 'leave'
   | 'mic'
   | 'mic-off'
+  | 'pause'
+  | 'play'
   | 'retry'
   | 'settings'
   | 'solo';

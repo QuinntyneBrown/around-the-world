@@ -67,6 +67,11 @@ describe('PodiumPage', () => {
       continue: () => undefined,
       playAgain: () => undefined,
       watchScreen: () => () => undefined,
+      kind: 'solo',
+      paused: signal(false),
+      pause: () => undefined,
+      resume: () => undefined,
+      leave: () => Promise.resolve(),
     };
     const visit: Visit = {
       tourFinished: signal(false),

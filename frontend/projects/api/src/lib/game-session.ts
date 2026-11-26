@@ -6,12 +6,19 @@ import { type TourResult, type TourState } from './tour';
 /** The game screen a game is at (docs/detailed-designs/player/find-way-through-screens/). */
 export type GameScreen = 'mic-check' | 'duel' | 'world-map' | 'podium';
 
+/** Whether a game is played on the device against classmates, or in a room with friends. */
+export type GameKind = 'solo' | 'friends';
+
 /**
  * A game in progress, solo or with friends. The solo group and the room group each provide
  * their own behind `GAME_SESSION` (docs/adr/0016-solo-game-route-group.md); the game screens
  * read it and do not know which kind of game is played.
  */
 export interface GameSession {
+  /** A solo game can be paused; a game with friends offers Leave instead (L2-033 criterion 4). */
+  readonly kind: GameKind;
+  /** Whether the game is paused: its clock and everything on it wait (docs/adr/0027). */
+  readonly paused: Signal<boolean>;
   /** Whether a game has started in this group. */
   readonly hasGame: Signal<boolean>;
   /** The setup the game was started with, or null before it starts. */
@@ -42,6 +49,15 @@ export interface GameSession {
    * and setup (L2-035 criterion 3).
    */
   playAgain(): void;
+  /** Stops the game's clock in a solo game (L2-033 criterion 4); an answer meanwhile is ignored. */
+  pause(): void;
+  /** Lets a paused game run on from where it stopped, with the same flash card and time left. */
+  resume(): void;
+  /**
+   * Leaves the game: at once in a solo game, or once the room has been told in a game with
+   * friends (L2-033 criterion 4). The screen opens Home when it settles.
+   */
+  leave(): Promise<void>;
   /**
    * Calls the listener each time the game moves to another screen; returns a function that
    * stops it (docs/adr/0023-game-screens-follow-the-session.md).

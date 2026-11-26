@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  EnvironmentInjector,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   GAME_SESSION,
   WAY_OF_ANSWERING,
@@ -11,6 +18,7 @@ import {
 import {
   DuelHud,
   FlashCard,
+  IconButton,
   NumberEntry,
   NumberPad,
   Pill,
@@ -36,13 +44,15 @@ import { DuelWords } from './duel-words';
  * quiet pill opens World Map (docs/adr/0022). With voice as the way of answering it shows
  * "Shout it!" while the child may answer, and listens exactly then; the quiet pill at the
  * bottom switches between voice and the pad (docs/detailed-designs/answering/answer-by-voice/).
- * Pause comes with journey 08.
+ * Pause stops the game's clock and opens its dialog, whose code loads on the first press; while
+ * paused nothing listens (docs/adr/0027-pausing-leaving-and-recovering.md).
  */
 @Component({
   selector: 'atw-duel-page',
   imports: [
     DuelHud,
     FlashCard,
+    IconButton,
     Listening,
     NumberPad,
     Pill,
@@ -60,6 +70,7 @@ import { DuelWords } from './duel-words';
 export class DuelPage {
   private readonly session = inject(GAME_SESSION);
   private readonly way = inject(WAY_OF_ANSWERING);
+  private readonly injector = inject(EnvironmentInjector);
   /** The duel in which speech recognition failed: the pad shows for it (L2-011 criterion 4). */
   private readonly failedDuel = signal<string | null>(null);
 
@@ -87,7 +98,12 @@ export class DuelPage {
   /** The child's duel, with a card showing: answers and the switch are offered (L2-011 5). */
   private readonly playing = computed(() => {
     const duel = this.duel();
-    return duel?.outcome === 'open' && duel.role !== 'watching' && !this.stamp();
+    return (
+      duel?.outcome === 'open' &&
+      duel.role !== 'watching' &&
+      !this.stamp() &&
+      !this.session.paused()
+    );
   });
   /** Whether the device listens now: by voice, playing and not frozen (L2-009 criterion 5). */
   protected readonly listening = computed(
@@ -147,6 +163,12 @@ export class DuelPage {
     const duel = this.duel();
     return this.player(duel?.deskHolder, `Holds ${duel?.country}`);
   });
+
+  /** Pause: the clock stops and the Pause dialog opens (L2-033 criterion 4). */
+  protected async pause(): Promise<void> {
+    const { openPause } = await import('../../dialogs/pause/open-pause');
+    openPause(this.injector);
+  }
 
   /** The pill after a lost duel: World Map shows what the duel did (L2-033 criterion 8). */
   protected moveOn(): void {
