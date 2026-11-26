@@ -22,6 +22,7 @@ export * from './lib/listener/listener';
 export * from './lib/mode-card/mode-card';
 export * from './lib/mode-card/mode-grid';
 export * from './lib/nickname/nickname';
+export * from './lib/notice/notice';
 export * from './lib/number-pad/number-entry';
 export * from './lib/number-pad/number-pad';
 export * from './lib/ordinal/ordinal';

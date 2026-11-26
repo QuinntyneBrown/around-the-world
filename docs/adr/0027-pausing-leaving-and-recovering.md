@@ -73,3 +73,6 @@ builds.
   unit tests of the dialog and of Duel with a game of kind `friends`.
 - "Try again" after a failure on a game screen ends the solo game; the game was held in memory,
   so nothing better could be restored.
+- `GameErrorHandler` and the two routes are in `main`: the initial total went from 270.72 kB to
+  271.38 kB, within ADR 0026's 272 kB warning. The dialogs, the guard's dialog and both notice
+  pages are lazy chunks.

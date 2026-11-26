@@ -1,0 +1,14 @@
+<atw-screen>
+  <main
+    id="main"
+    atw-notice
+    icon="alert"
+    heading="Oops, the game tripped over"
+    text="That wasn’t you. Try again, and if it keeps happening, tell a grown-up."
+  >
+    <button atw-toy-button type="button" size="xl" icon="retry" (click)="tryAgain()">
+      Try again
+    </button>
+    <a atw-toy-button variant="paper" icon="home" routerLink="/">Home</a>
+  </main>
+</atw-screen>

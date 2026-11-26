@@ -4,6 +4,7 @@ import { DuelPage } from '../pages/duel.page';
 import { GameSetupPage } from '../pages/game-setup.page';
 import { HomePage } from '../pages/home.page';
 import { MicCheckPage } from '../pages/mic-check.page';
+import { NoticePage } from '../pages/notice.page';
 import { PauseDialog } from '../pages/pause.dialog';
 import { PodiumPage } from '../pages/podium.page';
 import { WorldMapPage } from '../pages/world-map.page';
@@ -306,4 +307,69 @@ test.describe('Back during a game', () => {
       await expect(new HomePage(page).play).toBeVisible();
     });
   }
+});
+
+test.describe('Not Found and Something Went Wrong', () => {
+  test('@critical an address that leads to no screen says so and offers “Home”', async ({
+    page,
+  }) => {
+    // Given no screen at the address
+    // When the child opens it
+    const notFound = new NoticePage(page);
+    await notFound.openNowhere();
+
+    // Then a screen says so, with one way on (L2-030 criterion 9)
+    await expect(notFound.title).toHaveText('This desk isn’t on the map');
+    await expect(notFound.text).toHaveText(
+      'That page doesn’t exist. Let’s get you back to the classroom.',
+    );
+    await expect(notFound.actions).toHaveText(['Home']);
+    await expect(page).toHaveTitle('Not found · Around the World');
+
+    // When the child chooses "Home", Home opens
+    await notFound.home.click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(new HomePage(page).play).toBeVisible();
+  });
+
+  test('a failure of the game says so in plain words; “Try again” loads afresh', async ({
+    page,
+    device,
+    random,
+  }) => {
+    // Given a child on Game Setup, in a browser that breaks
+    await device.keeps(ZURI);
+    const setup = new GameSetupPage(page);
+    await setup.open();
+    await setup.tourLengths.filter({ hasText: '24' }).click();
+    await random.breaks();
+
+    // When the game breaks as "Go!" deals the first flash card
+    await setup.chooseGo();
+
+    // Then a screen says so, with nothing of the failure, and the address is kept (L2-054 4)
+    const failed = new NoticePage(page);
+    await expect(failed.title).toHaveText('Oops, the game tripped over');
+    await expect(failed.text).toHaveText(
+      'That wasn’t you. Try again, and if it keeps happening, tell a grown-up.',
+    );
+    await expect(failed.actions).toHaveText(['Try again', 'Home']);
+    await expect(failed.notice).not.toContainText('Math.random');
+    await expect(page).toHaveURL(/\/setup$/);
+
+    // When the child chooses "Try again"
+    await failed.tryAgain.click();
+
+    // Then the game loads afresh at Game Setup, with the choices kept on the device
+    await expect(setup.tourLengthChosen).toContainText('24');
+    await expect(failed.notice).toHaveCount(0);
+
+    // And when it breaks again, "Home" opens Home
+    await random.breaks();
+    await setup.chooseGo();
+    await expect(failed.title).toHaveText('Oops, the game tripped over');
+    await failed.home.click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(new HomePage(page).play).toBeVisible();
+  });
 });
