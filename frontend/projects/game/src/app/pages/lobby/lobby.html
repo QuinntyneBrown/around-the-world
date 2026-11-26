@@ -12,7 +12,17 @@
   @if (room(); as room) {
     <main atw-screen-body columns="side">
       <aside atw-stack gap="lg">
-        <section atw-room-code [code]="room.code"></section>
+        <section atw-room-code [code]="room.code">
+          <button
+            atw-icon-button
+            slot="action"
+            type="button"
+            icon="copy"
+            [onCode]="true"
+            aria-label="Copy room link"
+            (click)="copyLink()"
+          ></button>
+        </section>
         <section atw-panel>
           <div atw-panel-head heading="The game" headingId="game-title" [level]="2"></div>
           <dl atw-summary [rows]="setup()"></dl>
@@ -87,4 +97,14 @@
       </section>
     </main>
   }
+  <div atw-toast-region>
+    @for (message of messages(); track message.id) {
+      <atw-toast
+        [tone]="message.tone"
+        [heading]="message.heading"
+        [text]="message.text"
+        (dismissed)="dismiss(message.id)"
+      />
+    }
+  </div>
 </atw-screen>
