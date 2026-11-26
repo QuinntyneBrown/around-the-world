@@ -26,7 +26,9 @@ export const ROOM_RETRY_POLICY: IRetryPolicy = {
  * `RoomConnection` over SignalR's WebSockets transport. The SignalR client is imported when
  * the first connection opens, so it is in no initial chunk and a child who plays only solo
  * never downloads it (L2-047 criteria 2 and 3). The token travels as SignalR's access token
- * (docs/adr/0031), the same one on every try to get a lost connection back (docs/adr/0036). The client's logging is off: a lost room is the Lobby's state to show, not
+ * (docs/adr/0031), the same one on every try to get a lost connection back (docs/adr/0036). The
+ * client negotiates first and opens its one WebSocket where the negotiation says: the
+ * instance's own, or Azure SignalR Service's in a deployed system (L2-052, docs/adr/0037). The client's logging is off: a lost room is the Lobby's state to show, not
  * an error in the console.
  */
 @Injectable()
@@ -40,7 +42,6 @@ export class SignalRRoomConnection implements RoomConnection {
       .withUrl(ROOM_HUB_PATH, {
         accessTokenFactory: () => token,
         transport: signalR.HttpTransportType.WebSockets,
-        skipNegotiation: true,
       })
       .withAutomaticReconnect(ROOM_RETRY_POLICY)
       .configureLogging(signalR.LogLevel.None)

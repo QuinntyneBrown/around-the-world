@@ -38,7 +38,7 @@ requirements and designs leave.
 | [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |
 | [0030](0030-classmates-with-the-on-device-model.md) | Classmates with the on-device model: readiness, the sessions, the prompts, the decision and its deadline | Accepted |
 | [0031](0031-making-a-room.md) | Making a room: the code, the token, the rate limit, the room's life and Solo Or Friends' states | Accepted; `initial` warning and the redirect of a room's address superseded by 0032 |
-| [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted; a lost connection in the Lobby superseded by 0036 |
+| [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted; a lost connection in the Lobby superseded by 0036; the skipped negotiation and where the hub reads the token superseded by 0037 |
 | [0033](0033-deciding-a-game-on-the-server.md) | Deciding a game with friends on the server: the order of answers, the clock, the class, the shared rules and the room's life | Accepted |
 | [0034](0034-playing-with-friends-on-the-device.md) | Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium | Accepted; where a player not in the duel watches it amended by 0035 |
 | [0035](0035-watching-a-duel-and-stickers.md) | Watching a duel and stickers: where a watching player is, the six ids, the picture, the bound and the rate | Accepted |

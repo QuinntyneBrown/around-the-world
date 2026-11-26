@@ -14,8 +14,9 @@ import {
  * - `model`: a fake on-device model that answers as the spec tells it to;
  * - `backend`: API and hub requests answered from fixtures (no real backend or database), held
  *   back or left unanswered as an unreachable backend, and the record of what the game sent;
- * - `roomHub`: the room hub's WebSocket (`/hubs/room`), speaking SignalR's JSON protocol: it
- *   sends the room and the game the spec sets, holds it back, refuses or drops connections,
+ * - `roomHub`: the room hub's negotiation and WebSocket (`/hubs/room`), speaking SignalR's JSON
+ *   protocol, or Azure SignalR Service's on localhost when the spec sends the device there
+ *   (docs/adr/0037): it sends the room and the game the spec sets, holds it back, refuses or drops connections,
  *   loses them as a network does and lets them return (docs/adr/0036), holds back or refuses a
  *   method, and records the
  *   tokens presented and the methods invoked (docs/adr/0032);
@@ -94,6 +95,8 @@ export interface FakeBackend {
   requests(): { method: string; path: string; body: Json }[];
   /** Takes over the hub's WebSocket at a path (e.g. `/hubs/room`). */
   hub(path: string, handler: (socket: WebSocketRoute) => void): void;
+  /** Answers the negotiation of the hub at a path (`{path}/negotiate`), given the bearer token and the page's origin. */
+  negotiation(path: string, handler: (token: string, origin: string) => Json): void;
 }
 
 /**
@@ -124,6 +127,13 @@ export interface FakeRoomHub {
   returns(): void;
   /** The connection tokens the connections presented, in order. */
   tokens(): string[];
+  /**
+   * The instance's negotiation sends the device to Azure SignalR Service, here a fake on
+   * localhost at `/service/client/`, with the service's own access token (docs/adr/0037).
+   */
+  throughService(): void;
+  /** Each negotiation the game made: the hub's path and the bearer token it presented, in order. */
+  negotiations(): { path: string; token: string }[];
   /** The hub methods the game invoked, in order. */
   invoked(): string[];
   /** The hub methods the game invoked with the arguments it sent, in order (L2-040 criterion 1). */
@@ -314,6 +324,7 @@ class BackendFixtures implements FakeBackend {
   readonly unreachables = new Set<string>();
   readonly sent: { method: string; path: string; body: Json }[] = [];
   readonly hubs = new Map<string, (socket: WebSocketRoute) => void>();
+  readonly negotiators = new Map<string, (token: string, origin: string) => Json>();
 
   answer(method: string, path: string, body: Json = null, status = 200): void {
     const key = `${method.toUpperCase()} ${path}`;
@@ -354,11 +365,38 @@ class BackendFixtures implements FakeBackend {
   hub(path: string, handler: (socket: WebSocketRoute) => void): void {
     this.hubs.set(path, handler);
   }
+
+  /** Answers the negotiation of the hub at a path with what the handler returns for the token. */
+  negotiation(path: string, handler: (token: string, origin: string) => Json): void {
+    this.negotiators.set(path, handler);
+  }
+
+  /** Answers a hub's negotiation (`{hub}/negotiate`); false when no hub is at that path. */
+  async negotiate(route: Route, pathname: string): Promise<boolean> {
+    if (!pathname.endsWith('/negotiate')) return false;
+    const negotiator = this.negotiators.get(hubPath(pathname.slice(0, -'/negotiate'.length)));
+    if (!negotiator) return false;
+    const bearer = route.request().headers()['authorization'] ?? '';
+    const answer = negotiator(
+      bearer.replace(/^Bearer /, ''),
+      new URL(route.request().url()).origin,
+    );
+    await route.fulfill({ status: 200, json: answer }).catch(() => undefined);
+    return true;
+  }
 }
 
 /** The record separator that ends each message of SignalR's JSON protocol. */
 const RS = '\u001e';
 const ROOM_HUB = '/hubs/room';
+/** Where the fake Azure SignalR Service takes the room's connections, on localhost (ADR 0037). */
+const SERVICE_HUB = '/service/client';
+const SERVICE_ACCESS_TOKEN = 'service-access-token';
+
+/** A hub's path with no trailing slash, so `/service/client/` and `/service/client` are one. */
+function hubPath(pathname: string): string {
+  return pathname.replace(/\/+$/, '');
+}
 
 class RoomHubFixtures implements FakeRoomHub {
   private room: Json | null = null;
@@ -373,6 +411,9 @@ class RoomHubFixtures implements FakeRoomHub {
   private readonly heldMethods = new Map<string, (() => void)[]>();
   private readonly refusedMethods = new Map<string, string>();
   private gameState: object | null = null;
+  private service = false;
+  private readonly negotiated: { path: string; token: string }[] = [];
+  private connectionCount = 0;
 
   serves(room: Json): void {
     this.room = room;
@@ -418,6 +459,33 @@ class RoomHubFixtures implements FakeRoomHub {
 
   tokens(): string[] {
     return [...this.presented];
+  }
+
+  throughService(): void {
+    this.service = true;
+  }
+
+  negotiations(): { path: string; token: string }[] {
+    return this.negotiated.map((negotiation) => ({ ...negotiation }));
+  }
+
+  /**
+   * Answers a negotiation as the backend does: the instance's own connection, by WebSockets
+   * only, or, with the service set, the service's address and access token, after which the
+   * service answers its own negotiation with a connection.
+   */
+  negotiate(path: string, token: string, origin: string): Json {
+    this.negotiated.push({ path, token });
+    if (path === ROOM_HUB && this.service) {
+      return { url: `${origin}${SERVICE_HUB}/?hub=roomhub`, accessToken: SERVICE_ACCESS_TOKEN };
+    }
+    this.connectionCount += 1;
+    return {
+      negotiateVersion: 1,
+      connectionId: `connection-${this.connectionCount}`,
+      connectionToken: `connection-token-${this.connectionCount}`,
+      availableTransports: [{ transport: 'WebSockets', transferFormats: ['Text', 'Binary'] }],
+    };
   }
 
   invoked(): string[] {
@@ -563,6 +631,7 @@ async function guardRequests(
       return route.abort('blockedbyclient');
     }
     if (pictures.handle(route, url.pathname)) return;
+    if (await backend.negotiate(route, url.pathname)) return;
     if (!BACKEND_PATH.test(url.pathname)) return route.continue();
     const key = `${route.request().method()} ${url.pathname}`;
     const text = route.request().postData();
@@ -587,7 +656,7 @@ async function guardRequests(
       problems.push(`WebSocket off localhost: ${url.origin}`);
       return socket.close();
     }
-    const handler = backend.hubs.get(url.pathname);
+    const handler = backend.hubs.get(hubPath(url.pathname));
     if (handler) return handler(socket);
     problems.push(`Unanswered WebSocket: ${url.pathname}`);
     return socket.close();
@@ -711,7 +780,10 @@ export const test = base.extend<Fixtures>({
 
   roomHub: async ({ backend }, use) => {
     const hub = new RoomHubFixtures();
-    backend.hub(ROOM_HUB, (socket) => hub.handle(socket));
+    for (const path of [ROOM_HUB, SERVICE_HUB]) {
+      backend.hub(path, (socket) => hub.handle(socket));
+      backend.negotiation(path, (token, origin) => hub.negotiate(path, token, origin));
+    }
     await use(hub);
   },
 

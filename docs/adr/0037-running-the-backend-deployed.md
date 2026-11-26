@@ -39,7 +39,9 @@ on the in-memory test server, and never reaches Azure (`L2-052` criterion 3).
   `RoomPlayerBehaviour` still refuses a token that names no player (ADR 0032). The hub reads
   the token from `Context.User`, so the same code serves a connection the instance holds and one
   the service relays, whose claims came from the negotiation.
-- **The device negotiates.** `SignalRRoomConnection` no longer skips the negotiation; it asks
+- **The device negotiates.** This supersedes ADR 0032's skipped negotiation and its
+  `CurrentPlayerFilter` reading the query string. `SignalRRoomConnection` no longer skips the
+  negotiation; it asks
   for WebSockets only and follows the redirect a negotiation answers with, to the service's
   address and access token (`L2-052` criterion 1). With no service set, the negotiation is the
   instance's own and the WebSocket opens on the game's origin as before. While an instance has
