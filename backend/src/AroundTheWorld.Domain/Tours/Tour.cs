@@ -12,6 +12,9 @@ public enum TourEnding
 {
     AllTheWayRound,
     TimeLimit,
+
+    /// <summary>Fewer than two players remain in a game with friends after a removal (L2-029 criterion 5).</summary>
+    EveryoneLeft,
 }
 
 /// <summary>
@@ -179,6 +182,38 @@ public sealed class Tour
         Desk = next;
         RunnerOf(holder)?.Reach(1, at, TourLength);
         return new TourMove(TourMoveKind.DeskHolderTravels, holder, from, next, passed, beaten);
+    }
+
+    /// <summary>
+    /// Removes a player who was away for 30 seconds from the ring (L2-029 criterion 4, L2-007
+    /// criterion 6, docs/adr/0036): their desk is empty for the rest of the tour. When they held the
+    /// desk the traveller stands beside, the traveller moves on to the next held desk, as a hop
+    /// passes an empty desk, but without a hop. When they were the traveller, the desk holder they
+    /// stood beside travels on as if they had won, and nobody sits down at that desk. Their
+    /// distance still counts in the standings.
+    /// </summary>
+    public void Remove(string player, DateTimeOffset at)
+    {
+        if (DeskOf(player) is { } seat)
+        {
+            Holders[seat - 1] = null;
+            if (seat == Desk)
+            {
+                Desk = NextHeld(Desk).Desk;
+            }
+
+            return;
+        }
+
+        if (player != Traveller || HolderOf(Desk) is not { } holder)
+        {
+            return;
+        }
+
+        Holders[Desk - 1] = null;
+        Traveller = holder;
+        RunnerOf(holder)?.Reach(1, at, TourLength);
+        Desk = NextHeld(Desk).Desk;
     }
 
     private Runner? RunnerOf(string player) => Runners.Find(r => r.Player == player);

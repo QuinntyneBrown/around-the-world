@@ -1,5 +1,6 @@
 using AroundTheWorld.Application.Rooms;
 using AroundTheWorld.Application.Rooms.LeaveRoom;
+using AroundTheWorld.Application.Rooms.MarkPlayerAway;
 using AroundTheWorld.Application.Rooms.PlayAgain;
 using AroundTheWorld.Application.Rooms.Reconnect;
 using AroundTheWorld.Application.Rooms.SaveSetup;
@@ -31,8 +32,17 @@ public sealed class RoomHub(ISender sender) : Hub
     /// <summary>The event that carries a sticker to the room's players (docs/adr/0035).</summary>
     public const string StickerShown = nameof(StickerShown);
 
-    /// <summary>Attaches the connection to its player's room and sends it the room as it stands.</summary>
+    /// <summary>
+    /// Attaches the connection to its player's room, binding it to the same spot, and sends it the
+    /// room as it stands (L2-029 criterion 2, L2-043 criterion 4).
+    /// </summary>
     public override Task OnConnectedAsync() => sender.Send(new ReconnectCommand(), Context.ConnectionAborted);
+
+    /// <summary>
+    /// The connection is lost: its player's spot is held for 30 seconds (L2-029, docs/adr/0036). The
+    /// connection's own token is cancelled by now, so the request is not tied to it.
+    /// </summary>
+    public override Task OnDisconnectedAsync(Exception? exception) => sender.Send(new MarkPlayerAwayCommand(), CancellationToken.None);
 
     /// <summary>The host saves the game's setup to the room (L2-018 criterion 2).</summary>
     public Task SaveSetup(GameSetupDto? setup) => sender.Send(new SaveSetupCommand(setup), Context.ConnectionAborted);

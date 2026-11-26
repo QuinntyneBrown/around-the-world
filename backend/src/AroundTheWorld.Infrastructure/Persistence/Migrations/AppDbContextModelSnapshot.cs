@@ -71,6 +71,14 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset?>("AwaySince")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ConnectionId")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<bool>("IsHost")
                         .HasColumnType("bit");
 
@@ -95,6 +103,8 @@ namespace AroundTheWorld.Infrastructure.Persistence.Migrations
                         .HasColumnType("varchar(43)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AwaySince");
 
                     b.HasIndex("RoomId");
 

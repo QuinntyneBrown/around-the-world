@@ -53,7 +53,7 @@ internal sealed record CardBody(string Kind, int Left, int Right)
     };
 }
 
-internal sealed record GamePlayerBody(string Id, string Kid, NicknameBody? Nickname, int Distance, IReadOnlyList<int> Stamps);
+internal sealed record GamePlayerBody(string Id, string Kid, NicknameBody? Nickname, int Distance, IReadOnlyList<int> Stamps, bool Removed = false);
 
 internal sealed record GameDuelBody(
     int Number,
