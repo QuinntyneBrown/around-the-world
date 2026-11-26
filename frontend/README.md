@@ -6,7 +6,7 @@ The Angular 22 workspace that is the game. Run every command from this folder.
 | --------------------- | ----------------- | ------------------------------------------------------------------------------------------- |
 | `projects/game`       | (the application) | The shell, the routes, the composition root and the global foundations                      |
 | `projects/components` | `@atw/components` | One presentation component per design-system page ([README](projects/components/README.md)) |
-| `projects/domain`     | `@atw/domain`     | The game and its rules: `questions/`, `tour/`, `classmates/`, `voice/`, `storage/`          |
+| `projects/domain`     | `@atw/domain`     | The game and its rules: `questions/`, `tour/`, `classmates/`, `voice/`, `storage/`, `cast/` |
 | `projects/api`        | `@atw/api`        | Contracts, tokens, and the HTTP and SignalR clients for the backend                         |
 
 | Task                                   | Command                                                          |
@@ -20,4 +20,7 @@ The Angular 22 workspace that is the game. Run every command from this folder.
 
 The behaviour specs import `test` and `expect` from `e2e/fixtures/test.ts`, keep every
 selector in a page object in `e2e/pages/`, and run against `dist/game/browser` served on
-localhost. See `docs/adr/` for the decisions behind the workspace.
+localhost. The fixture's `device` seeds and reads what the game keeps on the device, and its
+`pictures` holds back or refuses pictures. CI runs only the specs tagged `@critical`
+(`npm run e2e -- --grep @critical`); run them all before pushing. See `docs/adr/` for the
+decisions behind the workspace.
