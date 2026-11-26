@@ -194,8 +194,9 @@ Decisions (ADR 0022):
 - The desks hold the mocks' 24 countries in order from France at desk 1, each with its landmark
   (ADR 0022 lists them); a tour takes the first 6, 12 or 24. They are the cast, not rules.
 - A passport holds a stamp only for a desk reached by a hop. A desk holder who becomes the
-  traveller walks on to the next desk with no stamp, and a player's own desk is not a stamp
-  (`L2-003` criterion 4).
+  traveller walks on to the next desk with no stamp, and a desk holder's own desk is not a stamp
+  (`L2-003` criterion 4). The first traveller's passport holds desk 1, where the tour starts,
+  from the start (`L2-007` criterion 7, ADR 0024).
 - When another player sits down the message reads "{name} sits down at {country} · {name}
   travels on", with "You travel on" when the child travels on (`L2-034` criterion 4).
 - A classmate who is not one of the five kids is "A classmate" at the start of a message and "a

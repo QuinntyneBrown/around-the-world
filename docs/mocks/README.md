@@ -88,8 +88,9 @@ the last times table switched off (Game Setup `last-table`), a game with two pla
    brought in line with the mocks.
 5. **A flash card nobody answers** (L2-005, to confirm): the mock says "Time's up! It was 24.
    Here comes a new card…" and nobody hops. Should the answer be shown?
-6. **Time running out on a tour** (L2-006, to confirm): the Podium says "Time's up! You
-   travelled furthest!". The time limit itself is not shown anywhere during a duel yet.
+6. **Time running out on a tour** (L2-006, decided in ADR 0024): the Podium says "Time's up!
+   You travelled furthest!", or "Time's up! {name} travelled furthest!" when another player
+   did. The time limit (3, 6 or 12 minutes) is not shown during a duel.
 7. **Leaving the Lobby.** Back leaves the room with no question asked, since joining again
    costs four letters. Should the host be asked first?
 8. **Body type.** The prototype sets body text in Nunito beside Fredoka; `AGENTS.md` names only
