@@ -33,3 +33,4 @@ requirements and designs leave.
 | [0024](0024-ending-a-tour.md) | Ending a tour: the time limit, the places, the first stamp, the headline and Play again | Accepted |
 | [0025](0025-answering-by-voice.md) | Answering by voice: what is heard, on the device, when Mic Check shows and what a failure does | Accepted |
 | [0026](0026-initial-budget-with-cdk-dialog.md) | The initial budget of `game` once CDK Dialog opens Settings | Accepted |
+| [0027](0027-pausing-leaving-and-recovering.md) | Pausing, leaving and recovering: the held clock, Back during a game, Not Found and Something Went Wrong | Accepted |
