@@ -15,26 +15,30 @@ title Class structure — Check the microphone
 
 interface VoiceAnswer {
   +available: boolean
-  +listening: Signal<boolean>
-  +heard: Observable<number>
-  +heardSpeech: Observable<void>
-  +failed: Observable<VoiceError>
   +requestMicrophone(): Promise<MicrophoneAnswer>
   +start(): void
   +stop(): void
+  +listen(listener: VoiceListener): () => void
 }
 enum MicrophoneAnswer {
   allowed
   refused
   failed
 }
-class WayOfAnswering {
+interface WayOfAnswering {
   +way: Signal<AnswerWay>
   +voiceOffered: Signal<boolean>
   +micCheckNeeded: Signal<boolean>
   +use(way: AnswerWay): void
-  +finishMicCheck(way: AnswerWay): void
+  +finishMicCheck(outcome: MicCheckOutcome): void
 }
+enum MicCheckOutcome {
+  heard
+  numberPad
+  refused
+  failed
+}
+class KeptWayOfAnswering
 enum AnswerWay {
   voice
   numberPad
@@ -61,18 +65,28 @@ class MicCheckPage {
 class micCheckGuard <<function>> {
   +micCheckGuard(): boolean | UrlTree
 }
+class LazyVoiceAnswer
 class SpeechVoiceAnswer {
   +requestMicrophone(): Promise<MicrophoneAnswer>
   +start(): void
   +stop(): void
 }
 
+LazyVoiceAnswer ..|> VoiceAnswer
+LazyVoiceAnswer ..> SpeechVoiceAnswer : imports dynamically
 SpeechVoiceAnswer ..|> VoiceAnswer
+KeptWayOfAnswering ..|> WayOfAnswering
+WayOfAnswering ..> MicCheckOutcome
 VoiceAnswer ..> MicrophoneAnswer : answers
 MicCheckPage ..> VoiceAnswer : injects VOICE_ANSWER
 MicCheckPage --> WayOfAnswering
 MicCheckPage --> MicCheckStep
-micCheckGuard ..> WayOfAnswering : reads micCheckNeeded
+micCheckGuard ..> GameSession : reads screen, "mic-check"
+interface GameSession {
+  +screen: Signal<GameScreen>
+  +continue(): void
+}
+MicCheckPage ..> GameSession : continue() deals the first card
 WayOfAnswering --> AnswerWay
 WayOfAnswering ..> VoiceAnswer : reads available
 @enduml

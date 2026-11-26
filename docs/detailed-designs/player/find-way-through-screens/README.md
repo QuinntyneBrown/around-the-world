@@ -185,8 +185,10 @@ Home:
   - *Widths.* The dialog is a sheet from the bottom below 576 px and a centred card from
     576 px.
   - Whether Settings stays, or the button goes and sound is the one corner button, is to
-    confirm (`L2-032` criterion 1). What "Answer by shouting" set to off does to Mic Check on
-    a later visit is `<TO SUPPLY>`.
+    confirm (`L2-032` criterion 1). "Answer by shouting" set to off keeps the number pad, so a
+    later visit skips Mic Check until it is switched on (`L2-012` criterion 13, ADR 0025).
+  - Until journey 10 builds sound, the dialog shows "Answer by shouting" alone; "Sound" joins
+    it with that journey.
 
 The five choices of a new child to the first solo duel (`L2-031` criteria 1 and 2) are: "Play"
 on Home, the confirm button for the kid offered on Pick Your Kid, "Play solo" on Solo Or

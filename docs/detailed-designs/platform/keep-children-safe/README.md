@@ -77,10 +77,10 @@ message is `<TO SUPPLY>` and is settled in `docs/detailed-designs/rooms/guard-ro
 - Neither `RoomsApi` nor `RoomConnection` has a member that accepts audio or a transcript, so a
   shout reaches a room only as `submitAnswer(number)`.
 
-Whether `SpeechVoiceAnswer` shall require recognition that runs on the device, so that the
-browser's own recognizer sends no sound to a recognition service, is `<TO SUPPLY>`. `L2-040`
-criterion 2 names only the backend; `AGENTS.md` states that nothing a child says leaves the
-device as sound. The decision belongs to `docs/detailed-designs/answering/`.
+`SpeechVoiceAnswer` requires recognition that runs on the device: each session sets
+`processLocally`, and a browser that cannot recognise speech on the device plays with the number
+pad, so no sound reaches a recognition service (`docs/adr/0025-answering-by-voice.md`,
+`docs/detailed-designs/answering/answer-by-voice/`).
 
 **A nickname is rebuilt from its indexes and rendered as text (`L2-040` criterion 3).**
 
