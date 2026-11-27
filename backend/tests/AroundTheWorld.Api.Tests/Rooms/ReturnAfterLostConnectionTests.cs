@@ -156,13 +156,17 @@ public sealed class ReturnAfterLostConnectionTests(ApiFixture api) : IClassFixtu
         using var http = api.CreateClient();
         var host = await RoomRequests.MakeAsync(http, "kenji", 2, 2);
         var friend = await RoomRequests.JoinAsync(http, host.Code, "pip", 3, 3);
-        var hostHub = await RoomHubClient.ConnectAsync(api, host.Token);
+        await using var hostHub = await RoomHubClient.ConnectAsync(api, host.Token);
         await using var friendHub = await RoomHubClient.ConnectAsync(api, friend.Token);
+        // The friend's snapshot can arrive before the host has finished connecting.
+        // Wait for both server-side reconnect handlers before simulating a dropped host.
+        await api.HandledForAsync("ReconnectCommand", host.Token);
+        await api.HandledForAsync("ReconnectCommand", friend.Token);
         await friendHub.WaitForAsync("two players", state => state.Players.Count == 2);
 
         // When the host's connection is lost for 30 seconds
         var lost = api.HandledForAsync("MarkPlayerAwayCommand", host.Token);
-        await hostHub.DisposeAsync();
+        await hostHub.Connection.StopAsync(Cancel);
         await lost;
         await PassAsync(SpotHeld);
 
