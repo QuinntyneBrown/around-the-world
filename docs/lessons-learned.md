@@ -1327,7 +1327,7 @@ the lessons that fit.
   policy is a meta element with `style-src 'unsafe-inline'`, and asks the host for the
   `frame-ancestors` header a meta element cannot carry.
 - *Tag one spec per feature `@critical`* (02, 5): the browser refuses another origin.
-- *Measure the initial bundle against the base commit* (03, 2): unchanged; the stylesheet left
-  the HTML, which is not in the budget.
+- *Measure the initial bundle against the base commit* (03, 2): unchanged at 274.39 kB; the
+  critical CSS moved from the HTML into the stylesheet the budget already counted.
 - *Keep one registry of the states a sweep visits* (19, 1): the fields-and-controls audit runs
   over all 29 states with one loop.
