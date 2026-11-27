@@ -1278,3 +1278,56 @@ the lessons that fit.
   now reads its own element.
 - *Measure overlap at three sizes* (15, 1): extended to eight sizes and 200% zoom by the
   responsive and accessibility sweeps.
+
+## Journey 20: Prove the game is safe for children
+
+**What slowed it.**
+
+- Angular's production build inlines the critical CSS with Beasties, which writes an inline
+  `<script>` to switch the full stylesheet on; a policy with `script-src 'self'` refuses it.
+  `autoCsp` would have hashed it but hides `main` from the preload scanner, so critical CSS is
+  no longer inlined (3.35 kB compressed, fetched beside `main`; ADR 0040).
+- Playwright's `routeWebSocket` replaces the page's `WebSocket`, so the browser's own
+  `connect-src` check of a WebSocket never runs in a spec. `EventSource`, under the same
+  directive, stands for it.
+- Chrome words a refusal differently by kind ("Fetch API cannot load … Refused to connect",
+  "Loading the image … violates the following Content Security Policy directive"), and the
+  fixture fails a spec on any console error; the expected errors needed both forms.
+- Most rules held at the audit's first run, built by journeys 02 to 17; each such audit was
+  broken by hand in the product (an answer sent with its words, recognition off the device, a
+  stored extra column) to see it fail for that reason.
+
+**New lessons.**
+
+1. Prove a Content Security Policy by asking another origin from the page and reading the
+   browser's `securitypolicyviolation` events, one kind of request per directive; with no
+   policy the spec fails on an empty list and the fixture's off-localhost guard.
+2. Audit what leaves the device by reading every frame and body the game sent and allowing
+   only closed values (a code, a kid, a setup word, a hub method, a number); then search all of
+   it for the words the child said and their nickname. A list of the allowed is stricter than a
+   list of the forbidden.
+3. A value from the backend that the device turns into words must be checked on the device,
+   even when the backend validates it: index a fixed list only with an index inside it.
+4. Prove what a store holds by reading every column of every row through the converters that
+   write it, after a whole game from devices that name their address and browser; break it once
+   with an extra column.
+5. Read the ARIA snapshot of every state of the sweeps' registry to prove what a screen asks
+   for: its fields and its controls' names, without a selector per screen.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the policy is proven in the very
+  `index.html` the build writes; `main` is 253.53 kB and the initial total 274.39 kB.
+- *Check a fake once by hand* (01, 2): the fixture's new records (frames, off-device
+  recognition) were proven by breaking the product, which they caught.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no component was
+  added or changed.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0040 records why the
+  policy is a meta element with `style-src 'unsafe-inline'`, and asks the host for the
+  `frame-ancestors` header a meta element cannot carry.
+- *Tag one spec per feature `@critical`* (02, 5): the browser refuses another origin.
+- *Measure the initial bundle against the base commit* (03, 2): unchanged at 274.39 kB; the
+  critical CSS moved from the HTML into the stylesheet the budget already counted.
+- *Keep one registry of the states a sweep visits* (19, 1): the fields-and-controls audit runs
+  over all 29 states with one loop.

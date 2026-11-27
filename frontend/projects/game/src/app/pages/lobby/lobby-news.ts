@@ -1,4 +1,4 @@
-import { type Nickname, type RoomState } from '@atw/api';
+import { type RoomPlayer, type RoomState } from '@atw/api';
 import { type ToastTone } from '@atw/components';
 
 /** A passing message of the Lobby (L2-024 criterion 6, L2-025 criterion 5). */
@@ -16,7 +16,7 @@ export const MAX_MESSAGES = 3;
 
 /** How the Lobby words a player: their nickname and their kid's name, built on the device. */
 export interface PlayerWords {
-  nickname(nickname: Nickname): string;
+  nickname(player: RoomPlayer): string;
   kidName(kid: string): string;
 }
 
@@ -38,7 +38,7 @@ export function lobbyNews(
     .filter((player) => !before.has(player.id) && player.id !== me)
     .map((player) => ({
       tone: 'info',
-      heading: `${words.nickname(player.nickname)} joined`,
+      heading: `${words.nickname(player)} joined`,
       text: `as ${words.kidName(player.kid)}`,
     }));
   const wasHost = previous.players.some((player) => player.id === me && player.host);

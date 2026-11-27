@@ -254,8 +254,8 @@ export class FriendsGame implements RoomSession, GameSession {
     return () => this.momentListeners.delete(listener);
   }
 
-  private readonly nameOf = (nickname: { adjective: number; animal: number }) =>
-    this.nicknames.words(nickname);
+  private readonly nameOf = (player: { kid: string; nickname: unknown }) =>
+    this.nicknames.nameOf(player);
 
   private async connect(): Promise<void> {
     this.state.set('connecting');
@@ -356,7 +356,7 @@ export class FriendsGame implements RoomSession, GameSession {
       const was = before.players.find(({ id }) => id === player.id);
       if (!player.removed || was?.removed || player.id === this.entry.playerId) continue;
       if (!player.nickname) continue;
-      this.droppedOut.set({ nickname: this.nameOf(player.nickname), atMs: this.clock.now() });
+      this.droppedOut.set({ nickname: this.nameOf(player), atMs: this.clock.now() });
     }
   }
 
@@ -367,7 +367,7 @@ export class FriendsGame implements RoomSession, GameSession {
   private showSticker({ sticker, from }: StickerMessage): void {
     const sender = this.received()?.players.find((player) => player.id === from);
     if (!this.last() || !sender || !isStickerId(sticker)) return;
-    const name = from === this.entry.playerId ? 'You' : this.nameOf(sender.nickname);
+    const name = from === this.entry.playerId ? 'You' : this.nameOf(sender);
     const atMs = this.clock.now();
     this.nowMs.set(atMs);
     const shown: ShownSticker = { key: ++this.stickerKey, sticker, kid: sender.kid, from: name };

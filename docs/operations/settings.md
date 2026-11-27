@@ -39,6 +39,7 @@ serves it needs no setting from the game, but shall:
 |---|---|---|
 | Send text (`.js`, `.css`, `.html`, `.json`, `.svg`) compressed with Brotli or gzip, as the browser accepts | The initial bundle is about 274 kB raw and 72 kB compressed; uncompressed, Home's Largest Contentful Paint misses 2.5 seconds on a phone on 4G (`L2-047` criterion 4, [ADR 0038](../adr/0038-opening-fast-and-staying-smooth.md)) | Journey 18 |
 | Answer any path that is not a file with `index.html` | The router's deep links, such as a room's link (`/room/{code}`) | Journey 18 |
+| Send `Content-Security-Policy: frame-ancestors 'none'` as a header with `index.html`, and never remove or loosen the policy in its `<meta http-equiv>` | The build's own policy lets the browser fetch only from the game's origin and Azure SignalR Service; a meta element cannot forbid framing, so the header stops another site framing the game (`L2-041` criterion 5, [ADR 0040](../adr/0040-keeping-children-safe.md)) | Journey 20 |
 
 ## Deploying
 
@@ -69,4 +70,5 @@ A deployed system routes those two paths to `AroundTheWorld.Api` and every other
 WebSocket upgrade through and must not log the query string, which carries the connection
 token as `access_token`. With Azure SignalR Service set, the game first negotiates at
 `/hubs/room/negotiate` and is sent to the service's endpoint, so the Content Security Policy's
-`connect-src` names that endpoint as well ([ADR 0037](../adr/0037-running-the-backend-deployed.md)).
+`connect-src` names the service's domain, `*.service.signalr.net`, as well
+([ADR 0037](../adr/0037-running-the-backend-deployed.md), [ADR 0040](../adr/0040-keeping-children-safe.md)).
