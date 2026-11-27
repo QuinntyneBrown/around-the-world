@@ -31,15 +31,21 @@ number pad's keys and keyboard handling (`L2-010`) belong to
 
 ## Description
 
-The slice is not built yet. The design introduces the parts below.
+The slice is built (journey 19, `docs/adr/0039-every-screen-for-every-child.md`). Its parts are
+below; where journeys 02 to 18 had already built a part under another name, the name is the
+built one.
 
 **Widths and breakpoints (`L2-050` criterion 1).**
 
-- **`breakpoints`** — SCSS partial among the global foundations. It names the four breakpoints
-  576, 768, 992 and 1200 px (`L1-015`) and offers one `min-width` query per breakpoint, written
-  in `rem` (36, 48, 62 and 75 rem). The design system names them `--layout-breakpoint-sm`,
-  `-md`, `-lg` and `-xl`. A component stylesheet uses a breakpoint by name and states no pixel
-  width of its own.
+- **`breakpoints`** — SCSS partial `_breakpoints.scss` in `components/src/styles`, found by every
+  stylesheet of `components` and `game` through the build's `includePaths` (`@use 'breakpoints'
+  as bp`). It names the four breakpoints 576, 768, 992 and 1200 px (`L1-015`) as `sm`, `md`,
+  `lg` and `xl` in `rem` (36, 48, 62 and 75 rem), the narrowest phones (under 360 px) and Duel's
+  two heights, `low` (672 px) and `short` (544 px), with the mixins `from`, `below`, `between`,
+  `height` and `narrow-phone`. The design system names the widths `--layout-breakpoint-sm`,
+  `-md`, `-lg` and `-xl`; a media query cannot read a custom property, so the partial repeats
+  their values once. A component stylesheet uses a breakpoint by name and states no width of
+  its own.
 - **Narrowest first** — each stylesheet's base rules lay out the screen for 320 px. Each
   `min-width` query adds to them. A stylesheet of Duel may add a height query, because Duel
   never scrolls.
@@ -48,20 +54,24 @@ The slice is not built yet. The design introduces the parts below.
   Text sizes are in `rem`.
 - **Page margins** — the page's margin is 16 px below 768 px, 32 px from 768 px and 48 px from
   992 px, and its content is at most 1152 px wide.
-- **Responsive sweep** — a Playwright sweep opens every mock state at 320 × 568, 360 × 800,
-  at 576, 768, 992 and 1200 px wide, at 844 × 390 and at 1920 × 1080, and fails on a horizontal
-  scrollbar, a clipped element or two overlapping controls. It runs only when a person asks.
+- **Responsive sweep** — the Playwright project `responsive` (`frontend/e2e/sweeps/`) brings the
+  game to each state of `frontend/e2e/support/screens.ts` (29 states of the mocks the game can
+  reach) and lays it out at 320 × 568, 360 × 800, at 576, 768, 992 and 1200 px wide, at
+  844 × 390 and at 1920 × 1080. It fails on a page that scrolls sideways, Duel or World Map
+  scrolling at all, a control or text cut off, a control sticking out of its panel, and a
+  control overlapping text or another control; a message placed over the screen (a toast, a
+  received sticker) is measured against itself. The project `visual` photographs each state at
+  each size beside its mock for a person to compare; it keeps no pixel baseline. Both run only
+  when a person asks (`npm run e2e:sweeps`).
 
 **Where the page renders different parts.**
 
-- **`Viewport`** — contract in the `api` library behind the `VIEWPORT` token. It exposes the
-  current width band as a signal, an `atLeast(band)` test, and a `short` signal that is true
-  while the viewport is under 544 px tall.
-- **`MediaQueryViewport`** — implementation in `game`, bound in `app.config.ts`. It registers
-  one `matchMedia` listener per breakpoint and one for the height, and removes each when
-  destroyed. Layout that CSS can express does not use `Viewport`. A page reads it only where
-  the rendered parts differ: the world ring on Duel, and the zoom of World Map below 768 px
-  (`L2-034` criterion 5, designed in `docs/detailed-designs/classroom/`).
+- **CSS, not a viewport service** — every difference between widths that a screen draws is a
+  media query: the world ring is hidden below 768 px and the line of text from 768 px. The one
+  difference CSS cannot make, the zoom of World Map's 3D classroom below 768 px (`L2-034`
+  criterion 5, designed in `docs/detailed-designs/classroom/`), reads one `matchMedia` in
+  `ClassroomCanvas`, released with it. The `Viewport` contract this design first proposed is
+  not built (ADR 0039).
 
 **Duel (`L2-050` criteria 2, 3 and 5; `L2-033` criterion 5).**
 
@@ -71,15 +81,24 @@ The slice is not built yet. The design introduces the parts below.
   the flash card is the largest thing on the screen at every width. Duel has no minimum height.
 - **Number pad** — below 768 px the pad sits under the flash card. From 768 px it sits beside
   the card. The pad keeps the same markup and the same place in the focus order.
-- **World ring** — from 768 px `DuelPage` renders `WorldRing` with "Desk {n} of {tour length}".
-  Below 768 px it renders, under the HUD, a pill of text: "{country} · desk {n} of {tour
-  length}". The choice is an `@if` on `Viewport`, so the ring does no work while it is not
-  shown.
+- **World ring** — from 768 px `WorldRing` shows with "Desk {n} of {tour length}". Below 768 px
+  a pill of text shows under the HUD instead: "{country} · desk {n} of {tour length}". Both are
+  in the page; the stylesheet shows one.
 - **A phone on its side** — a phone on its side is about 390 px tall and 768 px wide or wider,
   so the pad sits beside the card. Under 672 px tall the flash card and the pad's keys shrink;
   a key is never under 44 px tall. Under 544 px tall the world ring and the pill both give way
   to "Desk {n} of {tour length}" beside the names of the traveller and the desk holder in the
-  HUD. The flash card and the pad are both whole.
+  HUD. The flash card and the pad are both whole. With the pad beside the card (`duel--pad`),
+  the card and the pad stand at the top of the stage, and the way to switch ("Shout instead")
+  sits under the card, beside the pad, out of the flow, so the footer takes none of their
+  height (at 200% zoom of a 1280 × 800 screen too).
+- **A short phone held upright** — under 768 px wide and at most 672 px tall the flash card is
+  tighter (sum 48 px) and the keys are 4 px apart, still 44 px tall. While the player is frozen,
+  the line under the card, "Not {answer}! Frozen for a sec…", takes the answer box's place. A
+  connection banner shows its title only, the rest visually hidden and still read; the pill of
+  text gives way to it (`duel--banner`), and the HUD still names the country ("Holds Egypt")
+  (`L2-050` criterion 7). Under 360 px the duellists' portraits are 36 px, so names break only
+  between words.
 - **Watching** — the sticker bar in the footer is 2 stickers to a row, 3 from 576 px and one
   row of 6 from 992 px. It wraps and never scrolls sideways.
 
@@ -118,7 +137,8 @@ in its base rules and two columns in one `min-width` query. The columns are:
 - **Native controls** — every control is a `<button>`, an `<a>` or an `<input>`. No `<div>`
   carries a click handler. Each control is reachable with Tab and works with Enter or Space.
 - **Skip link** — every screen starts with a link, "Skip to the game", that moves the focus to
-  the screen's main part.
+  the screen's main part. `SkipLink` focuses its target itself (with `tabindex="-1"`) and does
+  not follow its `#main` address, which the document's `<base href="/">` would send to Home.
 - **Focus order** — the order of elements in a template is the order on the screen. No
   stylesheet reorders items visually and no template sets a positive `tabindex`.
 - **Focus ring** — one ring styles `:focus-visible` on every control: 4 px wide with a 3 px
@@ -139,7 +159,7 @@ in its base rules and two columns in one `min-width` query. The columns are:
     and "Done". Each switch is a `<button>` with the role `switch` and `aria-checked`, named
     by its label ("Sound", "Answer by shouting"), described by its help text, and showing "On"
     or "Off" in words. With no speech recognition the second switch is off and disabled.
-    Whether Settings stays is (to confirm) (`L2-032` criterion 1).
+    Settings stays (`L2-032` criterion 1).
 - **Accessible names** — each control's name is the words it shows. A control that shows only
   an icon is named: "Back" (in the Lobby "Leave the room"), "Mute sound" or "Turn sound on"
   (`L2-032` criterion 3), "Settings", "Pause" or "Leave the game" on Duel, "Back to the card"
@@ -158,14 +178,13 @@ in its base rules and two columns in one `min-width` query. The columns are:
 
 **Pressed state (`L2-051` criterion 3).**
 
-- **`ChoiceButton`** — presentation component in `components`: a native `<button>` with a
-  `pressed` input bound to `aria-pressed`. Its stylesheet styles the pressed state through the
-  attribute and adds a mark that is not colour: a tick or a dot. Game Setup uses the pattern
-  for each kind of maths, each times table, each tour length and each card speed. `KidPicker`
-  uses the same pattern for each of the five kids in its roster. The design system draws the
-  pattern as four blocks, Toggle chip, Table key, Choice and Segmented choice; whether
-  `components` holds one component for each block is settled in
-  `docs/detailed-designs/player/set-up-game/`.
+- **Groups of choices** — presentation components in `components`, each on a group's native
+  element, taking the options and which are on and emitting the one pressed: `ToggleChips`
+  (each kind of maths), `TableKeys` (each times table), `Choices` (each tour length),
+  `Segmented` (each card speed) and `KidPicker` (each of the five kids). Each option is a native
+  `<button>` with `aria-pressed`, styled through the attribute, with a mark that is not colour:
+  a tick or a dot. They are the design system's blocks Toggle chip, Table key, Choice,
+  Segmented choice and Kid picker (lesson 03-3).
 - **Disabled choices** — a choice that cannot be changed carries `disabled`: each times table
   while Times is off, and every choice while a setup is being saved.
 - **Sound button** — the sound button on Home carries `aria-pressed`, true while sound is
@@ -173,11 +192,12 @@ in its base rules and two columns in one `min-width` query. The columns are:
 
 **Live regions and alerts (`L2-051` criteria 4 and 5).**
 
-- **`LiveRegion`** — presentation component in `components`: a visually hidden element with
-  the role `status`, an `aria-live` politeness and a `message` input. Each live region is in
-  the page from the start, also while it is empty. Nothing moves the focus.
-- **`duelAnnouncement`** — pure helper in `game` with unit tests. It turns a `DuelState` into
-  the words `DuelPage` binds to an assertive `LiveRegion`. The timer bar's draining is not
+- **Live regions** — a visually hidden paragraph with the role `status` on each page that
+  announces (assertive on Duel), and the polite regions of `ToastRegion`, `StickerRegion` and
+  `MapToast`. Each live region is in the page from the start, also while it is empty. Nothing
+  moves the focus.
+- **`DuelWords.announcement`** — pure helper in `pages/duel/duel-words.ts` with unit tests. It
+  turns a `DuelState` into the words `DuelPage` binds to its assertive live region. The timer bar's draining is not
   announced. The flash card itself shows "= {answer}" and "You got it!", "{rival} said
   {answer} first. So close!" and "Not {answer}! Frozen for a sec…" (`L2-033` criteria 2 and 3,
   `L2-004` criterion 5). The announcements are:
@@ -192,16 +212,16 @@ in its base rules and two columns in one `min-width` query. The columns are:
   | Nobody answers in time | "Time is up. It was {answer}. A new card is coming." |
   | The player is watching | "You are watching. {traveller} against {desk holder}: {flash card}." |
 
-  Whether the answer is given when nobody answers in time is (to confirm) (`L2-005`
-  criterion 2). While the passport stamp shows, the stamp card is itself a status and the
+  The answer is given when nobody answers in time (`L2-005` criterion 2). While the passport stamp shows, the stamp card is itself a status and the
   live region is empty.
 - **Polite regions** — a joining player and a Lobby message, a received sticker, a World Map
   message and a hint on Game Setup are each announced politely, in a region of their own.
 - **Loading** — a screen whose content is still arriving sets `aria-busy` on the part that is
   arriving, hides its placeholders from assistive technology and says in a status what is
   arriving, for example "Getting the room…" (`L2-031` criterion 4).
-- **`AlertMessage`** — presentation component in `components`: an element with the role
-  `alert` and a `message` input. An error is shown through it, so the error is announced and
+- **`Alert`** — presentation component in `components` (`atw-alert`): the role `alert` for a
+  refusal of what the child just did, or `status`, with its words projected; `StatusOverlay`
+  and `FieldMessage` show the overlay's and a field's words the same way. An error is shown through it, so the error is announced and
   readable in words, with an icon as well as a colour. The focus stays where it was. Room
   shows a refused code as an alert under the field and sets `aria-invalid` on the input; the
   four boxes also change colour and shake once, so colour and motion are not the refusal's
@@ -214,8 +234,8 @@ in its base rules and two columns in one `min-width` query. The columns are:
   and on World Map, drawings standing in for the kids' pictures, the offline banner on Solo
   Or Friends and the connection banners "You're back!", "{nickname} dropped out." and "Your
   internet is wobbly." are statuses. The banner "Everyone else has left." is an alert.
-- **`messageForCode`** — pure helper in `game` that maps a refused request and its error
-  `code` to words a child understands (`L2-054`, designed in `docs/detailed-designs/platform/operate-backend/`).
+- **`roomRefusal` and `joinRefusal`** — pure helpers in `game` that map a refused request and
+  its error `code` to words a child understands (`L2-054`, designed in `docs/detailed-designs/platform/operate-backend/`).
 
 **Contrast (`L2-051` criterion 6).**
 
@@ -228,11 +248,12 @@ in its base rules and two columns in one `min-width` query. The columns are:
   with white text; yellow keeps navy text. A name tag reads its pair from `--kid-tag-bg` and
   `--kid-tag-fg`, set by `data-kid`. The bright colours are for marks only: the dots of the
   world ring, the timer bar and the backgrounds of pictures (`docs/mocks/README.md`,
-  departures 1 and 2). A kid's colour is never the only carrier of a state: the name is always
+  departures 1 and 2). A stamp's tile in the passport is `--color-passport-slot`, the deeper
+  `blue-700`, so a country's name on it is 6.94 to 1 (departure 24). A kid's colour is never the only carrier of a state: the name is always
   written (`L2-037` criterion 4).
 - **Themes** — the light theme is the design. The mocks also draw a dark theme from the same
-  roles. Whether the game offers the dark theme, following the device, or ships light only is
-  (to confirm) (`docs/mocks/README.md`, open question 3). A device that asks for more contrast
+  roles, and the game's tokens follow the device into it (`prefers-color-scheme: dark`)
+  (`docs/mocks/README.md`, open question 3). A device that asks for more contrast
   gets stronger edges and secondary text, and forced colours hand the focus ring and the edges
   to the system.
 
@@ -241,9 +262,15 @@ in its base rules and two columns in one `min-width` query. The columns are:
 - **200% zoom** — zooming halves the viewport's width in CSS pixels, so the `min-width` queries
   select a narrower band and the same layout rules apply. A 1280 px viewport at 200% is laid
   out as 640 px. No stylesheet fixes a height in pixels around text.
-- **Accessibility sweep** — a Playwright sweep checks every mock state for roles, names,
-  contrast and target size, and opens each at 200% zoom at 1280 px wide. It runs only when a
-  person asks. The checking tool is `<TO SUPPLY>`.
+- **Accessibility sweep** — the Playwright project `accessibility` checks every state of
+  `screens.ts` with axe-core (4.14, through `@axe-core/playwright`) against WCAG 2.2 A and AA,
+  for roles, names, contrast and target size, on a desktop and on a phone once the page's
+  entrances have finished, adds the game's own 44 × 44 px target check, and lays each out at
+  640 × 400 px, 200% zoom of a 1280 × 800 screen. It runs only when a person asks.
+- **Behaviour by default** — `frontend/e2e/specs/every-screen-for-every-child.spec.ts` runs with
+  the behaviour specs: each state's targets and Tab order with the focus ring showing, each
+  screen's skip link, a whole solo tour and a friend's game by keyboard alone, and Duel on the
+  narrowest phone.
 
 The slice follows every mock: each state of each page in `docs/mocks/pages/`, the dialogs
 `docs/mocks/dialogs/pause/` (state `default`), `docs/mocks/dialogs/leave-game/` (states
@@ -259,7 +286,7 @@ level-1 (L1) requirement, cited by identifier.
 
 | L2 ID | Refines (L1) | Requirement |
 |-------|--------------|-------------|
-| `L2-050` | `L1-015` | Every screen shall work at every width: at 320, 576, 768, 992, 1200 and 1920 px wide nothing shall be cut off, nothing shall overlap and the page shall not scroll sideways; on Duel the number pad shall sit under the flash card below 768 px and beside it from 768 px; on Duel the world ring shall be shown from 768 px and replaced below 768 px by a line of text giving the country and "desk {n} of {tour length}"; Home, Pick Your Kid, the Lobby, Game Setup and the Podium shall be one column below 992 px and two columns from 992 px as the mocks draw it; on a phone turned on its side Duel shall still fill the screen without scrolling with the flash card and the pad both whole, and under 544 px tall the world ring and the line of text shall give way to "Desk {n} of {tour length}" beside the names of the traveller and the desk holder; Solo Or Friends and Mic Check shall be one column below 768 px and two columns from 768 px, and Room shall be one column at every width. |
+| `L2-050` | `L1-015` | Every screen shall work at every width: at 320, 576, 768, 992, 1200 and 1920 px wide nothing shall be cut off, nothing shall overlap and the page shall not scroll sideways; on Duel the number pad shall sit under the flash card below 768 px and beside it from 768 px; on Duel the world ring shall be shown from 768 px and replaced below 768 px by a line of text giving the country and "desk {n} of {tour length}", which on a phone held upright at most 672 px tall gives way to a connection banner while the duel strip names the country; Home, Pick Your Kid, the Lobby, Game Setup and the Podium shall be one column below 992 px and two columns from 992 px as the mocks draw it; on a phone turned on its side Duel shall still fill the screen without scrolling with the flash card and the pad both whole, and under 544 px tall the world ring and the line of text shall give way to "Desk {n} of {tour length}" beside the names of the traveller and the desk holder; Solo Or Friends and Mic Check shall be one column below 768 px and two columns from 768 px, and Room shall be one column at every width. |
 | `L2-051` | `L1-016` | Every screen shall serve touch, keyboard and assistive technology: every control shall be reachable and workable with a keyboard alone, with a visible focus in the order of the screen; every touch target shall be at least 44 x 44 px; a toggle or a choice that is on shall expose its state with `aria-pressed` and show it by more than colour; a new flash card, a decided duel and a freeze shall be told to a screen reader through a live region; an error shall be announced as an alert in words; text contrast shall be at least 4.5 to 1, or 3 to 1 for large text and for the parts of a control; at 200% zoom nothing shall be lost and the page shall not scroll sideways. |
 
 ## Diagrams
@@ -275,37 +302,41 @@ regions and alerts from the game.
 ### Containers
 
 The slice lives in the frontend only. The pages of `game` lay out each screen and compose
-announcements, the `components` library supplies accessible controls, the `api` library holds
-the `Viewport` contract, and the global styles hold the breakpoints and tokens. No backend
-container takes part.
+announcements, the `components` library supplies accessible controls and the `breakpoints`
+partial, and the global styles hold the tokens. The sweeps and the behaviour specs drive the
+game in Chromium. No backend container takes part.
 
 ![C4 container view for showing every screen to everyone](diagrams/c4-container.png)
 
 ### Components
 
-`DuelPage` places the pad through the `breakpoints` partial and reads the width band and the
-height from `Viewport` to render `WorldRing`, a pill of text or the desk in the HUD. Five
-pages switch to two columns at 992 px and two at 768 px; `RoomPage` stays one column.
-`ChoiceButton`, `LiveRegion` and `AlertMessage` carry pressed state, duel events and errors to
-assistive technology. Pause, Leave Game and Settings open as CDK Dialogs.
+`DuelPage` places the pad and shows `WorldRing`, the pill of text or the desk in the HUD
+through the `breakpoints` partial; a banner (`duel--banner`) and the pad (`duel--pad`) mark it
+for the short screens. Five pages switch to two columns at 992 px and two at 768 px; `RoomPage`
+stays one column. The groups of choices, the live regions and `Alert` carry pressed state, duel
+events and errors to assistive technology; `SkipLink` moves the focus to the main part. Pause,
+Leave Game and Settings open as CDK Dialogs.
 
 ![C4 component view for showing every screen to everyone](diagrams/c4-component.png)
 
 ### Class structure
 
-`MediaQueryViewport` realizes `Viewport`, whose `band` is one of five `WidthBand` values and
-whose `short` is true under 544 px tall. `DuelPage` computes its announcement with
-`duelAnnouncement` and binds it to `LiveRegion`. `AlertMessage` shows the words
-`messageForCode` returns.
+`DuelPage` computes its announcement with `DuelWords.announcement` and binds it to its live
+region; `padShown` and the connection's notice mark the screen for the short layouts.
+`ChoiceGroup` stands for the five groups of choices. `Alert` shows the words `joinRefusal` and
+`roomRefusal` return. `SkipLink` focuses its target; `CodeField` emits `entered` from the field
+itself.
 
 ![Class diagram for showing every screen to everyone](diagrams/class-structure.png)
 
 ### Behaviour — arrange Duel by width
 
 When the width changes, the stylesheet's queries place the pad under or beside the flash card
-at 768 px, and `DuelPage` renders the world ring or the pill of text at the same width. Under
-544 px tall the HUD gives the desk instead. At 200% zoom a narrower band applies. The page
-fills the viewport's height at every width.
+at 768 px, and show the world ring or the pill of text at the same width. Under 544 px tall the
+HUD gives the desk instead and the way to switch sits under the card; on a short phone held
+upright the card tightens, a frozen line takes the answer box's place and a banner takes the
+pill's. At 200% zoom a narrower band applies. The page fills the viewport's height at every
+width.
 
 ![Sequence diagram for arranging Duel by width](diagrams/sequence-arrange-duel-by-width.png)
 

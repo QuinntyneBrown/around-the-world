@@ -1,5 +1,7 @@
 // The code-field block of docs/design-system/assets/components.css, on the host `<label>`. A
 // refused code shakes the boxes once in 300 ms; with reduced motion only the colour changes.
+
+@use 'breakpoints' as bp;
 :host {
   position: relative;
   display: grid;
@@ -51,7 +53,7 @@
   opacity: 0.7;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     gap: var(--space-4);
   }

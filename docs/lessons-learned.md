@@ -1159,3 +1159,175 @@ the lessons that fit.
 - *Let a test fixture record every request handled* (16, 3): `HandledCount` reads the same log.
 - *Keep a per-connection limit in the connection's own items* (15, 2): the answers' limit is a
   ring of 5 times there, and the stickers' a ring of 1.
+
+## Journey 18: Open fast and stay smooth on any device
+
+**What slowed it.**
+
+- The specs' server sent every file uncompressed, so the first measurement of Home on a phone on
+  slow 4G (4.1 seconds) mostly measured `main` at 252 kB on the wire. The server now gzips text
+  as the deployed host must, and the host's duty is in `docs/operations/settings.md`.
+- With the compression fixed Home still took 2.5 seconds: its picture was asked for only once
+  Home's code had run, and the 3D classroom's 133 kB shared the connection with it. A request
+  waterfall, read from a short Playwright script on the throttled page, showed both at once.
+- The first heap checks failed at 17.6% and 69.7%. Heap snapshot diffs showed the leak was the
+  specs' own WebGL fake, which kept every context it counted and with it each released canvas
+  and its page; V8's compiled code made up the rest of the growth.
+- Event Timing measured a pressed digit at 144 to 264 ms. The digit was quick; the frame after
+  it was not, since headless Chromium draws WebGL in software at about 10 frames a second.
+- The 20-second spec passed at its first run, as journeys 01 to 17 had built the way; it was
+  broken by hand (a 1-second limit) to prove it measures.
+
+**New lessons.**
+
+1. Before tuning a timing, serve the build as production does (compressed) and read the
+   request waterfall under the throttled profile: it names the cause, where a single number
+   only says something is slow.
+2. Make the largest content of the first screen the first thing asked for, and let heavy
+   extras (the 3D classroom, the next screens' code) wait until it is in.
+3. A test fake that counts resources must let go of the ones the game released, or it is the
+   leak a heap check finds. Diff two heap snapshots by kind of object before suspecting the game.
+4. Measure a heap from a snapshot with compiled code left out: V8's optimising compiler grows
+   the code space over the first runs, which is not memory the game holds.
+5. Time a press with Event Timing against a screen without software-drawn WebGL; the machine
+   that runs the specs is not a child's device, and a frame-bound measure there times the
+   software renderer.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): every timing ran against the
+  production build, now served compressed; `main` is 253.31 kB and the initial total 274.13 kB.
+- *Check a fake once by hand* (01, 2): the 20-second limit was broken by hand, and the fakes'
+  release was proved by the heap checks passing only once they let go.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no screen changed
+  its markup, and no component was added.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0038 measured CDK Dialog
+  against the native `<dialog>` and keeps the `AGENTS.md` rule; no correction is proposed.
+- *Tag one spec per feature `@critical`* (02, 5): the first flash card within 20 seconds on a
+  school connection.
+- *Measure the initial bundle against the base commit* (03, 2): module by module, `main` grew
+  0.4 kB for the picture's request only; with no lazy route `main` would be 204 kB, so the rest
+  is framework code the screens need.
+- *Prefer signals and outputs to `effect()`* (04, 2): `linkedSignal` in the Lobby was measured
+  and costs `main` nothing; nothing was changed.
+- *Keep fast-changing input in the component that owns it* (04, 3): the new specs ran with
+  `--repeat-each 3`.
+- *Let a short-lived thing live on the game's clock* (15, 4): confirmed by the audit: the duel's
+  timers and the stickers are bounded by the game's clock, so no general buffer was built.
+
+
+## Journey 19: Make every screen work for every child
+
+**What slowed it.**
+
+- Duel on a phone 320 × 568 px held upright had no height to spare. Each extra (a frozen line,
+  a banner, a two-line nickname) pushed the pad under the footer, and the prototype's own mock
+  overlapped the same way. Measuring each part's top and height at that size, for each state,
+  showed the budget in pixels; moving the desk into the duel strip cost more than it saved
+  (the strip grew 150 px at 320 px wide), so the line of text gives way to a banner instead.
+- A sweep that measures straight after a resize catches entrances mid-flight: a dialog sheet
+  still sliding up, a podium step still rising (contrast 1.76 to 1 on a step fading in), the
+  skip link still sliding down. Waiting for every animation that plays once fixed all three;
+  waiting for every animation hung on the infinite ones (the level meter, the shimmer).
+- Playwright needs a test's fixtures destructured, so a sweep cannot take `(fakes) =>`; and
+  `import.meta` is unavailable in specs, which Playwright loads as CommonJS.
+- The first overlap rule flagged messages by design over the screen (a toast over "Start the
+  race", a received sticker over the sticker bar, ADR 0035). A message is now a live region
+  placed over the screen and is measured against itself.
+- The design described seven parts (`Viewport`, `LiveRegion`, `AlertMessage`, `ChoiceButton`,
+  `duelAnnouncement`, `messageForCode`, a `breakpoints` partial) that earlier journeys had
+  built under other names or done without; matching each to the code took a pass of its own.
+
+**New lessons.**
+
+1. Keep one registry of the states a sweep visits, each reached through the page objects and
+   the fixture, and run every sweep and the default-run checks (targets, Tab order, skip link)
+   over it: a new screen joins all of them with one entry.
+2. Walk a screen with Tab by numbering its controls in page order first, then check each step
+   goes to the next: it proves every control is reached, in order, with no positive
+   `tabindex`, without a selector per screen.
+3. Type and press Enter as a child does (`keyboard.type` then `press('Enter')` at once): a
+   handler that reads an input signal sees the value before zoneless change detection has run.
+   Read the native element on Enter.
+4. A fragment link (`#main`) under `<base href="/">` resolves to the root and leaves the
+   screen; a skip link must move the focus itself.
+5. Before raising a sweep's measurement to a rule, let the page rest: one frame for the layout,
+   then every finite animation finished.
+6. Replace a design's literal breakpoints with a named partial in a library every build shares
+   (`includePaths`), and compare the built CSS's media queries before and after.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the sweeps and the new spec ran
+  against the build; `main` is 253.53 kB and the initial total 274.39 kB.
+- *Check a fake once by hand* (01, 2): the duel strip's name test was run against a build
+  without the portrait fix and failed on "Cosmic Llama" breaking inside a word; the skip link
+  and Enter specs failed on the real bugs first.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place (the
+  partial is a stylesheet).
+- *Build a component the first time a screen needs it* (01, 4): no component was added;
+  Portrait, FlashCard, NumberPad, ConnectionBanner, ModeCard, SkipLink and CodeField were
+  extended in `@atw/components` and the design system's CSS, and marked in its README.
+- *An ADR for a rule that conflicts with best practice* (01, 5): none conflicted; ADR 0039
+  records the sweeps, axe-core, the named breakpoints and why no `Viewport` contract was built.
+- *Tag one spec per feature `@critical`* (02, 5): a whole solo tour by keyboard alone.
+- *Measure the initial bundle against the base commit* (03, 2): `main` grew 0.22 kB, the skip
+  link's handler, within the 275 kB warning.
+- *Keep fast-changing input in the component that owns it* (04, 3): the code field's Enter
+  now reads its own element.
+- *Measure overlap at three sizes* (15, 1): extended to eight sizes and 200% zoom by the
+  responsive and accessibility sweeps.
+
+## Journey 20: Prove the game is safe for children
+
+**What slowed it.**
+
+- Angular's production build inlines the critical CSS with Beasties, which writes an inline
+  `<script>` to switch the full stylesheet on; a policy with `script-src 'self'` refuses it.
+  `autoCsp` would have hashed it but hides `main` from the preload scanner, so critical CSS is
+  no longer inlined (3.35 kB compressed, fetched beside `main`; ADR 0040).
+- Playwright's `routeWebSocket` replaces the page's `WebSocket`, so the browser's own
+  `connect-src` check of a WebSocket never runs in a spec. `EventSource`, under the same
+  directive, stands for it.
+- Chrome words a refusal differently by kind ("Fetch API cannot load … Refused to connect",
+  "Loading the image … violates the following Content Security Policy directive"), and the
+  fixture fails a spec on any console error; the expected errors needed both forms.
+- Most rules held at the audit's first run, built by journeys 02 to 17; each such audit was
+  broken by hand in the product (an answer sent with its words, recognition off the device, a
+  stored extra column) to see it fail for that reason.
+
+**New lessons.**
+
+1. Prove a Content Security Policy by asking another origin from the page and reading the
+   browser's `securitypolicyviolation` events, one kind of request per directive; with no
+   policy the spec fails on an empty list and the fixture's off-localhost guard.
+2. Audit what leaves the device by reading every frame and body the game sent and allowing
+   only closed values (a code, a kid, a setup word, a hub method, a number); then search all of
+   it for the words the child said and their nickname. A list of the allowed is stricter than a
+   list of the forbidden.
+3. A value from the backend that the device turns into words must be checked on the device,
+   even when the backend validates it: index a fixed list only with an index inside it.
+4. Prove what a store holds by reading every column of every row through the converters that
+   write it, after a whole game from devices that name their address and browser; break it once
+   with an extra column.
+5. Read the ARIA snapshot of every state of the sweeps' registry to prove what a screen asks
+   for: its fields and its controls' names, without a selector per screen.
+
+**Earlier lessons applied.**
+
+- *Write the spec against the production build* (01, 1): the policy is proven in the very
+  `index.html` the build writes; `main` is 253.53 kB and the initial total 274.39 kB.
+- *Check a fake once by hand* (01, 2): the fixture's new records (frames, off-device
+  recognition) were proven by breaking the product, which they caught.
+- *Check an ESLint boundary by hand* (01, 3): not needed; no library changed its place.
+- *Build a component the first time a screen needs it* (01, 4): not needed; no component was
+  added or changed.
+- *An ADR for a rule that conflicts with best practice* (01, 5): ADR 0040 records why the
+  policy is a meta element with `style-src 'unsafe-inline'`, and asks the host for the
+  `frame-ancestors` header a meta element cannot carry.
+- *Tag one spec per feature `@critical`* (02, 5): the browser refuses another origin.
+- *Measure the initial bundle against the base commit* (03, 2): unchanged at 274.39 kB; the
+  critical CSS moved from the HTML into the stylesheet the budget already counted.
+- *Keep one registry of the states a sweep visits* (19, 1): the fields-and-controls audit runs
+  over all 29 states with one loop.

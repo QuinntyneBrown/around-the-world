@@ -1,6 +1,8 @@
 // The passport block of docs/design-system/assets/components.css: the head, and a tile for each
 // desk, three across (four for 24 desks), four (six) from 576px. Stamps are tilted and dashed;
 // a tile not reached is a question mark with no edge. Upright under reduced motion.
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
 }
@@ -69,7 +71,7 @@
   aspect-ratio: 4 / 3;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .passport {
     padding: var(--space-6);
   }

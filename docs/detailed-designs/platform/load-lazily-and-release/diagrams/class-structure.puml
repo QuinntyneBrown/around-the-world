@@ -18,22 +18,22 @@ interface GameSession {
   +end()
 }
 class SoloGame {
-  -agents: ClassmateAgent[]
-  -duelsPlayed: BoundedBuffer<DuelState>
+  -agents: Map<player, ClassmateAgent>
+  -playing: the one duel in play, or null
+  -tour: Tour (one passport stamp a desk)
   +end()
 }
 class FriendsGame {
-  -connection: RoomConnection
-  -duelsPlayed: BoundedBuffer<DuelState>
-  -stickers: BoundedBuffer<StickerId>
-  -positions: Map<player, position>
+  -hub: RoomConnection
+  -game: the last GameChanged only
+  -receivedStickers: ReceivedSticker[] (3 at most)
   +end()
 }
-class "BoundedBuffer<T>" as BoundedBuffer {
-  +capacity: number
-  +push(item: T)
-  +items(): readonly T[]
-  +clear()
+class StickerBuffer <<helper>> {
+  {static} STICKERS_SHOWN = 3
+  {static} STICKER_LASTS_MS = 2000
+  +add(buffer, sticker)
+  +showing(buffer, nowMs)
 }
 interface RoomConnection {
   +connect()
@@ -77,10 +77,9 @@ GameSession <|.. FriendsGame
 RoomConnection <|.. SignalRRoomConnection
 VoiceAnswer <|.. SpeechVoiceAnswer
 ClassroomRenderer <|.. ThreeClassroomRenderer
-SoloGame *-- BoundedBuffer
-FriendsGame *-- BoundedBuffer
+FriendsGame ..> StickerBuffer : keeps stickers with
 SoloGame *-- "0..*" OnDeviceModelSession : destroys when the tour ends or is left
-FriendsGame --> RoomConnection : closes
+FriendsGame --> RoomConnection : closes when its route injector is destroyed
 DuelPage ..> GameSession : reads
 DuelPage ..> VoiceAnswer : stops on destroy
 DuelPage ..> ClassroomRenderer : disposes on destroy

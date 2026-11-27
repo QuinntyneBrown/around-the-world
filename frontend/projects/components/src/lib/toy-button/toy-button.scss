@@ -1,4 +1,6 @@
 // The toy-btn block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   --toy-face: var(--color-action-play);
   --toy-base: var(--color-action-play-base);
@@ -92,13 +94,13 @@
 }
 
 // A label that only fits from 576px; the button keeps it as its accessible name below.
-@media (max-width: 35.99rem) {
+@include bp.below(sm) {
   .toy-btn__label--wide {
     display: none;
   }
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host(.toy-btn--xl) {
     min-height: var(--control-height-2xl);
     padding: 0 var(--space-12);

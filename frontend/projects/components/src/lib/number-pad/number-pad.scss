@@ -1,4 +1,6 @@
 // The number-pad block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   width: 100%;
   max-width: var(--layout-panel-narrow);
@@ -54,7 +56,7 @@
   pointer-events: none;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     gap: var(--space-3);
   }
@@ -65,7 +67,7 @@
 }
 
 // Beside the flash card from 768 px (L2-050 criterion 2).
-@media (min-width: 48rem) {
+@include bp.from(md) {
   :host {
     max-width: 18rem;
     flex: none;
@@ -73,7 +75,7 @@
 }
 
 // Short screens: 44 px keys, so the pad and the card are both whole (L2-050 criterion 5).
-@media (max-height: 34rem) {
+@include bp.height(short) {
   :host {
     max-width: 16rem;
     flex: none;
@@ -85,7 +87,11 @@
   }
 }
 
-@media (max-width: 47.99rem) and (max-height: 42rem) {
+@include bp.below(md, low) {
+  :host {
+    gap: var(--space-1);
+  }
+
   .number-pad__key {
     height: var(--target-min);
     font: var(--text-h3);

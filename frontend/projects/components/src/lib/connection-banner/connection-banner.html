@@ -1,5 +1,6 @@
 <atw-alert [banner]="true" [tone]="banner().tone" [icon]="banner().icon" [urgent]="banner().urgent">
   <p>
-    <strong>{{ banner().title }}</strong> {{ banner().text }}
+    <strong>{{ banner().title }}</strong>
+    <span class="banner__text">{{ banner().text }}</span>
   </p>
 </atw-alert>

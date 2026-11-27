@@ -14,7 +14,7 @@
   [attr.aria-describedby]="describedBy() || null"
   (input)="typed(field)"
   (keydown)="toEnd(field)"
-  (keydown.enter)="enter()"
+  (keydown.enter)="enter(field)"
 />
 @for (box of boxes(); track $index) {
   <span class="code-field__box" aria-hidden="true" [attr.data-active]="box.waiting || null">{{

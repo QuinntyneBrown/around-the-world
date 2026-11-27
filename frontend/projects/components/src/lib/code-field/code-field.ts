@@ -71,7 +71,11 @@ export class CodeField implements AfterViewInit {
     field.setSelectionRange(field.value.length, field.value.length);
   }
 
-  protected enter(): void {
-    if (this.value().length === ROOM_CODE_LENGTH) this.entered.emit();
+  /**
+   * Enter with four letters in the field. The field itself is read, not `value`: a child who
+   * types fast presses Enter before the page has passed the last letter back.
+   */
+  protected enter(field: HTMLInputElement): void {
+    if (roomCodeLetters(field.value).length === ROOM_CODE_LENGTH) this.entered.emit();
   }
 }

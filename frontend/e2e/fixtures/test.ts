@@ -21,7 +21,9 @@ import {
  *   method, and records the
  *   tokens presented and the methods invoked (docs/adr/0032);
  * - `clipboard`: what the game copied, or a clipboard that refuses (docs/adr/0032);
- * - `network`: the device's network, taken away and given back (`navigator.onLine`);
+ * - `network`: the device's network, taken away and given back (`navigator.onLine`), or slowed
+ *   to a connection's speed and delay through the DevTools protocol (docs/adr/0038);
+ * - `processor`: the device's processor, slowed to stand for a slower device (docs/adr/0038);
  * - `device`: what the game keeps on the device (docs/adr/0011-player-record-on-the-device.md);
  * - `pictures`: the game's pictures on localhost, held back or refused when a spec asks;
  * - `classroom`: the 3D classroom's scenes on localhost, held back or refused when a spec asks,
@@ -47,6 +49,11 @@ export interface FakeVoice {
   fail(error?: string): Promise<number>;
   /** How many recognizers are listening now. */
   listening(): Promise<number>;
+  /**
+   * How many recognition sessions the game started without asking to listen on the device, so
+   * that the browser would send the sound to a recognition service (L2-040 criterion 2).
+   */
+  offDevice(): Promise<number>;
 }
 
 export interface FakeMicrophone {
@@ -56,6 +63,8 @@ export interface FakeMicrophone {
   ask(): Promise<void>;
   /** How many microphone streams the game opened and has not closed. */
   openStreams(): Promise<number>;
+  /** How many recorders (`MediaRecorder`) the game made: a recorder would keep the voice. */
+  recorders(): Promise<number>;
 }
 
 export interface FakeModel {
@@ -138,6 +147,8 @@ export interface FakeRoomHub {
   invoked(): string[];
   /** The hub methods the game invoked with the arguments it sent, in order (L2-040 criterion 1). */
   invocations(): { target: string; args: Json[] }[];
+  /** Every message the game sent on the room's connections, as sent, in order (L2-040 criterion 1). */
+  frames(): string[];
   /** The answers to the method wait until the returned function is called. */
   holdBackMethod(target: string): () => void;
   /** The method is refused with a hub error holding the code, as the backend refuses it. */
@@ -203,6 +214,20 @@ export interface FakeNetwork {
   offline(): Promise<void>;
   /** The device has its network back. */
   online(): Promise<void>;
+  /** The device's network has this connection's speeds and delay, from now on (docs/adr/0038). */
+  like(connection: Connection): Promise<void>;
+}
+
+/** A network a device is on: its speeds and its delay (docs/adr/0038). */
+export interface Connection {
+  downMbps: number;
+  upMbps: number;
+  latencyMs: number;
+}
+
+export interface FakeProcessor {
+  /** The page runs this many times slower, as on a slower device (docs/adr/0038). */
+  slowedBy(rate: number): Promise<void>;
 }
 
 export interface FakeSound {
@@ -210,6 +235,8 @@ export interface FakeSound {
   played(): Promise<string[]>;
   /** How many audio elements the game made and has not let go (L2-048 criterion 3). */
   openSounds(): Promise<number>;
+  /** Every text the game gave the browser to say aloud (L2-042 criterion 1). */
+  spoken(): Promise<string[]>;
 }
 
 export interface FakeClock {
@@ -249,6 +276,7 @@ interface Fixtures {
   roomHub: FakeRoomHub;
   clipboard: FakeClipboard;
   network: FakeNetwork;
+  processor: FakeProcessor;
 }
 
 /** Where a held clock starts: any fixed moment will do. */
@@ -408,6 +436,7 @@ class RoomHubFixtures implements FakeRoomHub {
   private readonly open = new Set<WebSocketRoute>();
   private readonly presented: string[] = [];
   private readonly calls: { target: string; args: Json[] }[] = [];
+  private readonly sent: string[] = [];
   private readonly heldMethods = new Map<string, (() => void)[]>();
   private readonly refusedMethods = new Map<string, string>();
   private gameState: object | null = null;
@@ -496,6 +525,10 @@ class RoomHubFixtures implements FakeRoomHub {
     return this.calls.map((call) => ({ target: call.target, args: [...call.args] }));
   }
 
+  frames(): string[] {
+    return [...this.sent];
+  }
+
   holdBackMethod(target: string): () => void {
     this.heldMethods.set(target, []);
     return () => {
@@ -539,6 +572,7 @@ class RoomHubFixtures implements FakeRoomHub {
       if (waiting >= 0) this.waiting.splice(waiting, 1);
     });
     socket.onMessage((message) => {
+      this.sent.push(String(message));
       for (const record of String(message).split(RS)) {
         if (record === '') continue;
         const data = JSON.parse(record) as {
@@ -798,6 +832,25 @@ export const test = base.extend<Fixtures>({
     await use({
       offline: () => page.context().setOffline(true),
       online: () => page.context().setOffline(false),
+      like: async ({ downMbps, upMbps, latencyMs }) => {
+        const devTools = await page.context().newCDPSession(page);
+        await devTools.send('Network.enable');
+        await devTools.send('Network.emulateNetworkConditions', {
+          offline: false,
+          latency: latencyMs,
+          downloadThroughput: (downMbps * 1_000_000) / 8,
+          uploadThroughput: (upMbps * 1_000_000) / 8,
+        });
+      },
+    });
+  },
+
+  processor: async ({ page }, use) => {
+    await use({
+      slowedBy: async (rate) => {
+        const devTools = await page.context().newCDPSession(page);
+        await devTools.send('Emulation.setCPUThrottlingRate', { rate });
+      },
     });
   },
 
@@ -805,6 +858,7 @@ export const test = base.extend<Fixtures>({
     await use({
       played: () => page.evaluate(() => [...window.__atwFakes.played]),
       openSounds: () => page.evaluate(() => window.__atwFakes.openSounds()),
+      spoken: () => page.evaluate(() => [...window.__atwFakes.spoken]),
     });
   },
 
@@ -815,6 +869,7 @@ export const test = base.extend<Fixtures>({
       silence: () => page.evaluate(() => window.__atwFakes.silence()),
       fail: (error = 'network') => page.evaluate((code) => window.__atwFakes.fail(code), error),
       listening: () => page.evaluate(() => window.__atwFakes.listening()),
+      offDevice: () => page.evaluate(() => window.__atwFakes.offDevice),
     });
   },
 
@@ -824,6 +879,7 @@ export const test = base.extend<Fixtures>({
       deny: () => setFake(page, { microphone: 'denied' }),
       ask: () => setFake(page, { microphone: 'asking' }),
       openStreams: () => page.evaluate(() => window.__atwFakes.openTracks()),
+      recorders: () => page.evaluate(() => window.__atwFakes.recorders),
     });
   },
 

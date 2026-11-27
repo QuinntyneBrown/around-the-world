@@ -1,4 +1,6 @@
 // The listener block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   position: relative;
   flex: none;
@@ -47,7 +49,7 @@
   color: var(--color-fg-on-danger);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     width: 18rem;
   }
@@ -58,7 +60,7 @@
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   :host {
     width: 20rem;
   }

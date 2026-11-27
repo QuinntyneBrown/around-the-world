@@ -1,4 +1,6 @@
 // The sticker-region block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   position: absolute;
   z-index: var(--z-toast);
@@ -17,13 +19,13 @@
   bottom: var(--space-4);
 }
 
-@media (max-width: 35.99rem) {
+@include bp.below(sm) {
   :host {
     gap: var(--space-2);
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   :host(.sticker-region--watching) {
     bottom: 8.5rem;
   }

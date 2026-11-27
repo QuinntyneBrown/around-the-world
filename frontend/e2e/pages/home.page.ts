@@ -46,6 +46,11 @@ export class HomePage {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
   }
 
+  /** Waits until Home has fetched all it fetches while the child reads it. */
+  async settle(): Promise<void> {
+    await this.page.waitForLoadState('networkidle');
+  }
+
   async choosePlay(): Promise<void> {
     await this.play.click();
   }

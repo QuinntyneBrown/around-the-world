@@ -7,14 +7,17 @@ Person(child, "Child", "Plays at any width, by touch or keyboard")
 System_Ext(at, "Assistive technology", "Screen reader")
 System_Boundary(atw, "Around the World") {
   Container(game, "game", "Angular application", "Pages: lay out each screen by breakpoint and compose announcements")
-  Container(components, "components", "Angular library", "Presentation: native controls, aria-pressed, live region, alert")
-  Container(apilib, "api", "Angular library", "Viewport contract and VIEWPORT token; ApiError")
-  Container(styles, "Global styles", "SCSS foundations", "Breakpoints, focus ring, minimum target size and colour tokens")
+  Container(components, "components", "Angular library", "Presentation: native controls, aria-pressed, live regions, alerts, skip link; the breakpoints partial")
+  Container(styles, "Global styles", "SCSS foundations", "Focus ring, minimum target size and colour tokens")
+}
+System_Boundary(tests, "Specs and sweeps") {
+  Container(specs, "Behaviour specs and sweeps", "Playwright, axe-core", "Targets, Tab order, skip links, keyboard tours; responsive, accessibility and visual sweeps on request")
 }
 Rel(child, game, "Uses", "Touch, keyboard")
 Rel(at, components, "Reads the accessibility tree of")
 Rel(game, components, "Composes")
-Rel(game, apilib, "Reads the width band through")
-Rel(game, styles, "Uses breakpoints and tokens from")
-Rel(components, styles, "Uses breakpoints and tokens from")
+Rel(specs, game, "Drive in Chromium")
+Rel(game, styles, "Uses tokens from")
+Rel(game, components, "Uses breakpoints from")
+Rel(components, styles, "Uses tokens from")
 @enduml

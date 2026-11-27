@@ -1,4 +1,6 @@
 // The screen__body element of docs/design-system/assets/components.css, on the host <main>.
+
+@use 'breakpoints' as bp;
 :host {
   flex: 1;
   width: 100%;
@@ -20,7 +22,7 @@
   text-align: center;
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   :host {
     padding-block: var(--space-8) var(--space-10);
   }

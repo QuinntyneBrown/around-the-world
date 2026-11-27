@@ -473,7 +473,13 @@
       "fg": "--color-passport-fg",
       "bg": "--color-passport-bg",
       "min": 4.5,
-      "note": "passport text and stamps"
+      "note": "passport text"
+    },
+    {
+      "fg": "--color-passport-fg",
+      "bg": "--color-passport-slot",
+      "min": 4.5,
+      "note": "a country's name on its stamp in the passport"
     },
     {
       "fg": "--color-fg-accent",

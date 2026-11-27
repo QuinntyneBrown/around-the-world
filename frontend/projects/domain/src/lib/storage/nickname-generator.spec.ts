@@ -39,6 +39,22 @@ describe('NicknameGenerator', () => {
   });
 
   it.each([
+    [{ kid: 'nia', nickname: { adjective: 8, animal: 4 } }, 'Cosmic Llama'],
+    [{ kid: 'pip', nickname: { adjective: 5, animal: 5 } }, 'Brave Narwhal'],
+    [{ kid: 'nia', nickname: { adjective: '<b>Sneaky</b>', animal: 0 } }, 'Nia'],
+    [{ kid: 'nia', nickname: { adjective: 0, animal: 10 } }, 'Nia'],
+    [{ kid: 'milo', nickname: { adjective: -1, animal: 0 } }, 'Milo'],
+    [{ kid: 'kenji', nickname: { adjective: 1.5, animal: 0 } }, 'Kenji'],
+    [{ kid: 'pip', nickname: 'Brave Narwhal' }, 'Pip'],
+    [{ kid: 'zuri', nickname: null }, 'Zuri'],
+  ])(
+    'names the player %o "%s": the nickname built from its indexes, or else the kid (L2-040 3)',
+    (player, name) => {
+      expect(new NicknameGenerator().nameOf(player)).toBe(name);
+    },
+  );
+
+  it.each([
     [{ adjective: 0, animal: 0 }, 0, { adjective: 0, animal: 1 }],
     [{ adjective: 3, animal: 4 }, 0, { adjective: 0, animal: 0 }],
     [{ adjective: 9, animal: 9 }, 0.999999, { adjective: 9, animal: 8 }],

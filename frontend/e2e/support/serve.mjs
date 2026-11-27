@@ -1,8 +1,12 @@
 // Serves the production build of `game` on localhost for the behaviour specs: a file when one
 // matches the path, index.html for any other path (the router's deep links). Nothing else.
+// Text is sent gzip-compressed when the browser accepts it, as the deployed host sends it
+// (docs/operations/settings.md, docs/adr/0038), so a spec on a slowed connection measures what
+// a child downloads.
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
+import { createGzip } from 'node:zlib';
 
 const root = resolve(import.meta.dirname, '../../dist/game/browser');
 const port = Number(process.argv[2] ?? 4300);
@@ -33,6 +37,16 @@ createServer((request, response) => {
   const isFile =
     candidate.startsWith(root) && existsSync(candidate) && statSync(candidate).isFile();
   const file = isFile ? candidate : join(root, 'index.html');
-  response.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' });
-  createReadStream(file).pipe(response);
+  const type = types[extname(file)] ?? 'application/octet-stream';
+  const compress =
+    /^(text\/|application\/json|image\/svg)/.test(type) &&
+    /\bgzip\b/.test(request.headers['accept-encoding'] ?? '');
+  response.writeHead(200, {
+    'content-type': type,
+    vary: 'accept-encoding',
+    ...(compress ? { 'content-encoding': 'gzip' } : {}),
+  });
+  const body = createReadStream(file);
+  if (compress) body.pipe(createGzip()).pipe(response);
+  else body.pipe(response);
 }).listen(port, 'localhost', () => console.log(`Serving ${root} on http://localhost:${port}`));
