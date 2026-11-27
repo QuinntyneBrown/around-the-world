@@ -1331,3 +1331,9 @@ the lessons that fit.
   critical CSS moved from the HTML into the stylesheet the budget already counted.
 - *Keep one registry of the states a sweep visits* (19, 1): the fields-and-controls audit runs
   over all 29 states with one loop.
+
+## Classroom walk and game-plan film
+
+- A path across the room can look like sliding even when the joints move. Sample the soles of the exported Blender clip and film it from the side so both the planted foot and the swinging foot are visible.
+- The name tag can start before the model finishes loading. The SVG fallback, the label and the Blender animation now use the same path and duration. A browser test holds the models back and checks that the label actually travels.
+- Stable viewport captures made it possible to compare the controls independently of generated nicknames, opponents, room membership and passport results. The [side-by-side review](visual-parity/003-classroom-tour/README.md) records those differences.

@@ -1,13 +1,23 @@
 import { type KidAnimation, type KidId } from '@atw/api';
-import { Group, MathUtils, type Material, type Mesh, type Object3D, type Vector3 } from 'three';
+import {
+  AnimationMixer,
+  type AnimationAction,
+  type AnimationClip,
+  Group,
+  MathUtils,
+  type Material,
+  type Mesh,
+  type Object3D,
+  type Vector3,
+} from 'three';
 import { type Palette } from './palette';
+import { RoomPlan } from './room-plan';
 
 /** A hop takes about a second (AGENTS.md, Motion and sound). */
-export const HOP_SECONDS = 1;
+export const HOP_SECONDS = 1.4;
 /** Under reduced motion the hop is a fade out and in, 200 ms in all (L2-038 4, ADR 0029). */
 export const HOP_FADE_SECONDS = 0.2;
-/** How high a hop goes, in metres. */
-const HOP_HEIGHT = 0.45;
+
 /** The win cheer: two jumps and a spin. */
 const CHEER_SECONDS = 1.2;
 /** The "so close": a gentle slump, held until the next moment. */
@@ -31,15 +41,22 @@ export class KidCharacter {
   private hop: { from: Vector3; to: Vector3; elapsed: number } | null = null;
   private faded = 1;
 
+  private readonly gait: AnimationMixer | null;
+  private readonly step: AnimationAction | null;
+  private arc: { angle: number; sweep: number } | null = null;
+
   constructor(
     template: Object3D,
     readonly kid: KidId | 'classmate',
     palette: Palette,
+    walk?: AnimationClip,
   ) {
     this.model = template.clone(true);
     this.model.position.set(0, 0, 0);
     this.root.name = `figure-${kid}`;
     this.root.add(this.model);
+    this.gait = walk ? new AnimationMixer(this.model) : null;
+    this.step = walk && this.gait ? this.gait.clipAction(walk) : null;
     const colours = palette.kid(kid);
     const copies = new Map<Material, Material>();
     this.model.traverse((node) => {
@@ -85,11 +102,22 @@ export class KidCharacter {
   place(point: Vector3): void {
     this.hop = null;
     this.root.position.copy(point);
+    this.step?.stop();
+    this.fade(1);
   }
 
-  /** Hops from where the kid stands to a point (docs/adr/0028). */
+  /** Walks from where the kid stands to a point (docs/adr/0028). */
   hopTo(point: Vector3): void {
     this.hop = { from: this.root.position.clone(), to: point.clone(), elapsed: 0 };
+    const { from, to } = this.hop;
+    const onPath = (point: Vector3) =>
+      Math.abs(Math.hypot(point.x, point.z - RoomPlan.pathShift) - RoomPlan.ringRadius) < 0.001;
+    const angle = Math.atan2(from.z - RoomPlan.pathShift, from.x);
+    const end = Math.atan2(to.z - RoomPlan.pathShift, to.x);
+    this.arc =
+      onPath(from) && onPath(to)
+        ? { angle, sweep: (end - angle + Math.PI * 2) % (Math.PI * 2) }
+        : null;
     this.play('hop');
   }
 
@@ -123,16 +151,30 @@ export class KidCharacter {
       const length = still ? HOP_FADE_SECONDS : HOP_SECONDS;
       const done = Math.min(1, this.hop.elapsed / length);
       if (still) {
+        this.step?.stop();
         this.root.position.copy(done < 0.5 ? this.hop.from : this.hop.to);
         this.fade(Math.abs(1 - 2 * done));
       } else {
         this.root.position.lerpVectors(this.hop.from, this.hop.to, done);
-        this.root.position.y = 4 * HOP_HEIGHT * done * (1 - done);
+        if (this.arc) {
+          const angle = this.arc.angle + this.arc.sweep * done;
+          this.root.position.set(
+            RoomPlan.ringRadius * Math.cos(angle),
+            0,
+            RoomPlan.ringRadius * Math.sin(angle) + RoomPlan.pathShift,
+          );
+          this.root.rotation.y = -angle;
+        } else {
+          this.face(this.hop.to);
+        }
+        this.step?.play();
+        this.gait?.setTime(done * 3);
         this.fade(1);
       }
       if (done === 1) {
         this.hop = null;
         this.fade(1);
+        this.step?.stop();
         this.play('idle');
       }
       return;
@@ -140,7 +182,7 @@ export class KidCharacter {
 
     switch (this.current) {
       case 'idle':
-        if (!still) model.position.y = 0.015 * (1 + Math.sin(this.time * 2.4));
+        if (!still) model.scale.y = 1 + 0.012 * Math.sin(this.time * 2.4);
         break;
       case 'thinking':
         model.rotation.x = 0.06;
@@ -191,6 +233,8 @@ export class KidCharacter {
 
   /** Disposes the materials made for this kid. */
   dispose(): void {
+    this.gait?.stopAllAction();
+    this.gait?.uncacheRoot(this.model);
     this.root.removeFromParent();
     for (const material of this.owned.splice(0)) material.dispose();
   }

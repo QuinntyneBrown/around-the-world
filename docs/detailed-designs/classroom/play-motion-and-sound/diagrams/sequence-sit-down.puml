@@ -31,7 +31,7 @@ duel -> session : continue()
 session --> map : World Map opens on the move
 map -> renderer : show(state): the beaten traveller at the desk, the desk holder hops on
 alt full motion
-  renderer --> actor : The new traveller hops along the path in 1 second
+  renderer --> actor : The new traveller walks along the path in 1.4 seconds
 else the device asks for reduced motion
   renderer --> actor : A fade of 200 ms to the new positions (L2-038 criterion 4)
 end

@@ -16,7 +16,8 @@ import { SCREENS } from '../support/screens';
  */
 
 const DOCS = resolve(__dirname, '../../../docs');
-const MOCKS = 'http://localhost:4300/__docs/mocks/';
+const ORIGIN = `http://localhost:${process.env['ATW_TEST_PORT'] ?? 4300}`;
+const MOCKS = `${ORIGIN}/__docs/mocks/`;
 const TYPES: Record<string, string> = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -44,7 +45,7 @@ for (const screen of SCREENS) {
     const mockPage = await page.context().newPage();
     await mockPage.route('**/*', async (route) => {
       const url = new URL(route.request().url());
-      if (url.host !== 'localhost:4300' || !url.pathname.startsWith('/__docs/')) {
+      if (url.origin !== ORIGIN || !url.pathname.startsWith('/__docs/')) {
         await route.abort();
         return;
       }

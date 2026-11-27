@@ -43,7 +43,7 @@ test.describe('Hopping round the ring', () => {
     // Then the passport stamp for the next desk's country stands in place of the flash card
     await expect(duel.stampCountry).toHaveText('Japan');
     await expect(duel.stampLandmark).toHaveText('Mount Fuji');
-    await expect(duel.stampHop).toHaveText('Zuri hops to desk 3 of 12');
+    await expect(duel.stampHop).toHaveText('Zuri walks to desk 3 of 12');
     await expect(duel.flashCard).toHaveCount(0);
 
     // When the stamp has shown for 1.2 seconds
@@ -67,6 +67,32 @@ test.describe('Hopping round the ring', () => {
     expect(await duel.named(duel.traveller)).toEqual(['You', 'Travelling']);
     expect(await duel.named(duel.deskHolder)).toEqual(['Classmate', 'Holds Japan']);
     await expect(duel.answerBox).toHaveText('?');
+  });
+
+  test('the traveller’s name tag follows the walking path while the classroom loads', async ({
+    page,
+    device,
+    clock,
+    classroom,
+  }) => {
+    await device.keeps(ZURI);
+    await clock.hold();
+    const release = classroom.holdBack();
+    try {
+      const setup = new GameSetupPage(page);
+      await setup.open();
+      await setup.chooseGo();
+      const duel = new DuelPage(page);
+      await duel.answerWithPad((await duel.card()).answer);
+      await clock.pass(2200);
+      const map = new WorldMapPage(page);
+      await expect(map.message).toHaveText('You walk on to Japan!');
+      const walk = await map.travelOfYourTag();
+      expect(walk.duration).toBe(1400);
+      expect(walk.distance).toBeGreaterThan(100);
+    } finally {
+      release();
+    }
   });
 
   test('a traveller who loses sits down at that desk, and the desk holder travels on', async ({
@@ -214,7 +240,7 @@ test.describe('Hopping round the ring', () => {
     // Then the child keeps their desk and the traveller hops on
     await expect(duel.result).toHaveText(`${rival} said ${answer} first. So close!`);
     await expect(duel.announcement).toHaveText(`${rival} said ${answer} first. You keep Egypt.`);
-    await expect(duel.sitPill).toHaveText(`You keep Egypt · ${rival} hops on`);
+    await expect(duel.sitPill).toHaveText(`You keep Egypt · ${rival} walks on`);
     await duel.sitPill.click();
     await expect(map.message).toHaveText(`${first(rival)} walks on to Japan!`);
     await expect(map.where).toHaveText(

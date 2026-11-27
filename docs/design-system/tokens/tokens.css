@@ -337,7 +337,7 @@
   --duration-spin: 800ms;     /* one turn of the spinner */
   --duration-sweep: 1400ms;   /* skeleton shimmer, listening rings */
   --duration-freeze: 1000ms;  /* frozen after a wrong answer */
-  --duration-hop: 1000ms;     /* the hop to the next desk */
+  --duration-hop: 1400ms;     /* the hop to the next desk */
   --duration-toast: 1600ms;   /* a World Map message stays this long */
   --duration-fade: 200ms;     /* the quick fade of reduced motion; it keeps its length there */
   --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);

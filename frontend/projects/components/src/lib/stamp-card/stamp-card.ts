@@ -17,6 +17,6 @@ import { Pill } from '../pill/pill';
 export class StampCard {
   readonly country = input.required<string>();
   readonly landmark = input.required<string>();
-  /** "Zuri hops to desk 6 of 12". */
+  /** "Zuri walks to desk 6 of 12". */
   readonly hop = input.required<string>();
 }

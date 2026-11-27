@@ -531,7 +531,7 @@ main[tabindex="-1"]:focus { outline: none; }
 .podium__rank { font: var(--text-h1); line-height: 1; }
 .podium__name { max-width: 100%; font: var(--text-label); font-family: var(--font-family-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: var(--space-1); }
 @media (min-width: 36rem) { .podium__headline { font: var(--text-display); } .podium__steps { gap: var(--space-4); } .podium__step { height: 8rem; } .podium__place--first .podium__step { height: 11rem; } .podium__place--third .podium__step { height: 6rem; padding-top: var(--space-3); } .podium__rank { font: var(--text-display); line-height: 1; } .podium__name { font-size: var(--font-size-lg); } }
-@media (min-width: 62rem) { .podium__headline, .podium__cheer { text-align: left; } }
+@media (min-width: 62rem) { .podium__steps { margin-top: auto; padding-top: var(--space-8); } .podium__headline, .podium__cheer { text-align: left; } }
 @media (min-width: 75rem) { .podium__headline { font: var(--text-hero); } }
 .passport { background: var(--color-passport-bg); color: var(--color-passport-fg); border-radius: var(--radius-xl); padding: var(--space-5); }
 .passport__head { display: flex; align-items: center; gap: var(--space-3); }

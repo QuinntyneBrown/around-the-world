@@ -13,7 +13,6 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   Scene,
-  Vector3,
   WebGLRenderer,
 } from 'three';
 import { AnimationLoop } from './animation-loop';
@@ -117,11 +116,13 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     this.loop.start();
   }
 
-  show(state: ClassroomState, view: ClassroomView): void {
+  show(state: ClassroomState, view: ClassroomView, elapsedMs = 0): void {
+    const firstFrame = this.state === null;
     this.state = state;
     this.view = view;
     this.classroom?.show(state);
     this.frameCamera();
+    if (firstFrame) this.drawFrame(elapsedMs);
   }
 
   dispose(): void {
@@ -161,7 +162,7 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
     if (!this.renderer || !this.classroom) return;
     const still = this.stillMotion?.matches ?? false;
     const facing = this.view === 'behind' ? this.behind.position : null;
-    this.classroom.update(Math.min(ms, 100) / 1000, still, facing);
+    this.classroom.update(ms / 1000, still, facing);
     if (this.scaler.frame(ms)) {
       reachedStep = this.scaler.level;
       this.applyStep();
@@ -206,22 +207,20 @@ export class ThreeClassroomRenderer implements ClassroomRenderer {
         this.behind.position.set(0, 3.8, 9.4);
         this.behind.lookAt(0, 0.3, 1.6);
       } else {
-        // Duel: from outside the ring, over the desk of the duel to the room behind it.
+        // Look across the desk so both faces frame the flash card. The holder stands
+        // behind the desk in -z and the traveller on the path in +z.
         const angle = deskAngle(focus, tourLength);
-        const out = new Vector3(Math.cos(angle), 0, Math.sin(angle));
-        this.behind.position
-          .copy(out)
-          .multiplyScalar(RoomPlan.ringRadius + 4.6)
-          .setY(2.8);
-        const target = out
-          .clone()
-          .multiplyScalar(RoomPlan.ringRadius - 2)
-          .setY(0.3);
-        this.behind.lookAt(target);
+        const deskX = RoomPlan.ringRadius * Math.cos(angle);
+        const deskZ = RoomPlan.ringRadius * Math.sin(angle) + 0.2;
+        const distance = Math.max(1.85, 1.6 / aspect);
+        this.behind.position.set(deskX + distance, 0.84, deskZ + 0.12);
+        this.behind.lookAt(deskX, 0.49, deskZ);
       }
+      this.classroom?.frameRoom(this.behind.position, focus !== null);
       this.behind.updateProjectionMatrix();
       return;
     }
+    this.classroom?.frameRoom(null);
     const zoomed = this.view === 'fromAboveZoomed';
     const you = this.state?.figures.find((figure) => figure.you);
     const frame =

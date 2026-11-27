@@ -103,8 +103,7 @@ In the `world` library (`@atw/world`), which depends on `api` only:
     `hop` animation moves the traveller along the dotted path to the next desk;
     `classroom/play-motion-and-sound` gives its time (`L2-038` criterion 1). The mocks draw
     the kid before and after the hop and leave the movement between to this design
-    (`docs/mocks/README.md`, departure 10). The kid moves in a straight line to the new spot
-    while rising and falling once, 0.45 m high, in 1 second: along the path for a hop, down to
+    (`docs/mocks/README.md`, departure 10). The kid walks with six alternating steps in 1.4 seconds, along the dotted ring between desks or directly to
     the seat for a sit (`docs/adr/0028`). Under reduced motion the kid fades out where it stands
     and in at the new spot, 200 ms in all, on its own copy of each material
     (`classroom/play-motion-and-sound`, `docs/adr/0029`).
@@ -247,3 +246,7 @@ picture, Home and World Map say so in words, and leaving the screen disposes eve
 a second, until the classroom draws at 30 or more.
 
 ![Sequence diagram for scaling the detail back](diagrams/sequence-scale-detail-back.png)
+
+### Production artwork
+
+The Blender cast includes vertex-painted faces and clothing plus individually animated arms and legs. A traveller follows the circular path between desks. The perspective classroom adds windows, shelves and a chalkboard. Duel frames its two players from across the desk. The overhead view keeps the tabletop open. See [the Blender sources](../../../../tools/blender/).

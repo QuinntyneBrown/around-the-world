@@ -68,7 +68,7 @@ flash card, duel, hop, room, code, host, classmates, sticker, passport, stamp.
 | 7 | The breakpoints are Tailwind's (640, 768, 1024, 1280). | 576, 768, 992 and 1200. | L1-015 names the five sizes. |
 | 8 | The selected kid, kind of maths, table, tour length and card speed are shown by colour. | Each also has a tick or a dot, and `aria-pressed`. | Colour is never the only carrier of a state (L2-051). |
 | 9 | Portraits and scenes load from a CDN, and fonts from Google Fonts. | They are files in `assets/`. | No network beyond localhost; fonts are bundled and self-hosted. |
-| 10 | On World Map each kid is a detailed walking figure (`Kid.tsx`). | Each is the simpler bean-bodied piece (`Bean.tsx`) with the kid's one accessory. | `AGENTS.md`: on the World Map each is a small bean-bodied character. The walk is an animation for the detailed design, not a mock. |
+| 10 | On World Map each kid is a detailed walking figure (`Kid.tsx`). | Each is the simpler bean-bodied piece (`Bean.tsx`) with the kid's one accessory. | `AGENTS.md`: on the World Map each is a small bean-bodied character. The live Blender cast follows this compact silhouette with articulated feet and arms. The traveller walks the dotted path. |
 | 11 | The losing line is a button inside the card. | The same words on a quiet pill that leads to World Map. | It is the only action after losing, and it must not look like a second answer. |
 | 12 | No dark theme. | A dark theme built from the same roles (a night classroom). | The mock set is themed through tokens in light and dark. Whether the game ships dark is an open question; the light theme is the design. |
 | 13 | The player list marks you by position. | "(you)" in words, and "You" in the standings with an outline. | L2-024, L2-034 (6). |

@@ -1,6 +1,6 @@
-import { type TourMove, type TourPlayer, type TourState } from '@atw/api';
+import { type ClassroomFigure, type TourMove, type TourPlayer, type TourState } from '@atw/api';
 import { type RoomKid, type StandingsItem } from '@atw/components';
-import { nextStop } from '@atw/domain';
+import { ClassroomStates, nextStop } from '@atw/domain';
 
 /**
  * The words and the pieces of World Map for a tour (docs/detailed-designs/tour/
@@ -90,21 +90,19 @@ export const MapWords = {
   },
 
   /** The kids in the room: each at their desk, the traveller on the path beside theirs. */
-  kids(tour: TourState): RoomKid[] {
-    const kids: RoomKid[] = [];
-    for (const player of tour.players) {
-      const seat = tour.desks.find((desk) => desk.holder === player.id);
-      const travelling = player.id === tour.traveller;
-      if (!seat && !travelling) continue;
-      kids.push({
-        kid: player.kid,
-        desk: seat?.desk ?? tour.travellerDesk,
-        travelling: !seat,
-        you: player.you,
-        name: player.name,
-      });
-    }
-    return kids;
+  kids(
+    tour: TourState,
+    figures: readonly ClassroomFigure[] = ClassroomStates.ofTour(tour).figures,
+  ): RoomKid[] {
+    return figures.map(({ id, kid, desk, travelling, from, you }) => ({
+      id,
+      kid,
+      desk,
+      travelling,
+      from,
+      you,
+      name: MapWords.player(tour, id).name,
+    }));
   },
 
   /** The standings' entries: the five kids, the device's player named "You" (L2-034 6, 11). */

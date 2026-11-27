@@ -230,7 +230,7 @@ export class DuelPage {
     return {
       country: desk.country,
       landmark: desk.landmark,
-      hop: `${kid} hops to desk ${hop.to} of ${duel.tourLength}`,
+      hop: `${kid} walks to desk ${hop.to} of ${duel.tourLength}`,
     };
   });
   protected readonly traveller = computed(() => this.player(this.duel()?.traveller, 'Travelling'));

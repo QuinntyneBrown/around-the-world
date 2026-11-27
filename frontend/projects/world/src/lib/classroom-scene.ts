@@ -1,5 +1,6 @@
 import { type ClassroomFigure, type ClassroomSpot, type ClassroomState } from '@atw/api';
 import {
+  type AnimationClip,
   Group,
   InstancedMesh,
   type Material,
@@ -18,6 +19,7 @@ import { deskAngle, deskPoint, RoomPlan, spotPoint } from './room-plan';
 export interface SceneTemplates {
   readonly room: Object3D;
   readonly cast: Object3D;
+  readonly walks?: ReadonlyMap<string, AnimationClip>;
 }
 
 /** The dots of the path round the ring. */
@@ -42,12 +44,13 @@ interface BuiltDesk {
  * rug, the dotted path and a ring of desks, one for each country of the tour with its landmark
  * on it (L2-036 criterion 1), and a `KidCharacter` for each figure. Each desk holder is at their
  * desk and the traveller beside a desk, on the path; the desk the traveller is at and the next
- * stop are lit (L2-034 criterion 1). A figure that moves between two states hops there.
+ * stop are lit (L2-034 criterion 1). A moving figure walks to its new spot.
  * Its parts are clones of the two scenes, which own every geometry; the scene owns only the
  * materials it makes (the lit desk top, the kids' colours).
  */
 export class ClassroomScene {
   readonly root = new Group();
+  private readonly interior: Object3D | null;
   private readonly desks = new Group();
   private readonly figures = new Map<string, KidCharacter>();
   private readonly deskTop: Material | null;
@@ -63,6 +66,8 @@ export class ClassroomScene {
     private readonly palette: Palette,
   ) {
     this.root.name = 'classroom';
+    this.interior = this.part(templates.room, 'classroom-interior');
+    if (this.interior) this.root.add(this.interior);
     for (const name of ['floor', 'rug']) {
       const part = this.part(templates.room, name);
       if (part) this.root.add(part);
@@ -148,9 +153,19 @@ export class ClassroomScene {
   update(seconds: number, still: boolean, facing: Vector3 | null): void {
     for (const figure of this.figures.values()) {
       figure.update(seconds, still);
+      if (figure.hopping && !still) continue;
       if (facing) figure.face(facing);
       else figure.root.rotation.y = 0;
     }
+  }
+
+  /** The classroom from inside faces its furnishings. The map shows the open tabletop. */
+  frameRoom(camera: Vector3 | null, closeUp = false): void {
+    if (!this.interior) return;
+    this.interior.visible = camera !== null;
+    if (camera) this.interior.rotation.y = closeUp ? Math.PI / 2 : Math.atan2(camera.x, camera.z);
+    const board = this.root.getObjectByName('floor');
+    if (board) board.visible = camera === null;
   }
 
   /** Applies a step of detail: blob shadows or a shadow map, and the small decorations. */
@@ -210,7 +225,12 @@ export class ClassroomScene {
       this.templates.cast.getObjectByName(`kid-${figure.kid}`) ??
       this.templates.cast.getObjectByName('kid-classmate');
     if (!template) throw new Error(`The cast has no kid-${figure.kid}`);
-    const kid = new KidCharacter(template, figure.kid, this.palette);
+    const kid = new KidCharacter(
+      template,
+      figure.kid,
+      this.palette,
+      this.templates.walks?.get(figure.kid),
+    );
     const blob = this.part(this.templates.room, 'shadow');
     if (blob) {
       blob.scale.setScalar(0.6);

@@ -8,7 +8,9 @@ import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { createGzip } from 'node:zlib';
 
-const root = resolve(import.meta.dirname, '../../dist/game/browser');
+const root = resolve(
+  process.env.ATW_BUILD_DIR ?? resolve(import.meta.dirname, '../../dist/game/browser'),
+);
 const port = Number(process.argv[2] ?? 4300);
 
 if (!existsSync(join(root, 'index.html'))) {

@@ -14,6 +14,16 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   projects: [
     {
+      name: 'game-plan',
+      testMatch: 'game-plan.sweep.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'magic-patterns',
+      testMatch: 'magic-patterns.sweep.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'responsive',
       testMatch: 'responsive.sweep.ts',
       use: { ...devices['Desktop Chrome'] },

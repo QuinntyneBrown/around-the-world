@@ -1,7 +1,9 @@
-import type { KidId } from '@atw/api';
+import type { ClassroomSpot, KidId } from '@atw/api';
 
 /** A kid on World Map: at their desk, or the traveller beside the desk on the path. */
 export interface RoomKid {
+  readonly id?: string;
+  readonly from?: ClassroomSpot | null;
   readonly kid: KidId | 'classmate';
   readonly desk: number;
   readonly travelling: boolean;
@@ -29,6 +31,8 @@ export interface PlacedDesk {
 }
 
 export interface PlacedKid {
+  readonly id: string;
+  readonly walk: string | null;
   readonly kid: KidId | 'classmate';
   readonly x: number;
   readonly y: number;
@@ -46,6 +50,8 @@ export interface PlacedPlaque {
 }
 
 export interface PlacedTag {
+  readonly id: string;
+  readonly walk: string | null;
   readonly kid: KidId;
   readonly name: string;
   readonly x: number;
@@ -104,14 +110,32 @@ export const RoomLayout = {
       ...deskAt(index + 1, DESK_Y),
       lit: index + 1 === plan.travellerDesk || index + 1 === plan.nextDesk,
     }));
-    const kids = plan.kids.map((kid) => {
+    const kids = plan.kids.map((kid, index) => {
       const at = kid.travelling
         ? deskAt(kid.desk, PATH_Y)
         : { x: desks[kid.desk - 1].x, y: desks[kid.desk - 1].y - SEAT_RISE };
-      return { ...kid, ...at, flip: at.x > CENTRE_X };
+      let walk: string | null = null;
+      if (kid.from) {
+        const start = deskAt(kid.from.desk, kid.from.travelling ? PATH_Y : DESK_Y - SEAT_RISE);
+        const arc = kid.travelling && kid.from.travelling;
+        const steps = (kid.desk - kid.from.desk + tourLength) % tourLength;
+        const segment = arc
+          ? `A ${RADIUS_X} ${RADIUS_Y} 0 ${steps > tourLength / 2 ? 1 : 0} 1`
+          : 'L';
+        walk = `path('M ${start.x - at.x} ${start.y - at.y} ${segment} 0 0')`;
+      }
+      return { ...kid, ...at, id: kid.id ?? String(index), walk, flip: at.x > CENTRE_X };
     });
     const drawn: Drawn[] = [
-      ...kids.map(({ kid, x, y, flip }) => ({ type: 'kid' as const, kid, x, y, flip })),
+      ...kids.map(({ id, kid, x, y, flip, walk }) => ({
+        type: 'kid' as const,
+        id,
+        kid,
+        x,
+        y,
+        flip,
+        walk,
+      })),
       ...desks.map((desk) => ({ type: 'desk' as const, ...desk })),
     ].sort((one, other) => one.y - other.y || (one.type === 'kid' ? -1 : 1));
 
@@ -135,6 +159,8 @@ export const RoomLayout = {
     for (const kid of kids) {
       if (kid.kid === 'classmate') continue;
       tags.push({
+        id: kid.id,
+        walk: kid.walk,
         kid: kid.kid,
         name: kid.name,
         x: kid.x,

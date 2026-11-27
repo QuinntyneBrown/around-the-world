@@ -60,7 +60,7 @@ export class WorldMapPage {
   });
   protected readonly kids = computed(() => {
     const tour = this.tour();
-    return tour ? MapWords.kids(tour) : [];
+    return tour ? MapWords.kids(tour, this.classroom()?.figures) : [];
   });
   protected readonly standings = computed(() => {
     const tour = this.tour();

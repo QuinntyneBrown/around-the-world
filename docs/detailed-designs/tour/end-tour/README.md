@@ -221,3 +221,5 @@ and releases the game's state. In a game with friends "Play again" returns the p
 room's Lobby (`rooms/decide-game-on-server`).
 
 ![Sequence diagram for leaving the Podium](diagrams/sequence-leave-podium.png)
+
+On desktop, the standings fill their column. The steps sit at its foot, level with the solo passport actions, as in the Podium frame (L2-035 criterion 9).

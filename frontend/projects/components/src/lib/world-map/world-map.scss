@@ -180,3 +180,21 @@
 .art-tag-text--you {
   fill: var(--palette-white);
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .world-map__walker {
+    offset-path: var(--travel-path);
+    offset-anchor: 0 0;
+    offset-position: 0 0;
+    offset-rotate: 0deg;
+    animation: walk-to-desk var(--duration-hop) linear both;
+  }
+}
+@keyframes walk-to-desk {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}

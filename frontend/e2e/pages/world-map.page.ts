@@ -103,6 +103,22 @@ export class WorldMapPage {
     throw new Error('Neither view of the room is shown');
   }
 
+  /** Sample the name tag on the map at departure and arrival using its browser animation. */
+  async travelOfYourTag(): Promise<{ duration: number; distance: number }> {
+    return this.page.locator('.art-tag--you').evaluate((tag) => {
+      const group = tag.parentElement as unknown as SVGGraphicsElement;
+      const walk = group.getAnimations()[0];
+      if (!walk) return { duration: 0, distance: 0 };
+      walk.pause();
+      walk.currentTime = 0;
+      const start = group.getCTM()!;
+      const duration = Number(walk.effect!.getComputedTiming().duration);
+      walk.currentTime = duration;
+      const end = group.getCTM()!;
+      return { duration, distance: Math.hypot(end.e - start.e, end.f - start.f) };
+    });
+  }
+
   /** Whether the page scrolls either way. */
   scrolls(): Promise<boolean> {
     return this.page.evaluate(() => {
