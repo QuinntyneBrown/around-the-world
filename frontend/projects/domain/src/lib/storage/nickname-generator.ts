@@ -1,4 +1,5 @@
 import { type Nickname } from '@atw/api';
+import { KIDS } from '../cast/kids';
 
 /** The adjectives of L2-014, in order: a nickname's `adjective` is an index into it. */
 export const ADJECTIVES = [
@@ -62,6 +63,17 @@ export class NicknameGenerator {
   /** The nickname as the words a child reads: "Speedy Otter". */
   words(nickname: Nickname): string {
     return `${ADJECTIVES[nickname.adjective]} ${ANIMALS[nickname.animal]}`;
+  }
+
+  /**
+   * How a player of a room is named (L2-040 criterion 3): their nickname's words, built from the
+   * lists by its two indexes; or, when what arrived is not two indexes inside the lists, their
+   * kid's name, so nothing of what arrived is ever shown. A kid outside the cast is named as the
+   * first kid, as the Lobby draws it.
+   */
+  nameOf(player: { readonly kid: string; readonly nickname: unknown }): string {
+    if (this.isValid(player.nickname)) return this.words(player.nickname);
+    return (KIDS.find((kid) => kid.id === player.kid) ?? KIDS[0]).name;
   }
 
   private pick(size: number): number {

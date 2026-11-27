@@ -38,8 +38,8 @@ export interface Seen {
   readonly pillAtMs: number | null;
 }
 
-/** The words for a player of the room, from their nickname's indexes. */
-export type NameOf = (nickname: { readonly adjective: number; readonly animal: number }) => string;
+/** The words for a player of the room, from their nickname's indexes or else their kid. */
+export type NameOf = (player: { readonly kid: string; readonly nickname: unknown }) => string;
 
 /**
  * What the screens show of a game with friends (docs/adr/0034-playing-with-friends-on-the-device.md):
@@ -118,7 +118,7 @@ export const FriendsView = {
           ? 'You'
           : player.kid === 'classmate' || !player.nickname
             ? 'Classmate'
-            : nameOf(player.nickname),
+            : nameOf(player),
       kid: player.kid,
       you: player.id === you,
     }));

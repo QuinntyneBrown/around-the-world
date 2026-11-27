@@ -240,6 +240,40 @@ test.describe('Nothing a child types or says leaves the device', () => {
     await expect.poll(() => voice.listening()).toBe(0);
     expect(await microphone.openStreams()).toBe(0);
   });
+
+  test('a nickname that is not two list indexes is never shown: the kid’s name stands in', async ({
+    page,
+    device,
+    backend,
+    roomHub,
+  }) => {
+    // Given a room whose backend sends Cosmic Llama's nickname as markup, not as two indexes
+    await device.keeps(PIP_RECORD);
+    const markup = '<img src=x onerror="window.__atwBroken=1">Sneaky';
+    // The fixtures' types hold indexes, so the markup is forced past them, as a broken backend would.
+    const broken = { ...NIA, nickname: { adjective: markup, animal: 99 } } as unknown as typeof NIA;
+    backend.answer('POST', '/api/rooms/join', joinedRoom('BOLT', [HOST, broken, PIP], PIP));
+    roomHub.serves(roomState('BOLT', [HOST, broken, PIP]));
+
+    // When Brave Narwhal joins and the Lobby shows the class
+    const room = new RoomPage(page);
+    await room.open();
+    await room.type('BOLT');
+    await room.chooseJoin();
+    const lobby = new LobbyPage(page);
+    await expect(lobby.count).toHaveText('3/8');
+
+    // Then that player is shown by their kid's name, and nothing of what was sent is shown or
+    // run (L2-040 criterion 3)
+    await expect(lobby.player(1).name).toHaveText('Nia');
+    await expect(lobby.player(1).kid).toHaveText('as Nia');
+    const words = await new AppShellPage(page).words();
+    for (const word of ['Sneaky', 'undefined', 'onerror']) expect(words).not.toContain(word);
+    expect(await page.evaluate(() => 'atwBroken' in window || '__atwBroken' in window)).toBe(false);
+    // And the others keep their nicknames, built from the lists by their indexes
+    await expect(lobby.player(0).name).toHaveText('Speedy Otter');
+    await expect(lobby.player(2).name).toHaveText('Brave Narwhal (you)');
+  });
 });
 
 test.describe('No account, field, advert or purchase', () => {

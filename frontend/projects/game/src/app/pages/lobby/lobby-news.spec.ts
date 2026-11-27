@@ -2,8 +2,7 @@ import { type RoomPlayer, type RoomState } from '@atw/api';
 import { keepNewest, lobbyNews, type LobbyMessage } from './lobby-news';
 
 const words = {
-  nickname: ({ adjective, animal }: { adjective: number; animal: number }) =>
-    `Nick ${adjective}-${animal}`,
+  nickname: ({ nickname: { adjective, animal } }: RoomPlayer) => `Nick ${adjective}-${animal}`,
   kidName: (kid: string) => kid.toUpperCase(),
 };
 

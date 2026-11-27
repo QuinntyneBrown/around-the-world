@@ -104,7 +104,7 @@ export class LobbyPage {
         kid: player.kid,
         kidName: kid.name,
         picture: kid.picture,
-        nickname: this.nicknames.words(player.nickname),
+        nickname: this.nicknames.nameOf(player),
         host: player.host,
         you: player.id === this.session.entry.playerId,
       };
@@ -126,7 +126,7 @@ export class LobbyPage {
       const shown = previous?.value ?? [];
       if (!room) return shown;
       const news = lobbyNews(previous?.source ?? null, room, this.session.entry.playerId, {
-        nickname: (nickname) => this.nicknames.words(nickname),
+        nickname: (player) => this.nicknames.nameOf(player),
         kidName: (kid) => KIDS.find((candidate) => candidate.id === kid)?.name ?? kid,
       });
       return news.length === 0
