@@ -1,4 +1,5 @@
 import {
+  AnimationClip,
   type Material,
   type Mesh,
   MeshLambertMaterial,
@@ -12,8 +13,7 @@ import { releaseTree } from './release';
 
 /**
  * Where the classroom's scenes are, on the game's own origin (L2-036 criterion 5): glTF binary
- * files exported from Blender, or the stand-in built from primitives until they are in the
- * repository (docs/adr/0028). Relative to the document, so they follow the game's base href.
+ * files exported from Blender (docs/adr/0028). Relative to the document, so they follow the game's base href.
  */
 export const SCENE_PATHS = {
   room: 'classroom/classroom.glb',
@@ -39,7 +39,18 @@ export async function loadScenes(palette: Palette, signal: AbortSignal): Promise
     throw new Error('A scene of the classroom did not load');
   }
   const [room, cast] = scenes.map((scene) => cheapen(scene, palette));
-  return { room, cast };
+  const walks = new Map<string, AnimationClip>();
+  const castFile = loaded[1];
+  if (castFile.status === 'fulfilled') {
+    for (const root of cast.children) {
+      const kid = root.name.replace(/^kid-/, '');
+      const tracks = castFile.value.animations.flatMap((clip) =>
+        clip.tracks.filter((track) => track.name.startsWith(kid + '_')),
+      );
+      if (tracks.length) walks.set(kid, new AnimationClip('walk', -1, tracks));
+    }
+  }
+  return { room, cast, walks };
 }
 
 /** Swaps every material for a Lambert one of the same name and colour, and disposes the old. */
@@ -54,6 +65,8 @@ function cheapen(scene: Object3D, palette: Palette): Object3D {
       const lambert = new MeshLambertMaterial({
         name: old.name,
         color: old.color,
+        map: old.map,
+        vertexColors: old.vertexColors,
         transparent: old.transparent,
         opacity: old.opacity,
         depthWrite: !old.transparent,

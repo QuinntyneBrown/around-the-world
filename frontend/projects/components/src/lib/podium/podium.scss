@@ -1,6 +1,8 @@
 // The podium block of docs/design-system/assets/components.css: the headline, the cheer and the
 // steps. The list is in place order and drawn 2nd, 1st, 3rd through `order`. The places rise in
 // turn, third, second, first, each in under 300 ms; reduced motion fades them.
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
 }
@@ -101,7 +103,7 @@
   margin-top: var(--space-1);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .podium__headline {
     font: var(--text-display);
   }
@@ -133,14 +135,14 @@
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   .podium__headline,
   .podium__cheer {
     text-align: left;
   }
 }
 
-@media (min-width: 75rem) {
+@include bp.from(xl) {
   .podium__headline {
     font: var(--text-hero);
   }

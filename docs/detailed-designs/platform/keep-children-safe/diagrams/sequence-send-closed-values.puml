@@ -52,8 +52,8 @@ else every value valid
   handler --> controller : RoomState with each player's indexes, and the connection token (L2-043 criterion 1)
   controller --> rooms : RoomState
   rooms --> page : RoomState
-  page -> nick : textOf(indexes) for each player
-  nick --> page : Text from the fixed lists
+  page -> nick : nameOf(player) for each player
+  nick --> page : Text from the fixed lists, or the kid's name\nwhen the nickname is not two indexes inside them
   page -> view : Bind text by interpolation (L2-040 criterion 3)
 end
 == A duel ==

@@ -11,63 +11,54 @@ skinparam class {
 }
 title Class structure — Show every screen to everyone
 
-enum WidthBand {
-  xs (below 576 px)
-  sm (from 576 px)
-  md (from 768 px)
-  lg (from 992 px)
-  xl (from 1200 px)
-}
-interface Viewport {
-  +band: signal of WidthBand
-  +short: signal of boolean
-  +atLeast(band: WidthBand): boolean
-}
-class MediaQueryViewport {
-  -queries: MediaQueryList[]
-  +band: signal of WidthBand
-  +short: signal of boolean
-  +atLeast(band: WidthBand): boolean
-  -release()
-}
 class DuelPage {
-  +showsWorldRing: computed boolean
-  +showsDeskInHud: computed boolean
   +announcement: computed string
+  +padShown: computed boolean
+  +notice: signal of ConnectionNotice
 }
-class ChoiceButton {
-  +pressed: input boolean
-  +disabled: input boolean
+class "DuelWords" as DuelWords <<helper>> {
+  +announcement(duel: DuelState): string
+  +line(duel: DuelState): CardLine
+}
+class "ChoiceGroup" as ChoiceGroup <<ToggleChips, TableKeys, Choices, Segmented, KidPicker>> {
+  +options: input
+  +on: input
   +chosen: output
 }
-class LiveRegion {
-  +message: input string
-  +politeness: input polite | assertive
+class Alert {
+  +tone: input AlertTone
+  +urgent: input boolean
 }
-class AlertMessage {
-  +message: input string
+class SkipLink {
+  +target: input string
+  -skip(event): focuses the target
+}
+class CodeField {
+  +value: input string
+  +entered: output
+  -enter(field): reads the field itself
 }
 class NumberPad {
   +disabled: input boolean
-  +digit: output number
-  +delete: output
-  +go: output
+  +keyPress: output
 }
 class WorldRing {
-  +tour: input TourState
+  +tourLength: input number
+  +desk: input number
 }
-class "messageForCode" as messageForCode <<function>> {
-  +(request: RefusedRequest, error: ApiError): ErrorWords
+class "joinRefusal / roomRefusal" as refusal <<function>> {
+  +(error): Refusal and its words
 }
-class "duelAnnouncement" as duelAnnouncement <<function>> {
-  +(duel: DuelState): string
+class "breakpoints" as bp <<SCSS partial>> {
+  +from(band, height?)
+  +below(band, height?)
+  +between(from, below)
+  +height(low | short)
+  +narrow-phone
 }
-Viewport <|.. MediaQueryViewport
-Viewport --> WidthBand
-DuelPage ..> Viewport : reads band and short
-DuelPage ..> duelAnnouncement : computes with
-DuelPage --> LiveRegion : binds announcement
+DuelPage ..> DuelWords : computes with
 DuelPage --> NumberPad
 DuelPage --> WorldRing : from md, when not short
-AlertMessage <.. messageForCode : words for
+DuelPage ..> bp : lays out by
+Alert <.. refusal : words for
 @enduml

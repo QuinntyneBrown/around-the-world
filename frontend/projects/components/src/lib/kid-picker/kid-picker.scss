@@ -1,4 +1,6 @@
 // The kid-picker block of docs/design-system/assets/components.css.
+
+@use 'breakpoints' as bp;
 .kid-picker {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -47,7 +49,7 @@
   display: contents;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .kid-picker {
     gap: var(--space-4);
   }

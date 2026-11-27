@@ -1,6 +1,5 @@
 // Builds the stand-in for the classroom's Blender exports (docs/adr/0028) from three.js
-// primitives, in the same format and at the same paths: glTF binary files in
-// projects/game/public/classroom/. Run from frontend/: `npm run classroom:stand-in`.
+// primitives. The scratch glTF files go to .cache/classroom-stand-in/. Run from frontend/: `npm run classroom:stand-in`.
 //
 // - classroom.glb: `floor`, `rug`, `path-dot`, `desk`, `shadow` and one `landmark-<country>`
 //   for each of the 24 countries of the tour (domain's tour/countries.ts).
@@ -16,7 +15,10 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
-const out = join(dirname(fileURLToPath(import.meta.url)), '../projects/game/public/classroom');
+const roomBase = process.argv[2] === '--room-base';
+const out = roomBase
+  ? process.argv[3]
+  : join(dirname(fileURLToPath(import.meta.url)), '../../.cache/classroom-stand-in');
 
 // GLTFExporter reads its binary output with the browser's FileReader.
 globalThis.FileReader ??= class {
@@ -440,4 +442,4 @@ async function write(name, nodes) {
 await write('classroom.glb', room());
 materials.clear();
 geometries.clear();
-await write('cast.glb', cast());
+if (!roomBase) await write('cast.glb', cast());

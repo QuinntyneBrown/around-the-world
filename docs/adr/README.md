@@ -20,7 +20,7 @@ requirements and designs leave.
 | [0011](0011-player-record-on-the-device.md) | The player's record is one versioned JSON entry in `localStorage` | Accepted |
 | [0012](0012-interactive-components-on-native-elements.md) | A design-system component that is a link or a button sits on the native element | Accepted |
 | [0013](0013-pictures-arriving-and-failing.md) | Home's and Pick Your Kid's loading and error states follow their pictures | Accepted |
-| [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted; `initial` warning superseded by 0021 |
+| [0014](0014-initial-budget-with-the-first-routes.md) | The initial budget of `game` once its first routes are lazy | Accepted; `initial` warning superseded by 0021; `anyComponentStyle` superseded by 0038 |
 | [0015](0015-critical-path-in-ci.md) | CI runs the behaviour specs tagged `@critical` | Accepted |
 | [0016](0016-solo-game-route-group.md) | The solo game is a lazy route group that holds Game Setup and the game screens | Accepted |
 | [0017](0017-game-setup-rules-and-states.md) | Game Setup's rules, how the setup is kept, and the states a solo game reaches | Accepted |
@@ -38,9 +38,12 @@ requirements and designs leave.
 | [0029](0029-motion-and-sound.md) | Motion and sound: the sounds' source, the first touch, where the mute is kept, the moments and the quick fade | Accepted |
 | [0030](0030-classmates-with-the-on-device-model.md) | Classmates with the on-device model: readiness, the sessions, the prompts, the decision and its deadline | Accepted |
 | [0031](0031-making-a-room.md) | Making a room: the code, the token, the rate limit, the room's life and Solo Or Friends' states | Accepted; `initial` warning and the redirect of a room's address superseded by 0032 |
-| [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted; a lost connection in the Lobby superseded by 0036; the skipped negotiation and where the hub reads the token superseded by 0037 |
+| [0032](0032-joining-a-room-and-the-lobby.md) | Joining a room and the Lobby: the join, the room hub, the room's link, Room's states and the Lobby's messages | Accepted; a lost connection in the Lobby superseded by 0036; the skipped negotiation and where the hub reads the token superseded by 0037; `initial` budget superseded by 0038 |
 | [0033](0033-deciding-a-game-on-the-server.md) | Deciding a game with friends on the server: the order of answers, the clock, the class, the shared rules and the room's life | Accepted |
 | [0034](0034-playing-with-friends-on-the-device.md) | Playing with friends on the device: the room group's screens, the game the device shows, Game Setup's Save, Mic Check, Back and the Podium | Accepted; where a player not in the duel watches it amended by 0035 |
 | [0035](0035-watching-a-duel-and-stickers.md) | Watching a duel and stickers: where a watching player is, the six ids, the picture, the bound and the rate | Accepted |
 | [0036](0036-coming-back-after-a-lost-connection.md) | Coming back after a lost connection: the 30 seconds, the retries, the removed player's desk, the banners and the overlay | Accepted |
 | [0037](0037-running-the-backend-deployed.md) | Running the backend deployed: Azure SignalR Service, the hosting platform, telemetry, health, the limits and the failures | Accepted |
+| [0038](0038-opening-fast-and-staying-smooth.md) | Opening fast and staying smooth: the profiles, the picture first, the way on, CDK Dialog, the measurements and the budgets | Accepted |
+| [0039](0039-every-screen-for-every-child.md) | Every screen for every child: the sweeps, axe-core, named breakpoints, Duel on a short phone and the fixes the sweeps found | Accepted |
+| [0040](0040-keeping-children-safe.md) | Keeping children safe: the Content Security Policy, a nickname that cannot be built, and the audits | Accepted |

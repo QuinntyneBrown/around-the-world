@@ -2,6 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Only the game's own origin, and in a deployed system the backend's Azure SignalR
+         Service, may be asked for anything (L2-041, docs/adr/0040-keeping-children-safe.md). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; media-src 'self'; connect-src 'self' https://*.service.signalr.net wss://*.service.signalr.net; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
     <title>Around the World</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

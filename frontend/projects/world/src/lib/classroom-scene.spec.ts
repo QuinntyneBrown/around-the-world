@@ -4,7 +4,7 @@ import { ClassroomScene, landmarkName, type SceneTemplates } from './classroom-s
 import { HOP_SECONDS } from './kid-character';
 import { Palette } from './palette';
 import { QUALITY_STEPS } from './quality-scaler';
-import { planOf } from './room-plan';
+import { planOf, RoomPlan } from './room-plan';
 
 const COUNTRIES = ['France', 'Egypt', 'Japan', 'UK', 'Italy', 'USA'];
 
@@ -145,7 +145,7 @@ describe('ClassroomScene', () => {
     expect(scene.figure('a')!.animation).toBe('soClose');
   });
 
-  it('hops a figure from where it was along the path, and it arrives after the hop (L2-034 3)', () => {
+  it('walks along the dotted ring with its root on the floor and arrives at the next desk (L2-034 3)', () => {
     const scene = new ClassroomScene(templates(), palette);
     scene.show(
       stateOf([
@@ -164,7 +164,10 @@ describe('ClassroomScene', () => {
     ).toBeLessThan(0.001);
     scene.update(HOP_SECONDS / 2, false, null);
     expect(traveller.animation).toBe('hop');
-    expect(traveller.position.y).toBeGreaterThan(0.3);
+    expect(traveller.position.y).toBe(0);
+    expect(Math.hypot(traveller.position.x, traveller.position.z - RoomPlan.pathShift)).toBeCloseTo(
+      RoomPlan.ringRadius,
+    );
     scene.update(HOP_SECONDS / 2, false, null);
     expect(traveller.position.distanceTo(target)).toBeLessThan(0.001);
     expect(traveller.animation).toBe('idle');

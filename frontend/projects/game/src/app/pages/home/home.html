@@ -8,12 +8,16 @@
         <img class="home__picture" [src]="classroomPicture" alt="" />
       }
     }
-    <canvas
-      class="home__canvas"
-      [class.home__canvas--drawn]="scene() === 'drawn'"
-      [atwClassroom]="atRest"
-      (status)="scene.set($event)"
-    ></canvas>
+    @if (classroom() !== 'loading') {
+      <!-- The 3D classroom is fetched once the still picture is in, so the picture and Play
+           come first (L2-047 criterion 4, docs/adr/0038). -->
+      <canvas
+        class="home__canvas"
+        [class.home__canvas--drawn]="scene() === 'drawn'"
+        [atwClassroom]="atRest"
+        (status)="scene.set($event)"
+      ></canvas>
+    }
     <div class="home__corner">
       <button
         atw-icon-button
@@ -40,7 +44,7 @@
         the <span class="home__title-accent">World</span>
       </h1>
       <p class="home__lead">
-        Shout the answer first. Hop to the next desk. Make it all the way round.
+        Shout the answer first. Walk to the next desk. Make it all the way round.
       </p>
       <a atw-toy-button size="xl" class="home__play" [routerLink]="playLink()">{{ playLabel() }}</a>
     </div>

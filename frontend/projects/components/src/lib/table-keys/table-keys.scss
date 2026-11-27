@@ -1,4 +1,6 @@
 // The table-grid and table-key blocks of docs/design-system/assets/components.css.
+
+@use 'breakpoints' as bp;
 :host {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -49,7 +51,7 @@
   }
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-3);

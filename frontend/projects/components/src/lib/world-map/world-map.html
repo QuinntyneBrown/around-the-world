@@ -36,7 +36,7 @@
         <ellipse class="art-path" cx="600" cy="440" rx="420" ry="210" />
         @for (
           item of layout().drawn;
-          track item.type + (item.type === 'desk' ? item.desk : item.kid)
+          track item.type + (item.type === 'desk' ? item.desk : item.id)
         ) {
           @if (item.type === 'desk') {
             <g [attr.transform]="'translate(' + item.x + ' ' + item.y + ')'">
@@ -51,18 +51,14 @@
               />
             </g>
           } @else {
-            <g
-              [attr.transform]="
-                'translate(' +
-                item.x +
-                ' ' +
-                item.y +
-                ') scale(' +
-                (item.flip ? -1.2 : 1.2) +
-                ' 1.2)'
-              "
-            >
-              <g atw-bean-parts [kid]="item.kid"></g>
+            <g [attr.transform]="'translate(' + item.x + ' ' + item.y + ')'">
+              <g [class.world-map__walker]="item.walk" [style.--travel-path]="item.walk">
+                <g
+                  atw-bean-parts
+                  [kid]="item.kid"
+                  [attr.transform]="'scale(' + (item.flip ? -1.2 : 1.2) + ' 1.2)'"
+                />
+              </g>
             </g>
           }
         }
@@ -84,18 +80,22 @@
           </text>
         </g>
       }
-      @for (tag of layout().tags; track tag.kid) {
+      @for (tag of layout().tags; track tag.id) {
         <g [attr.data-kid]="tag.kid" [attr.transform]="'translate(' + tag.x + ' ' + tag.y + ')'">
-          <rect
-            class="art-tag"
-            [class.art-tag--you]="tag.you"
-            [attr.x]="-tag.width / 2"
-            y="-14"
-            [attr.width]="tag.width"
-            height="26"
-            rx="13"
-          />
-          <text class="art-tag-text" [class.art-tag-text--you]="tag.you" y="5">{{ tag.name }}</text>
+          <g [class.world-map__walker]="tag.walk" [style.--travel-path]="tag.walk">
+            <rect
+              class="art-tag"
+              [class.art-tag--you]="tag.you"
+              [attr.x]="-tag.width / 2"
+              y="-14"
+              [attr.width]="tag.width"
+              height="26"
+              rx="13"
+            />
+            <text class="art-tag-text" [class.art-tag-text--you]="tag.you" y="5">
+              {{ tag.name }}
+            </text>
+          </g>
         </g>
       }
     </g>

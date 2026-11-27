@@ -67,7 +67,7 @@ export interface ClassroomRenderer {
    */
   mount(canvas: HTMLCanvasElement): Promise<void>;
   /** Shows the state in the view; a figure that has moved since the last state hops there. */
-  show(state: ClassroomState, view: ClassroomView): void;
+  show(state: ClassroomState, view: ClassroomView, elapsedMs?: number): void;
   /**
    * Stops the animation loop and disposes every geometry, material, texture, render target and
    * the renderer itself (L2-048 criterion 3). A `mount` in progress is abandoned.

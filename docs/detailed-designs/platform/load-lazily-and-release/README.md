@@ -31,16 +31,21 @@ fallback belong to `docs/detailed-designs/classroom/`, the voice session to
 
 ## Description
 
-The slice is not built yet. The design introduces the parts below.
+Journeys 01 to 17 built most of the parts below as each screen arrived; journey 18 checked
+every screen against them, closed the gaps and wrote the measurements
+(`docs/adr/0038-opening-fast-and-staying-smooth.md`).
 
 **The budget (`L2-047` criterion 1).**
 
 - **`angular.json` budgets** — the production configuration of `game` declares a budget of type
   `initial` with a `maximumError`. A build whose initial bundle exceeds it fails. CI runs the
   production build, so a change that grows the initial bundle past the budget does not merge.
-  The budgets are 225 kB (warning) and 250 kB (error) for the `initial` bundle, and 4 kB and
-  8 kB for `anyComponentStyle`, measured raw (`docs/adr/0008-bundle-budgets.md`). A change that
-  raises one shall state its reason.
+  The budgets are 275 kB (warning) and 276 kB (error) for the `initial` bundle, 10 kB and
+  11 kB for Home's own chunk (`bundle` `home`), and 3.5 kB and 4 kB for `anyComponentStyle`,
+  measured raw, each within about 2 kB of what the build reaches (`docs/adr/0038`). A change
+  that raises one shall state its reason in a record.
+- **Compression** — the host that serves `game` sends text compressed with gzip or Brotli
+  (`docs/operations/settings.md`); the initial bundle is about 72 kB on the wire.
 
 **A lazy chunk per screen (`L2-047` criterion 2).**
 
@@ -63,7 +68,12 @@ The slice is not built yet. The design introduces the parts below.
 - **Three.js and the renderer** — the `world` library is reached only through a dynamic
   `import('@atw/world')`. The import runs when the classroom is first drawn, after the screen's
   interface is usable (`L2-036` criterion 2). A still picture stands in until it arrives. On
-  Home the picture and "Play" are ready first. Home, Duel and World Map are the only screens
+  Home the picture and "Play" are ready first: when the game opens at Home's address, `main.ts`
+  asks for the picture as the game starts (`askForHomePicture`), and Home draws its canvas, and
+  so starts the import, only once the picture has come or failed (`docs/adr/0038`).
+- **The way on** — once its picture is in, Home fetches the code of Pick Your Kid and Solo Or
+  Friends without opening them (`warmTheWayOn`), and Solo Or Friends fetches the solo game's
+  (`warmSoloGame`), so the choices on the way to the first duel download no code. Home, Duel and World Map are the only screens
   that show the classroom (`L2-036` criterion 6), so no other screen starts the import.
 - **The SignalR client** — `SignalRRoomConnection`, the implementation of `RoomConnection`, and
   the SignalR package it uses are reached only through the `ROOM_CONNECTION` binding of the
@@ -81,8 +91,16 @@ The slice is not built yet. The design introduces the parts below.
   Angular's `HttpClient`, even bound only by a lazy route, moved 25 kB into the initial bundle
   (`docs/adr/0031-making-a-room.md`).
 
-How the `api` and `domain` libraries expose `SignalRRoomConnection` and `classmates/` as
-separately importable entry points is `<TO SUPPLY>`.
+The `api` and `domain` libraries have no secondary entry points. Each exports from its public
+API a loader whose `import()` of a module inside the library makes the split:
+`SignalRRoomConnection` imports `@microsoft/signalr` with `import()` when it first connects and is
+bound only by the friends route group, and `loadClassmateAgent` and `LazyClassmateModel` import
+the classmates' agent and the model's session the same way (`docs/adr/0038`).
+
+**The dialogs stay on CDK Dialog.** The framework code CDK Dialog needs is placed in `main`
+(14.55 kB, 3.9 kB transferred) whichever lazy chunk opens a dialog. It costs about 40 ms of
+Home's Largest Contentful Paint on the phone profile, which leaves every target met, so the
+native `<dialog>` is not used (`docs/adr/0038`).
 
 **Teardown (`L2-048` criteria 1 to 3).** Each owner registers its teardown with `DestroyRef`.
 A subscription uses `takeUntilDestroyed`. A resource has one of three owners: a page, a tour or
@@ -123,31 +141,32 @@ game's resources stay.
 
 **The stable heap (`L2-048` criterion 4).**
 
-- **Heap check** — a Playwright spec enters and leaves a screen with the classroom 20 times,
-  forces garbage collection, and compares the heap with its size after the first time. The
-  check fails above 10%. Like the visual and accessibility sweeps, it runs only when a person
-  asks.
+- **Heap checks** — `frontend/e2e/measure/heap.spec.ts` enters and leaves Home with its
+  classroom 20 times, and plays 20 duels of a 24-desk tour, each leaving Duel for World Map and
+  coming back with the cast. After garbage collection it reads the heap from a heap snapshot,
+  compiled code left out, and fails above 10% over its size after the first time. The same
+  tour measures Duel's frame rate at the 20th duel against the first (`L2-049` criterion 4).
+  Like the visual and accessibility sweeps, they run only when a person asks
+  (`npm run build && npm run e2e:measure`), never in `verify.mjs` or CI. Journey 18 measured
+  4.9 to 5.5% for Home and 2.4 to 3.0% for Duel and World Map over two runs.
 
-**Fixed-size buffers (`L2-048` criterion 5).**
+**Fixed limits (`L2-048` criterion 5).**
 
-- **`BoundedBuffer<T>`** — helper in `domain`'s `tour/` with a fixed capacity. Pushing at
-  capacity drops the oldest item.
-- **Duels played** — `SoloGame` and `FriendsGame` keep the duels played in a `BoundedBuffer`.
-  `Standings` holds no more than one entry for each desk and `Passport` one stamp for each
-  desk, so each is bounded by the tour's 24 desks.
+- **Duels played** — none is kept once decided. `SoloGame` holds only the duel in play and the
+  timers it set, cancelled when it is decided; `FriendsGame` holds only the last game state the
+  server sent. `Standings` holds one entry for each player and `Passport` one stamp for each
+  desk, so each is bounded by the tour's 24 desks. No general bounded buffer is needed.
 - **A new tour** — "Play again" clears the duels played, the stickers received, the positions
   and the passport, so a second tour starts from the same memory as the first. In a solo game
   the new tour starts at once. In a game with friends the players first return to the room's
   Lobby (`L2-035` criterion 3).
-- **Stickers received** — `FriendsGame` keeps the stickers received in a `BoundedBuffer`. A
-  sticker is removed about 2 seconds after it is shown (`L2-028` criterion 3). Stickers that
-  arrive close together stack, newest at the bottom (`L2-028` criterion 7); the mocks stack
-  three.
+- **Stickers received** — `FriendsGame` keeps the stickers received with `StickerBuffer`:
+  three at most, a fourth dropping the oldest, each removed 2 seconds of the game's clock after
+  it is shown (`L2-028` criteria 3 and 7, `docs/adr/0035`).
 - **Positions** — a map keyed by player. A new position replaces the old one, so the map never
   holds more entries than the tour has desks.
 
-The capacity of the duels buffer and of the stickers buffer is `<TO SUPPLY>`: `L2-048`
-criterion 5 requires a fixed limit and states no number.
+The limits are therefore one duel in play and three stickers (`docs/adr/0038`).
 
 **The timing targets (`L2-047` criterion 4, `L2-049`).**
 
@@ -164,8 +183,13 @@ Whether the 50 ms target holds depends on the room store's engine, Azure SQL Dat
 (`docs/adr/0009-health-and-migrations.md`), and is measured from the histogram
 `atw.request.duration` by the load test that confirms the service tier
 (`docs/adr/0037-running-the-backend-deployed.md`). The
-device and network profile that stand for "a mid-range phone on a 4G connection" in a
-measurement are `<TO SUPPLY>`.
+device and network that stand for "a mid-range phone on a 4G connection" are Lighthouse's
+mobile profile, applied through the DevTools protocol: 1.6 Mbit/s down, 0.75 Mbit/s up, 150 ms
+of delay, the processor four times slower, 412 by 915 CSS pixels with touch. "A typical school
+connection" is 10 Mbit/s down, 5 Mbit/s up and 40 ms (`docs/adr/0038`). Journey 18 measured
+Home's Largest Contentful Paint at about 2.0 seconds, "Play" responding in at most 40 ms, a
+digit showing in at most 48 ms, and the first flash card at about 1.4 seconds after opening on
+the school connection; `frontend/e2e/specs/play-fast-on-any-device.spec.ts` checks each.
 
 The slice changes no screen's layout. What it states about a screen follows the mocks: the
 `loading` state of each of the ten pages in `docs/mocks/pages/`, `docs/mocks/pages/home/`
@@ -218,7 +242,8 @@ route. `SoloGame` imports the classmates' code and never asks for `ROOM_CONNECTI
 
 ### Class structure
 
-`SoloGame` and `FriendsGame` realize `GameSession` and own their `BoundedBuffer` instances.
+`SoloGame` and `FriendsGame` realize `GameSession`. Each holds one duel at most, and
+`FriendsGame` keeps the stickers received with `StickerBuffer`, three at most.
 Each contract that acquires a resource declares the method that releases it: `stop()`,
 `close()`, `dispose()` and `destroy()`.
 
@@ -226,8 +251,9 @@ Each contract that acquires a resource declares the method that releases it: `st
 
 ### Behaviour — load a chunk only when it is needed
 
-The browser downloads the initial chunks, then the Home chunk, then the `world` chunk once the
-interface is drawn. A child with no kid kept on the device passes Pick Your Kid; "Play" takes
+The browser downloads the initial chunks and, at Home's address, Home's still picture, then the
+Home chunk, then the `world` chunk and the chunks of Pick Your Kid and Solo Or Friends once the
+picture is in. A child with no kid kept on the device passes Pick Your Kid; "Play" takes
 any other child to Solo Or Friends (`L2-030` criterion 1). A solo game imports the classmates'
 model code and never requests the SignalR client. A game with friends imports the SignalR client
 when its route group is entered. This behaviour has no backend part, so the diagram shows
@@ -240,9 +266,9 @@ frontend boxes only.
 After each decided duel `DuelPage` is destroyed for World Map: speech recognition stops, the
 microphone's stream closes and the renderer is disposed, while the model sessions and the
 SignalR connection are kept. When a solo tour ends, `SoloGame` destroys its model sessions.
-"Play again" clears the buffers; in a game with friends it returns the players to the Lobby with
+"Play again" drops the ended tour and the stickers; in a game with friends it returns the players to the Lobby with
 the connection still open. When the child leaves for Home, the game route's injector is
-destroyed: the buffers are cleared, any model session still open is destroyed, and the SignalR
+destroyed: the duel in play, the stickers and the positions go with it, any model session still open is destroyed, and the SignalR
 connection of a game with friends is closed.
 
 ![Sequence diagram for releasing everything when a game is left](diagrams/sequence-release-on-leave.png)

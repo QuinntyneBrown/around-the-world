@@ -1,4 +1,9 @@
-<atw-screen [fill]="true" class="duel">
+<atw-screen
+  [fill]="true"
+  class="duel"
+  [class.duel--banner]="!!notice()"
+  [class.duel--pad]="padShown()"
+>
   <img class="duel__scene" src="img/scene-duel.jpg" alt="" />
   <canvas
     class="duel__canvas"
@@ -90,7 +95,7 @@
           </atw-flash-card>
         }
       }
-      @if (open() && !byVoice() && !watching() && live()) {
+      @if (padShown()) {
         <atw-number-pad [disabled]="duel.frozen" (keyPress)="press($event)" />
       }
     </main>

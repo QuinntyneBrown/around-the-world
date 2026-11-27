@@ -7,7 +7,7 @@ traveller duels a desk holder over one flash card, and the traveller who wins ho
 desk. This feature is how the game feels at those moments: the hop is the reward, losing a
 desk is gentle, and every sound can be muted.
 
-- **hop** — move of the traveller to the next desk after winning a duel: a passport stamp lands on Duel, and the kid then hops along the path on World Map
+- **hop** — move of the traveller to the next desk after winning a duel: a passport stamp lands on Duel, and the kid then walks six alternating steps with their name tag along the path on World Map
 - **shake** — one short side-to-side movement of the flash card after a wrong answer, or of the four boxes of the code on Room after a code is refused
 - **card flip** — way a new flash card appears
 - **"so close"** — reaction of a kid who loses a duel
@@ -94,7 +94,7 @@ What plays at each moment:
 | A wrong answer | Duel | none | the flash card shakes once, is outlined and reads "Not {answer}! Frozen for a sec…" (`L2-004` criterion 5) | no shake; the card fades back in 200 ms, with the outline and the words |
 | The device's player's right answer (`answerCorrect`) | Duel | chime | the flash card reads "= {answer}" and "You got it!", and the kid plays `winCheer`; after 1 second the passport stamp lands tilted in place of the flash card, and after 1.2 seconds World Map opens (`L2-033` criterion 7, `L2-038` criteria 1 and 5) | the same, with the stamp upright, fading in over 200 ms |
 | A lost duel | Duel | none | the kid plays `soClose`; the flash card reads "{rival} said {answer} first. So close!" and stays until the child chooses the pill "You sit at {country} · {rival} travels on" (`L2-033` criteria 3 and 8, `L2-038` criterion 3) | the same, with no movement |
-| A traveller hops on | World Map | none | the kid hops along the path to the next desk in 1 second (`L2-038` criterion 1) | the kid fades out where it stands and in at the next desk, 200 ms in all, and nothing moves across the screen |
+| A traveller hops on | World Map | none | the kid walks along the path to the next desk in 1.4 seconds (`L2-038` criterion 1) | the kid fades out where it stands and in at the next desk, 200 ms in all, and nothing moves across the screen |
 | A traveller sits down | World Map | none | the beaten traveller is drawn at their desk and the desk holder hops on (`L2-034` criterion 4) | the same, with the fade of a hop |
 | The device's player reaches a new country (`countryReached`) | World Map | jingle | a message names the country and stays for 1.6 seconds, and Duel then returns (`L2-034` criteria 3 and 9) | the same; the message appears with no movement |
 | The Podium opens | Podium | none | the places rise in turn, third, second, first, each in 200 ms (`L2-038` criterion 6) | each place fades in over 200 ms |
@@ -104,7 +104,7 @@ screen plays anywhere: no component has a full-screen effect for losing.
 
 The durations are motion tokens of the design system, in `docs/design-system/tokens/tokens.css`,
 and a stylesheet names a token, never a number: `--duration-fast` is 120 ms, `--duration-base`
-200 ms, `--duration-slow` 320 ms, `--duration-freeze` 1000 ms, `--duration-hop` 1000 ms,
+200 ms, `--duration-slow` 320 ms, `--duration-freeze` 1000 ms, `--duration-hop` 1400 ms,
 `--duration-toast` 1600 ms and `--duration-fade` 200 ms. Under reduced motion the duration
 tokens drop to nothing, `--duration-hop` becomes 200 ms and `--duration-fade` keeps its 200 ms:
 it is the quick fade that stands in for a hop, a card flip, a shake, the stamp landing and the
@@ -132,7 +132,7 @@ refused (`L2-023`); `CodeBoxes` plays that shake in its own stylesheet, with the
 fade, and `rooms/join-room` designs it. The number pad does not shake: it is disabled while the
 player is frozen (`L2-004` criterion 4).
 
-In the `world` library (`@atw/world`), **`KidCharacter`** plays the hop: a one-second arc along
+In the `world` library (`@atw/world`), **`KidCharacter`** plays the hop: a 1.4-second grounded walk along
 the path, or under reduced motion, read by the renderer from `prefers-reduced-motion` on each
 frame, a fade out where the kid stands and in at the next desk, 200 ms in all. Each kid owns a
 copy of every material of its model, so its fade touches no other kid. When the 3D classroom is
@@ -160,7 +160,7 @@ level-1 (L1) requirement, cited by identifier.
 
 | L2 ID | Refines (L1) | Requirement |
 |-------|--------------|-------------|
-| `L2-038` | `L1-011` | The hop and losing a desk: when the traveller wins a duel and the hop plays, a passport stamp shall land on Duel with the country's landmark, the kid shall then hop along the path to the next desk on World Map, and the hop shall last about 1 second (no more than 1.5); a new flash card shall flip in within 300 ms; a player who loses a duel shall see their kid do the "so close" reaction and sit down, with no red screen, buzzer or other punishing effect; when the device asks for reduced motion, a fade of no more than 200 ms shall play in place of a hop, a card flip or a shake (the flash card after a wrong answer, and the four boxes of the code on Room after a code is refused), and nothing shall move across the screen; when the Duel screen shows a hop, a passport stamp shall stand in place of the flash card: "Passport stamp!", the country reached, its landmark and "{kid} hops to desk {n} of {tour length}"; when the Podium opens, the places shall rise in turn (third, second, first), each in under 300 ms, and shall fade in with reduced motion. |
+| `L2-038` | `L1-011` | The hop and losing a desk: when the traveller wins a duel and the hop plays, a passport stamp shall land on Duel with the country's landmark, the kid shall then walk along the path to the next desk on World Map, and the hop shall last about 1 second (no more than 1.5); a new flash card shall flip in within 300 ms; a player who loses a duel shall see their kid do the "so close" reaction and sit down, with no red screen, buzzer or other punishing effect; when the device asks for reduced motion, a fade of no more than 200 ms shall play in place of a hop, a card flip or a shake (the flash card after a wrong answer, and the four boxes of the code on Room after a code is refused), and nothing shall move across the screen; when the Duel screen shows a hop, a passport stamp shall stand in place of the flash card: "Passport stamp!", the country reached, its landmark and "{kid} walks to desk {n} of {tour length}"; when the Podium opens, the places shall rise in turn (third, second, first), each in under 300 ms, and shall fade in with reduced motion. |
 | `L2-039` | `L1-011` | Sound: with sound on, a pop, a chime or a short jingle shall play when a key of the number pad is pressed, an answer is correct or a new country is reached; no sound shall play while sound is muted; no sound shall play before the child has touched the page; a sound shall never cause an answer to be given by voice. |
 
 ## Diagrams
@@ -199,7 +199,7 @@ play the motion of the state the screens show.
 
 The chime plays once the duel is decided. "You got it!" shows, and the passport stamp then
 lands in place of the flash card. World Map then opens with the message and the jingle, and the
-kid hops to the next desk in 1 second. Duel returns when the message has stayed for 1.6
+kid walks to the next desk in 1.4 seconds. Duel returns when the message has stayed for 1.6
 seconds, and the new flash card flips in. Under reduced motion a fade of 200 ms replaces the
 hop, and a muted or untouched page plays no sound.
 

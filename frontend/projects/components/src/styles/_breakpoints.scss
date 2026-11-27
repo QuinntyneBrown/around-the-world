@@ -1,0 +1,89 @@
+// The breakpoints of the design system (L1-015; docs/design-system/foundations/responsive.html),
+// named once so that no stylesheet states a width of its own. The tokens
+// --layout-breakpoint-sm, -md, -lg and -xl hold the same values, but a media query cannot read a
+// custom property. A stylesheet lays out the narrowest phone (320px) in its base rules and adds
+// to them with `from`; `below` and the heights are for the few rules that only a small or short
+// screen needs (docs/detailed-designs/platform/show-every-screen-to-everyone/).
+//
+//   @use 'breakpoints' as bp;
+//   @include bp.from(md) { ... }          // 768px and wider
+//   @include bp.below(md, low) { ... }    // narrower than 768px and at most 672px tall
+@use 'sass:map';
+
+$widths: (
+  sm: 36rem,
+  md: 48rem,
+  lg: 62rem,
+  xl: 75rem,
+);
+
+// The narrowest phones, under 360px wide.
+$narrow-phone: 22.5rem;
+
+// Duel's heights (L2-050 criterion 5): at most 672px tall the flash card and the keys shrink;
+// at most 544px tall (a phone on its side) the desk moves into the HUD.
+$heights: (
+  low: 42rem,
+  short: 34rem,
+);
+
+@function -width($band) {
+  @if not map.has-key($widths, $band) {
+    @error 'No breakpoint #{$band}: use sm, md, lg or xl.';
+  }
+  @return map.get($widths, $band);
+}
+
+@function -height($height) {
+  @if not map.has-key($heights, $height) {
+    @error 'No height #{$height}: use low or short.';
+  }
+  @return map.get($heights, $height);
+}
+
+/// From the breakpoint up; with a height, only while the viewport is at most that tall.
+@mixin from($band, $height: null) {
+  @if $height {
+    @media (min-width: -width($band)) and (max-height: -height($height)) {
+      @content;
+    }
+  } @else {
+    @media (min-width: -width($band)) {
+      @content;
+    }
+  }
+}
+
+/// Narrower than the breakpoint; with a height, only while the viewport is at most that tall.
+@mixin below($band, $height: null) {
+  @if $height {
+    @media (max-width: -width($band) - 0.01rem) and (max-height: -height($height)) {
+      @content;
+    }
+  } @else {
+    @media (max-width: -width($band) - 0.01rem) {
+      @content;
+    }
+  }
+}
+
+/// From one breakpoint up to just under the next.
+@mixin between($from, $below) {
+  @media (min-width: -width($from)) and (max-width: -width($below) - 0.01rem) {
+    @content;
+  }
+}
+
+/// While the viewport is at most this tall: `low` (672px) or `short` (544px).
+@mixin height($height) {
+  @media (max-height: -height($height)) {
+    @content;
+  }
+}
+
+/// The narrowest phones, under 360px wide.
+@mixin narrow-phone {
+  @media (max-width: $narrow-phone - 0.01rem) {
+    @content;
+  }
+}

@@ -1,4 +1,5 @@
 // The mode-card block of docs/design-system/assets/components.css, on the panel it renders.
+
 :host {
   display: contents;
 }
@@ -47,10 +48,10 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 36rem) {
-  .mode-card__actions--two {
-    grid-template-columns: 1fr 1fr;
-  }
+// Two actions share a row where the card has room for both, and stack where it does not (a
+// card beside its twin on a tablet), so neither sticks out of the card (L2-050 criterion 1).
+.mode-card__actions--two {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 // What the card says about its actions: an alert or a hint, across the card below them.

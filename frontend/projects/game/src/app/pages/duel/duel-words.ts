@@ -48,13 +48,13 @@ export const DuelWords = {
 
   /**
    * The quiet pill after a lost duel, which opens World Map: "You sit at Italy · Nia travels
-   * on", or "You keep Italy · Kenji hops on" for the desk holder (L2-033 criteria 8 and 11).
+   * on", or "You keep Italy · Kenji walks on" for the desk holder (L2-033 criteria 8 and 11).
    */
   pill(duel: DuelState): string | null {
     if (duel.outcome !== 'won' || duel.role === 'watching' || DuelWords.youWon(duel)) return null;
     const rival = DuelWords.rival(duel);
     return duel.role === 'deskHolder'
-      ? `${DuelWords.yourDesk(duel)} · ${rival} hops on`
+      ? `${DuelWords.yourDesk(duel)} · ${rival} walks on`
       : `${DuelWords.yourDesk(duel)} · ${rival} travels on`;
   },
 

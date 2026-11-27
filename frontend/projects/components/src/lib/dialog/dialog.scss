@@ -1,5 +1,7 @@
 // The backdrop and dialog blocks of docs/design-system/assets/components.css. The app opens it
 // in a CDK Dialog pane that fills the screen, which the dialog fills in turn.
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
   width: 100%;
@@ -67,7 +69,7 @@
   padding: var(--space-4) var(--space-6) calc(var(--space-6) + var(--toy-depth));
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .dialog {
     place-items: center;
     padding: var(--space-6);

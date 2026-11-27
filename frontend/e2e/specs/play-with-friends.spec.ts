@@ -373,7 +373,7 @@ test.describe('Play a race with friends', () => {
 
     // Then the card says who answered first, gently, with the quiet pill (L2-033 criterion 11)
     await expect(duel.result).toContainText('Speedy Otter said 24 first. So close!');
-    await expect(duel.sitPill).toHaveText('You keep Egypt · Speedy Otter hops on');
+    await expect(duel.sitPill).toHaveText('You keep Egypt · Speedy Otter walks on');
 
     // And World Map opens by itself, for the server does not wait (L2-033 criterion 12)
     await clock.pass(2200);

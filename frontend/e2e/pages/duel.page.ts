@@ -190,6 +190,30 @@ export class DuelPage {
     ];
   }
 
+  /** Whether a duellist's name or role is broken inside a word, rather than between words. */
+  breaksInsideAWord(duellist: Locator): Promise<boolean> {
+    return duellist.locator('.duelist__name, .duelist__role').evaluateAll((lines) =>
+      lines.some((line) => {
+        const text = line.firstChild;
+        if (!text || text.nodeType !== Node.TEXT_NODE) return false;
+        const words = (text.textContent ?? '').split(/(\s+)/);
+        let at = 0;
+        for (const word of words) {
+          const tops = new Set<number>();
+          for (let letter = 0; letter < word.length && !/\s/.test(word); letter++) {
+            const range = document.createRange();
+            range.setStart(text, at + letter);
+            range.setEnd(text, at + letter + 1);
+            tops.add(Math.round(range.getBoundingClientRect().top));
+          }
+          at += word.length;
+          if (tops.size > 1) return true;
+        }
+        return false;
+      }),
+    );
+  }
+
   /** The flash card showing, and its answer. */
   async card(): Promise<ShownCard> {
     const text = (await this.sum.textContent())?.trim() ?? '';

@@ -163,11 +163,11 @@ larger; its accessible name is "The ring of {tour length} desks: you are at desk
   in the answer box, and the rival is not frozen (`L2-004` criterion 4). The pad does not shake.
 - **right** — "= {answer}" and "You got it!" (`L2-033` criterion 2).
 - **hop** — `StampCard` in place of the flash card: "Passport stamp!", the country reached, its
-  landmark and "{kid} hops to desk {n} of {tour length}" (`L2-038` criterion 5). The stamp lands
+  landmark and "{kid} walks to desk {n} of {tour length}" (`L2-038` criterion 5). The stamp lands
   in about 250 ms.
 - **lost** — "{rival} said {answer} first. So close!" and, under it, the quiet pill "You sit at
   {country} · {rival} travels on" (`L2-033` criteria 3 and 8). When the child is the desk
-  holder the pill reads "You keep {country} · {rival} hops on" (`L2-033` criterion 11, mock
+  holder the pill reads "You keep {country} · {rival} walks on" (`L2-033` criterion 11, mock
   `kept`). The pill is the only action on
   the screen, and it is drawn so that it does not look like a second answer. No red screen shows
   and no buzzer plays.

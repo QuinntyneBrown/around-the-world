@@ -1,5 +1,7 @@
 // The world-map view and the art-* parts of docs/design-system/assets/components.css. These are
 // picture colours: the room is the same in light and dark. Kid colours come from `data-kid`.
+
+@use 'breakpoints' as bp;
 :host {
   position: absolute;
   inset: 0;
@@ -24,7 +26,7 @@
   display: none;
 }
 
-@media (min-width: 48rem) {
+@include bp.from(md) {
   .world-map__view--room {
     display: block;
   }
@@ -177,4 +179,22 @@
 
 .art-tag-text--you {
   fill: var(--palette-white);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .world-map__walker {
+    offset-path: var(--travel-path);
+    offset-anchor: 0 0;
+    offset-position: 0 0;
+    offset-rotate: 0deg;
+    animation: walk-to-desk var(--duration-hop) linear both;
+  }
+}
+@keyframes walk-to-desk {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
 }

@@ -5,6 +5,7 @@ import {
   inject,
   input,
   type OnChanges,
+  type SimpleChanges,
   type OnInit,
   output,
 } from '@angular/core';
@@ -54,6 +55,7 @@ export class ClassroomCanvas implements OnInit, OnChanges {
   private readonly canvas = inject<ElementRef<HTMLCanvasElement>>(ElementRef).nativeElement;
   private renderer: ClassroomRenderer | null = null;
   private drawn = false;
+  private stateSince = performance.now();
   private destroyed = false;
   private readonly wide = typeof matchMedia === 'function' ? matchMedia(WHOLE_ROOM_FROM) : null;
 
@@ -72,7 +74,8 @@ export class ClassroomCanvas implements OnInit, OnChanges {
     void this.draw();
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['state']) this.stateSince = performance.now();
     this.show();
   }
 
@@ -97,7 +100,7 @@ export class ClassroomCanvas implements OnInit, OnChanges {
   private show(): void {
     const state = this.state();
     if (!this.drawn || !this.renderer || !state) return;
-    this.renderer.show(state, this.resolvedView());
+    this.renderer.show(state, this.resolvedView(), performance.now() - this.stateSince);
   }
 
   private resolvedView(): ClassroomView {

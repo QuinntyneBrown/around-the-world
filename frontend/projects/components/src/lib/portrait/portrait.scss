@@ -1,4 +1,6 @@
 // The portrait block of docs/design-system/assets/components.css.
+
+@use 'breakpoints' as bp;
 :host {
   display: contents;
 }
@@ -53,7 +55,15 @@
   border-radius: calc(var(--radius-xl) + var(--radius-xs));
 }
 
-@media (min-width: 36rem) {
+// A duellist's portrait on the narrowest phones, so both names fit whole beside it.
+@include bp.narrow-phone {
+  :host-context(.duelist) .portrait {
+    width: 2.25rem;
+    border-radius: var(--radius-sm);
+  }
+}
+
+@include bp.from(sm) {
   .portrait--md {
     width: 3.5rem;
   }
@@ -63,7 +73,7 @@
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   .portrait--hero {
     max-width: 28rem;
   }

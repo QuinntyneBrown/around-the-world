@@ -42,6 +42,8 @@ a:hover { color: var(--color-fg-link-hover); }
   outline-offset: var(--focus-ring-offset);
 }
 :focus:not(:focus-visible) { outline: none; }
+/* The skip link moves the focus to the screen's main part, a landmark, not a control: the next Tab shows the ring. */
+main[tabindex="-1"]:focus { outline: none; }
 
 .visually-hidden {
   position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
@@ -236,7 +238,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .mode-card__text { font: var(--text-body-lg); color: var(--color-fg-muted); margin-top: var(--space-3); }
 .mode-card__art { margin-top: var(--space-6); }
 .mode-card__actions { margin-top: auto; padding-top: var(--space-8); display: grid; gap: var(--space-3); }
-@media (min-width: 36rem) { .mode-card__actions--two { grid-template-columns: 1fr 1fr; } }
+.mode-card__actions--two { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
 .mode-card__note { margin-top: var(--space-3); }
 .code-letters { display: flex; gap: var(--space-2); }
 .code-letters__letter { display: grid; place-items: center; width: 3.5rem; aspect-ratio: 1; border-radius: var(--radius-sm); background: var(--color-bg-canvas); box-shadow: inset 0 0 0 var(--border-width-thick) var(--color-border-default); font: var(--text-h2); color: var(--color-fg-accent); }
@@ -412,7 +414,9 @@ a:hover { color: var(--color-fg-link-hover); }
 @media (min-width: 36rem) { .number-pad { gap: var(--space-3); } .number-pad__key { height: var(--control-height-xl); } }
 @media (min-width: 48rem) { .number-pad { max-width: 18rem; flex: none; } }
 @media (max-height: 34rem) { .number-pad__key { height: var(--target-min); font: var(--text-h3); } .number-pad { max-width: 16rem; flex: none; } .duel__stage { flex-direction: row; gap: var(--space-4); } }
-@media (max-width: 47.99rem) and (max-height: 42rem) { .number-pad__key { height: var(--target-min); font: var(--text-h3); } .duel__foot { padding-block: var(--space-1) var(--space-2); min-height: 0; } .duel__stage { padding-block: var(--space-2); gap: var(--space-2); } }
+@media (max-width: 47.99rem) and (max-height: 42rem) { .number-pad { gap: var(--space-1); } .number-pad__key { height: var(--target-min); font: var(--text-h3); } .duel__foot { padding-block: var(--space-1) var(--space-2); min-height: 0; } .duel__stage { padding-block: var(--space-1); gap: var(--space-1); } .flash-card { padding-block: var(--space-2); } .flash-card__sum { font-size: var(--font-size-5xl); } .flash-card__foot { margin-top: var(--space-1); } .flash-card--frozen .answer-box { display: none; } .duel--banner .duel__progress { display: none; } .banner__text { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+/* A phone on its side with the pad beside the card: the way to switch sits under the card, beside the pad. */
+@media (max-height: 34rem) { .duel--pad .duel__stage { align-items: flex-start; } .duel--pad .duel__foot { position: absolute; left: 0; bottom: 0; width: 50%; } }
 .stamp-card { width: 100%; max-width: 28rem; display: flex; flex-direction: column; align-items: center; padding: var(--space-8) var(--space-6); text-align: center; background: var(--color-bg-surface); border: var(--border-width-stamp) dashed var(--color-danger-solid); border-radius: var(--radius-xl); rotate: -3deg; }
 .stamp-card__kicker { font: var(--text-h4); color: var(--color-danger-fg); }
 .stamp-card__country { font: var(--text-display); margin-top: var(--space-1); }
@@ -527,7 +531,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .podium__rank { font: var(--text-h1); line-height: 1; }
 .podium__name { max-width: 100%; font: var(--text-label); font-family: var(--font-family-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: var(--space-1); }
 @media (min-width: 36rem) { .podium__headline { font: var(--text-display); } .podium__steps { gap: var(--space-4); } .podium__step { height: 8rem; } .podium__place--first .podium__step { height: 11rem; } .podium__place--third .podium__step { height: 6rem; padding-top: var(--space-3); } .podium__rank { font: var(--text-display); line-height: 1; } .podium__name { font-size: var(--font-size-lg); } }
-@media (min-width: 62rem) { .podium__headline, .podium__cheer { text-align: left; } }
+@media (min-width: 62rem) { .podium__steps { margin-top: auto; padding-top: var(--space-8); } .podium__headline, .podium__cheer { text-align: left; } }
 @media (min-width: 75rem) { .podium__headline { font: var(--text-hero); } }
 .passport { background: var(--color-passport-bg); color: var(--color-passport-fg); border-radius: var(--radius-xl); padding: var(--space-5); }
 .passport__head { display: flex; align-items: center; gap: var(--space-3); }

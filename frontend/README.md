@@ -18,7 +18,8 @@ The Angular 22 workspace that is the game. Run every command from this folder.
 | Lint and format                         | `npm run lint`, `npm run format:check` (`npm run format` to fix) |
 | Behaviour specs (Playwright, Chromium)  | `npm run build && npm run e2e`                                   |
 | End-to-end type check                   | `npm run e2e:typecheck`                                          |
-| Rebuild the classroom's stand-in scenes | `npm run classroom:stand-in` (docs/adr/0028)                     |
+| Heap and frame-rate checks (on request) | `npm run build && npm run e2e:measure` (docs/adr/0038)           |
+| Generate scratch stand-in scenes in .cache | `npm run classroom:stand-in` ([production Blender artwork](../tools/blender/README.md))                     |
 
 The behaviour specs import `test` and `expect` from `e2e/fixtures/test.ts`, keep every
 selector in a page object in `e2e/pages/`, and run against `dist/game/browser` served on

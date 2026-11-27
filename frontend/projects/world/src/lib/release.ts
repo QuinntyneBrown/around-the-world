@@ -33,6 +33,13 @@ export function releaseMaterial(material: Material, released = new Set<object>()
     if (texture && typeof texture === 'object' && texture.isTexture && !released.has(texture)) {
       released.add(texture);
       texture.dispose?.();
+      // glTF uses ImageBitmapLoader. Texture.dispose releases the GPU copy,
+      // while the decoded bitmap stays allocated until its owner closes it.
+      const bitmap = texture.source?.data as { close?: () => void } | null;
+      if (bitmap?.close && !released.has(bitmap)) {
+        released.add(bitmap);
+        bitmap.close();
+      }
     }
   }
   material.dispose();

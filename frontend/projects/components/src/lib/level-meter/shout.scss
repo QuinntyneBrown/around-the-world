@@ -1,4 +1,6 @@
 // The shout block of docs/design-system/assets/components.css, on the host element.
+
+@use 'breakpoints' as bp;
 :host {
   display: inline-flex;
   align-items: center;
@@ -20,13 +22,13 @@
   background: color-mix(in srgb, var(--color-fg-on-action) 25%, transparent);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     font: var(--text-h2);
   }
 }
 
-@media (max-height: 34rem) {
+@include bp.height(short) {
   :host {
     min-height: var(--target-min);
     font: var(--text-h4);

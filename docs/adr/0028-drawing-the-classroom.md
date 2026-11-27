@@ -10,8 +10,7 @@ landmark, loaded when first needed, with a still picture and words on a device t
 it, and its detail scaled back below 30 frames a second. `L2-037` asks for the cast as animated
 characters. `docs/detailed-designs/classroom/draw-classroom/` leaves `<TO SUPPLY>` the format
 and paths of the exported scenes, which countries and landmarks a tour holds, the look of the
-hop's movement, and the order, size and floor of the detail's steps. The Blender exports the
-design names are not in the repository, and no Blender is at hand to make them.
+hop's movement, and the order, size and floor of the detail's steps. The original implementation used generated primitives until the Blender cast and furnishings were available.
 
 The design draws World Map's room in the 3D scene and its name tags, plaques and messages as
 interface (`tour/travel-round-ring`), but journey 05 built the whole room as an SVG drawing,
@@ -39,13 +38,7 @@ room may share a kid (`L2-013`).
     landmarks). Every material is drawn as a Lambert material, the cheap form of lighting.
   - A part whose name ends in `-detail` (a smile, a rug's rings, a landmark's small parts) is
     left out at the low level of detail.
-- **The stand-in.** Until the Blender exports are in the repository,
-  `frontend/tools/make-classroom-stand-in.mjs` (`npm run classroom:stand-in`) builds both files
-  from three.js primitives, in that format and with those names: toy-like low-poly desks,
-  landmarks and bean-bodied kids. The Blender exports replace the two files and nothing else
-  changes. The five animations (idle, thinking, hop, win cheer, "so close") are moved in code by
-  `KidCharacter`, since the stand-in carries no animation clips; clips of those names in the
-  Blender exports are the next step, and their absence is this journey's one blocker.
+- **Blender production assets.** The Blender scripts in `tools/blender/` build the furnished room and six cast models. Vertex colours retain the skin, clothing and accessory colours in a single material per kid. Each kid has four animated limbs with keyframes exported in glTF. The browser plays the Blender walk in step with distance travelled and releases its animation mixer with the figure. The separate overhead view keeps the desk layout, rug and country landmarks visible. Duel frames its two players across their desk.
 - **Countries and landmarks.** A tour of n desks holds the first n of the 24 countries of
   `domain`'s `tour/countries.ts`, desk 1 first, each with the landmark that list gives it (the
   mocks' cast, ADR 0022): France to Peru for 12, and Mexico to Chile after them for 24. Home's
@@ -82,11 +75,7 @@ room may share a kid (`L2-013`).
   the page's. The directive loads the renderer through `CLASSROOM_RENDERER` once the screen is
   shown, emits `drawn` or `still`, picks World Map's zoom below 768 px (`L2-034` criterion 5)
   and disposes the renderer with the canvas. The page fades the canvas in over the picture.
-- **The hop's look.** A figure whose spot changes moves in a straight line to its new spot while
-  rising and falling once, 0.45 m high, in 1 second (`HOP_SECONDS`): along the path for a hop,
-  down to the seat for a sit. Journey 10 gives it its sound and its quick fade under reduced
-  motion; until then, under reduced motion, the idle and thinking movements hold still and
-  every move ends at once.
+- **Walking between desks.** The traveller follows the dotted ring in six steps over 1.4 seconds, as in the Magic Patterns World Map frame, facing the direction of travel with alternating footfalls. A kid changing seats walks directly to the seat. Reduced motion uses the 200 ms fade in ADR 0029.
 - **The detail's steps.** `QualityScaler` measures windows of 2 seconds; below 30 frames a
   second it takes the next step and measures again. The steps are: resolution 1.5 (never above
   the device's), shadow map, full detail; resolution 1; blob shadows in place of the 512 px
@@ -110,8 +99,7 @@ room may share a kid (`L2-013`).
 
 ## Consequences
 
-- The game runs end to end with the stand-in, and the Blender exports can drop in at the same
-  paths. Their absence is reported as the journey's blocker; the animation clips come with them.
+- The game loads the Blender exports at the original paths. Each portrait uses a small texture cropped from the approved Character Sheet and fitted to its sculpted head. The texture files are served on the game origin. On scene teardown the renderer releases both the GPU texture and its decoded bitmap.
 - The `world` library joins the dependency direction (`game` → `world` → `api`), enforced by
   ESLint, as `AGENTS.md` already describes it. Since `game` reaches it only through `import()`,
   ESLint's boundaries now count a dynamic `import()` as a dependency too, so no other library

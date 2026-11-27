@@ -1,0 +1,117 @@
+@font-face {
+  font-family: Fredoka;
+  src: url("../../../frontend/projects/game/src/styles/fonts/fredoka-latin-wght-normal.woff2");
+}
+@font-face {
+  font-family: Nunito;
+  src: url("../../../frontend/projects/game/src/styles/fonts/nunito-latin-wght-normal.woff2");
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #11224a;
+}
+body {
+  color: #18274c;
+  font-family: Nunito, sans-serif;
+}
+section {
+  display: none;
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  transform: scale(var(--scale, 1));
+  transform-origin: top left;
+  background: #e1f4ff;
+  overflow: hidden;
+}
+section.active {
+  display: block;
+}
+header {
+  position: absolute;
+  inset: 42px 58px auto;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  font: 500 32px Fredoka;
+  color: #293b68;
+}
+header img {
+  width: 68px;
+  height: 68px;
+}
+aside {
+  position: absolute;
+  left: 62px;
+  top: 214px;
+  width: 468px;
+}
+h1,
+h2 {
+  font: 600 83px/0.99 Fredoka;
+  letter-spacing: -2.4px;
+  margin: 0 0 38px;
+}
+p {
+  font: 650 32px/1.28 Nunito;
+  margin: 0 0 24px;
+}
+figure {
+  margin: 0;
+  position: absolute;
+  left: 590px;
+  top: 70px;
+  width: 1280px;
+  height: 900px;
+  border-radius: 32px;
+  box-shadow:
+    0 8px 0 #aacde0,
+    0 28px 45px #18385e24;
+  background: #fff;
+  overflow: hidden;
+}
+figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+figure.clip {
+  border-radius: 0;
+  box-shadow: none;
+}
+figure video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 102px;
+  background: #17274b;
+  color: white;
+  display: grid;
+  place-items: center;
+  padding: 0 64px;
+  text-align: center;
+  font: 650 32px/1.18 Nunito;
+}
+.progress {
+  position: absolute;
+  bottom: 102px;
+  left: 0;
+  height: 6px;
+  background: #ee5475;
+}

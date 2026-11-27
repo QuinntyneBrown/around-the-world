@@ -244,7 +244,7 @@
   --color-scene-scrim: rgba(27, 37, 89, 0.3);
   --color-passport-bg: var(--palette-blue-600);
   --color-passport-fg: var(--palette-white);
-  --color-passport-slot: rgba(255, 255, 255, 0.12);
+  --color-passport-slot: var(--palette-blue-700); /* a stamp's tile: white text on it is 6.9:1 */
   --color-passport-missing: rgba(255, 255, 255, 0.72);
   --color-code-bg: var(--palette-blue-600);           /* the room code panel */
   --color-code-fg: var(--palette-white);
@@ -337,7 +337,7 @@
   --duration-spin: 800ms;     /* one turn of the spinner */
   --duration-sweep: 1400ms;   /* skeleton shimmer, listening rings */
   --duration-freeze: 1000ms;  /* frozen after a wrong answer */
-  --duration-hop: 1000ms;     /* the hop to the next desk */
+  --duration-hop: 1400ms;     /* the hop to the next desk */
   --duration-toast: 1600ms;   /* a World Map message stays this long */
   --duration-fade: 200ms;     /* the quick fade of reduced motion; it keeps its length there */
   --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);

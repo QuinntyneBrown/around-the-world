@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const port = 4300;
+const port = Number(process.env['ATW_TEST_PORT'] ?? 4300);
 
 /**
  * Behaviour specs only, on Chromium only (AGENTS.md, E2E). They run against the production

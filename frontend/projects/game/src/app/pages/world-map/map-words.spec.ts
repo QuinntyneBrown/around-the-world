@@ -114,6 +114,8 @@ describe('MapWords', () => {
   it('puts each kid at their desk and the traveller on the path', () => {
     const kids = MapWords.kids(tour());
     expect(kids.find((kid) => kid.you)).toEqual({
+      id: tour().traveller,
+      from: null,
       kid: 'zuri',
       desk: 3,
       travelling: true,

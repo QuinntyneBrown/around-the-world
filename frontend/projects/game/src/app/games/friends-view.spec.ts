@@ -87,8 +87,10 @@ function hostHopped(overrides: Partial<GameState> = {}): GameState {
   });
 }
 
-const names = (nickname: { adjective: number; animal: number }) =>
-  `nickname ${nickname.adjective}-${nickname.animal}`;
+const names = ({ nickname }: { nickname: unknown }) => {
+  const { adjective, animal } = nickname as { adjective: number; animal: number };
+  return `nickname ${adjective}-${animal}`;
+};
 
 function seen(
   game: GameState,

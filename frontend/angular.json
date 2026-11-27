@@ -30,23 +30,37 @@
                 "input": "projects/game/public"
               }
             ],
-            "styles": ["projects/game/src/styles.scss"]
+            "styles": ["projects/game/src/styles.scss"],
+            "stylePreprocessorOptions": {
+              "includePaths": ["projects/components/src/styles"]
+            }
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "274kB",
-                  "maximumError": "285kB"
+                  "maximumWarning": "275kB",
+                  "maximumError": "276kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "home",
+                  "maximumWarning": "10kB",
+                  "maximumError": "11kB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "3.5kB",
+                  "maximumError": "4kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": { "minify": true, "inlineCritical": false },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,

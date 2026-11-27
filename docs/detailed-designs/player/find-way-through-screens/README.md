@@ -152,7 +152,7 @@ Home:
   one large "Play" button and, in a corner, the sound and settings buttons (`L2-032`
   criterion 1).
   - *Title panel.* It reads "The flash-card race", then the game's name "Around the World",
-    then "Shout the answer first. Hop to the next desk. Make it all the way round.", then
+    then "Shout the answer first. Walk to the next desk. Make it all the way round.", then
     the button. The button reads "Play", or "Play again" when `Visit.tourFinished` is true
     (`L2-032` criterion 2). It is as wide as the panel below 576 px.
   - *Play.* For a child with no kid kept on the device, "Play" opens Pick Your Kid. For a

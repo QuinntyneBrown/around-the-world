@@ -4,16 +4,16 @@ LAYOUT_WITH_LEGEND()
 title Components — Load lazily and release
 
 Container_Boundary(game, "game and its libraries") {
-  Component(budget, "angular.json budgets", "Build configuration", "Fails the production build above the initial budget")
+  Component(budget, "angular.json budgets", "Build configuration", "Fails the production build above the initial budget or Home's chunk budget")
   Component(routes, "app.routes.ts", "Angular routes", "loadComponent per screen, Not Found and Something Went Wrong included; solo and friends game routes bind GAME_SESSION")
   Component(solo, "SoloGame", "game, route-scoped", "Imports classmates/ dynamically; destroys model sessions when the tour ends or is left; never asks for ROOM_CONNECTION")
   Component(friends, "FriendsGame", "game, route-scoped", "Uses ROOM_CONNECTION; keeps it through the Podium and the return to the Lobby on Play again; closes it on destroy")
-  Component(duel, "HomePage, DuelPage, WorldMapPage", "game, lazy screens", "The three screens that show the classroom; each registers teardown with DestroyRef")
+  Component(duel, "HomePage, DuelPage, WorldMapPage", "game, lazy screens", "The three screens that show the classroom; each registers teardown with DestroyRef; Home fetches the way on once its picture is in")
   Component(conn, "SignalRRoomConnection", "api, dynamic chunk", "The SignalR client; stop() and handler removal")
   Component(voice, "SpeechVoiceAnswer", "domain voice/", "stop() ends recognition and closes the microphone stream")
   Component(agents, "ClassmateAgent / OnDeviceModelSession", "domain classmates/, dynamic chunk", "destroy() per model session")
   Component(renderer, "ThreeClassroomRenderer", "world, dynamic chunk", "dispose() stops the loop and frees GPU resources")
-  Component(buffer, "BoundedBuffer", "domain tour/", "Fixed-size buffer for duels played and stickers received")
+  Component(buffer, "StickerBuffer", "game games/", "The stickers received: three at most, each for 2 seconds of the game's clock")
 }
 Rel(budget, routes, "Measures the initial chunks rooted at")
 Rel(routes, duel, "Loads lazily")
@@ -23,6 +23,5 @@ Rel(solo, agents, "import() at the start of a solo tour")
 Rel(friends, conn, "import() through the ROOM_CONNECTION binding")
 Rel(duel, renderer, "import() when the classroom is first drawn; dispose() on destroy")
 Rel(duel, voice, "DuelPage starts; stops on destroy")
-Rel(solo, buffer, "Holds duels played in")
-Rel(friends, buffer, "Holds duels and stickers in")
+Rel(friends, buffer, "Holds the stickers received in")
 @enduml

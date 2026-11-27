@@ -44,7 +44,7 @@ moments -> sound : play(jingle)
 map --> actor : "You walk on to {country}!" for 1.6 seconds (L2-034 criteria 3 and 9)
 map -> renderer : show(state): the kid hops from the desk of the duel
 alt full motion
-  renderer --> actor : Kid hops along the path to the next desk in 1 second (L2-038 criterion 1)
+  renderer --> actor : Kid walks along the path to the next desk in 1.4 seconds (L2-038 criterion 1)
 else the device asks for reduced motion
   renderer --> actor : Kid fades out and in at the next desk, 200 ms in all; nothing moves across the screen (L2-038 criterion 4)
 end

@@ -148,7 +148,7 @@ test.describe('Finishing a tour', () => {
 
     // When the tour's 3 minutes pass and the traveller beats the child, who keeps the desk
     await clock.pass(3 * 60_000);
-    await expect(duel.sitPill).toHaveText('You keep Egypt · Nia hops on');
+    await expect(duel.sitPill).toHaveText('You keep Egypt · Nia walks on');
     await duel.sitPill.click();
     await clock.pass(MESSAGE_MS);
 

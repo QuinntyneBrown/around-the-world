@@ -17,7 +17,7 @@ skinparam package {
 actor "Child" as actor
 participant "Browser" as browser
 box "Frontend — game application" #E0F2FE
-  participant "Host of game\n<TO SUPPLY>" as host
+  participant "Host of game\n(static files)" as host
   participant "index.html and initial chunks" as shell
   participant "Global styles (@font-face)" as styles
   participant "app.routes.ts" as routes
@@ -27,7 +27,7 @@ box "Frontend — world library" #E0F2FE
 end box
 actor -> browser : Open the game
 browser -> host : GET /
-host --> browser : index.html with Content-Security-Policy
+host --> browser : index.html, its Content-Security-Policy in a meta element\n(own origin, and *.service.signalr.net for connections; ADR 0040)
 browser -> host : GET initial scripts (own origin)
 host --> browser : Initial chunks
 browser -> shell : Run

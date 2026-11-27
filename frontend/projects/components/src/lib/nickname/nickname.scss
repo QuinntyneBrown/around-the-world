@@ -1,4 +1,6 @@
 // The nickname block of docs/design-system/assets/components.css, with its label and hint.
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
 }
@@ -27,7 +29,7 @@
   color: var(--color-fg-muted);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .nickname__value {
     font: var(--text-h2);
     font-weight: var(--font-weight-semibold);
