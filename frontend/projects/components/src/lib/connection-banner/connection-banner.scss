@@ -1,5 +1,20 @@
+@use 'breakpoints' as bp;
+
 // The banner is Alert's own block; this host adds no box of its own, so the banner sits in the
 // screen's layout as the mocks draw it.
 :host {
   display: contents;
+}
+
+// A short phone held upright: one line, the title; the rest is still read out (L2-050 1).
+@include bp.below(md, low) {
+  .banner__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }

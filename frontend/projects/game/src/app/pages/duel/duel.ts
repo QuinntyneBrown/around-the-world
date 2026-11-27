@@ -193,6 +193,10 @@ export class DuelPage {
   protected readonly open = computed(() => this.duel()?.outcome === 'open');
   /** A player of a game with friends who is not in the duel watches it (L2-028 criterion 1). */
   protected readonly watching = computed(() => this.duel()?.role === 'watching');
+  /** Whether the number pad is shown: an open card the child answers with the pad. */
+  protected readonly padShown = computed(
+    () => this.open() && !this.byVoice() && !this.watching() && this.live(),
+  );
   protected readonly sum = computed(() => {
     const duel = this.duel();
     return duel ? DuelWords.sum(duel.card) : undefined;

@@ -1,5 +1,7 @@
 // The sticker-bar and sticker blocks of docs/design-system/assets/components.css: the six
 // stickers, each a toy button on its kid's tag colours, wrapping 2, 3, then 6 across.
+
+@use 'breakpoints' as bp;
 :host {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -86,20 +88,20 @@
   stroke-width: 2;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   :host {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 62rem) {
+@include bp.from(lg) {
   :host {
     display: flex;
   }
 }
 
 // A wide screen held low: one row, so the flash card keeps its room (L2-050).
-@media (max-height: 34rem) and (min-width: 48rem) {
+@include bp.from(md, short) {
   :host {
     display: flex;
   }

@@ -1,5 +1,7 @@
 // The standings block of docs/design-system/assets/components.css: five equal columns on a
 // phone, one centred row from 576 px. The child's entry has an accent edge as well as "You".
+
+@use 'breakpoints' as bp;
 :host {
   display: block;
 }
@@ -74,7 +76,7 @@
   white-space: nowrap;
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .standings {
     display: flex;
     justify-content: center;

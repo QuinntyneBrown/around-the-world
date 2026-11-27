@@ -1,5 +1,7 @@
 // The world-ring block of docs/design-system/assets/components.css, on the host element. It
 // shows from 768 px wide; under that a pill gives the same in words (L2-050 criterion 3).
+
+@use 'breakpoints' as bp;
 :host {
   display: none;
   flex: none;
@@ -11,14 +13,14 @@
   box-shadow: var(--shadow-ledge-1);
 }
 
-@media (min-width: 48rem) {
+@include bp.from(md) {
   :host {
     display: flex;
   }
 }
 
 // A phone turned on its side: the desk goes beside the names instead (L2-050 criterion 5).
-@media (max-height: 34rem) {
+@include bp.height(short) {
   :host {
     display: none;
   }

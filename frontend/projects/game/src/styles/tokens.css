@@ -245,7 +245,7 @@
   --color-scene-scrim: rgba(27, 37, 89, 0.3);
   --color-passport-bg: var(--palette-blue-600);
   --color-passport-fg: var(--palette-white);
-  --color-passport-slot: rgba(255, 255, 255, 0.12);
+  --color-passport-slot: var(--palette-blue-700); /* a stamp's tile: white text on it is 6.9:1 */
   --color-passport-missing: rgba(255, 255, 255, 0.72);
   --color-code-bg: var(--palette-blue-600);           /* the room code panel */
   --color-code-fg: var(--palette-white);

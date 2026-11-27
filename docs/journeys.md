@@ -30,10 +30,10 @@ team) can see working. Journey 01 scaffolds the workspace that every other journ
 | 16 | [Come back after a lost connection](prompts/16-return-after-lost-connection.md) | Connection banner, reconnecting duel, and rejoining the same spot. | 4 | 100% |
 | 17 | [Run the backend in a deployed system](prompts/17-run-the-backend.md) | Azure SignalR scale-out, OpenTelemetry without child data, health and migrations. | 3 | 100% |
 | 18 | [Open fast and stay smooth on any device](prompts/18-play-fast-on-any-device.md) | Tight bundle budgets, lazy loading, released memory, playing within 20 seconds. | 4 | 100% |
-| 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 0% |
+| 19 | [Make every screen work for every child](prompts/19-every-screen-for-every-child.md) | Every width from phone to desktop, keyboard, touch and screen readers. | 4 | 100% |
 | 20 | [Prove the game is safe for children](prompts/20-keep-children-safe.md) | Audit that nothing a child types or says leaves the device. | 3 | 0% |
 
-**Total effort:** 86 days. **Overall % complete:** 92% (79 of 86 days).
+**Total effort:** 86 days. **Overall % complete:** 97% (83 of 86 days).
 
 ## Where each journey comes from
 

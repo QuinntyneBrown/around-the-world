@@ -1,6 +1,8 @@
 // Mic Check's own layout (docs/mocks/pages/mic-check/; the mic-check block of
 // docs/design-system/assets/components.css). Below 768px the picture is above the words; from
 // 768px it is on their left (L2-050 criterion 6).
+
+@use 'breakpoints' as bp;
 .mic-check {
   flex: 1;
   width: 100%;
@@ -55,13 +57,13 @@
   margin-top: var(--space-8);
 }
 
-@media (min-width: 36rem) {
+@include bp.from(sm) {
   .mic-check__title {
     font: var(--text-display);
   }
 }
 
-@media (min-width: 48rem) {
+@include bp.from(md) {
   .mic-check {
     flex-direction: row;
     gap: var(--space-12);
