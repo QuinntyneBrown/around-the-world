@@ -25,4 +25,9 @@ export class NoticePage {
   async openNowhere(): Promise<void> {
     await this.page.goto('/desk-99');
   }
+
+  /** Opens an address as a child would type it into the browser. */
+  async openAt(path: string): Promise<void> {
+    await this.page.goto(path);
+  }
 }

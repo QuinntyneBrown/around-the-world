@@ -6,7 +6,9 @@
  * only count the contexts the game opens, and take WebGL away when the spec asks. Sound is
  * never heard: each sound the game plays is recorded by its file's name, and the audio
  * elements the game makes are counted until it lets them go. The clipboard keeps what the game
- * copied, or refuses to copy when the spec asks. A use the
+ * copied, or refuses to copy when the spec asks. The recognition sessions started without
+ * listening on the device and the recorders made are counted, and speech synthesis keeps what
+ * it was given instead of saying it (L2-040 criterion 2, L2-042 criterion 1). A use the
  * spec did not set up is recorded as a problem, and the fixture fails the spec with it.
  *
  * This function is serialised into the page, so it must not close over anything.
@@ -44,6 +46,12 @@ export interface BrowserFakesState {
   listening(): number;
   /** How many microphone tracks the game opened and has not stopped. */
   openTracks(): number;
+  /** How many recognition sessions the game started without asking to listen on the device. */
+  offDevice: number;
+  /** How many recorders (`MediaRecorder`) the game made. */
+  recorders: number;
+  /** Every text the game gave the browser's speech synthesis to say aloud. */
+  spoken: string[];
   /** Whether the browser gives a WebGL context; false draws no 3D classroom. */
   webglSupported: boolean;
   /** How many WebGL contexts the game opened that are not lost. */
@@ -83,6 +91,9 @@ export function installBrowserFakes(): void {
     fail: () => 0,
     listening: () => 0,
     openTracks: () => 0,
+    offDevice: 0,
+    recorders: 0,
+    spoken: [],
     webglSupported: true,
     openContexts: () => 0,
     played: [],
@@ -151,6 +162,25 @@ export function installBrowserFakes(): void {
       return constraints?.audio ? silentStream() : new MediaStream();
     },
   });
+  // A recorder would keep the child's voice: each one made is counted, and none is ever made.
+  const Recorder = window.MediaRecorder;
+  if (Recorder) {
+    window.MediaRecorder = class extends Recorder {
+      constructor(...args: ConstructorParameters<typeof MediaRecorder>) {
+        super(...args);
+        fakes.recorders += 1;
+      }
+    };
+  }
+  // Nothing is said aloud by the browser: each text given to speech synthesis is kept instead.
+  if (window.speechSynthesis) {
+    Object.defineProperty(window.speechSynthesis, 'speak', {
+      configurable: true,
+      value: (utterance: SpeechSynthesisUtterance) => {
+        fakes.spoken.push(utterance.text);
+      },
+    });
+  }
   if (navigator.permissions) {
     const query = navigator.permissions.query.bind(navigator.permissions);
     Object.defineProperty(navigator.permissions, 'query', {
@@ -203,6 +233,10 @@ export function installBrowserFakes(): void {
           this.emit(new Event('end'));
         });
         return;
+      }
+      // Chrome sends the sound to a recognition service unless the session listens on the device.
+      if ((this as unknown as { processLocally?: boolean }).processLocally !== true) {
+        fakes.offDevice += 1;
       }
       listening.add(this);
       queueMicrotask(() => {

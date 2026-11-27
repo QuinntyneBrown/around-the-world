@@ -35,6 +35,19 @@ export class AppShellPage {
     );
   }
 
+  /**
+   * The screen as assistive technology reads it: every heading, field, button and link with its
+   * role and its accessible name, one per line (Playwright's ARIA snapshot).
+   */
+  accessibilityTree(): Promise<string> {
+    return this.page.locator('body').ariaSnapshot();
+  }
+
+  /** Every word the screen holds, shown or read out, including its live regions. */
+  words(): Promise<string> {
+    return this.page.evaluate(() => document.body.textContent ?? '');
+  }
+
   async pressTab(): Promise<void> {
     await this.page.keyboard.press('Tab');
   }
