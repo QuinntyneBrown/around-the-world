@@ -136,6 +136,17 @@
 }
 
 @include bp.from(lg) {
+  :host {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .podium__steps {
+    margin-top: auto;
+    padding-top: var(--space-8);
+  }
+
   .podium__headline,
   .podium__cheer {
     text-align: left;
