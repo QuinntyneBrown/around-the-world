@@ -43,7 +43,7 @@ export class PickYourKidPage {
   }
 
   async open(): Promise<void> {
-    await this.page.goto('/kid');
+    await this.page.goto('/kid', { waitUntil: 'domcontentloaded' });
   }
 
   kid(name: string): Locator {
