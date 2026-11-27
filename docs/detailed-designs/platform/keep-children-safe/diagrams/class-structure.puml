@@ -55,8 +55,9 @@ package "Frontend — domain library" {
     -adjectives: readonly string[]
     -animals: readonly string[]
     +generate(): Nickname
-    +isValid(nickname: Nickname): boolean
-    +textOf(nickname: Nickname): string
+    +isValid(nickname: unknown): boolean
+    +words(nickname: Nickname): string
+    +nameOf(player: kid and nickname): string
   }
   class SpeechVoiceAnswer {
     +start()

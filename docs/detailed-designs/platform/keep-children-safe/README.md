@@ -29,9 +29,10 @@ shapes those features validate.
 
 ## Description
 
-The slice is not built yet. The design introduces the parts below. The members of each contract
-are fixed by the design of the subsystem that owns it; this design fixes only the kinds of value
-a member may carry.
+The slice is built (journey 20); the parts below are those the design introduces, most of them
+built by the journeys whose features they keep safe, and proven together by journey 20's audits
+(`docs/adr/0040-keeping-children-safe.md`). The members of each contract are fixed by the design
+of the subsystem that owns it; this design fixes only the kinds of value a member may carry.
 
 **Client messages hold closed values and the connection token only (`L2-040` criterion 1).**
 
@@ -86,9 +87,10 @@ pad, so no sound reaches a recognition service (`docs/adr/0025-answering-by-voic
 
 - **`NicknameGenerator`** — class in `domain`'s `storage/`. It holds the two fixed lists.
   `generate()` returns a `Nickname`. `isValid()` reports whether both indexes are inside the
-  lists. `textOf()` builds the text from the lists.
-- A page that receives a `RoomState` calls `textOf()` for each player and passes the result to
-  the component that shows it. A nickname is shown in the Lobby (`PlayerList`, the messages
+  lists. `words()` builds the text from the lists. `nameOf()` names a player of a room: the
+  nickname's words when it is two indexes inside the lists, and the kid's name otherwise.
+- A page that receives a `RoomState` or a game calls `nameOf()` for each player and passes the
+  result to the component that shows it. A nickname is shown in the Lobby (`PlayerList`, the messages
   "{nickname} joined" and "Waiting for {host's nickname} to start…"), on Duel (the HUD, a
   received sticker, the banner "{nickname} dropped out.") and on the Podium (`PodiumSteps`,
   the headline). Each binds it by text interpolation. The device's own player is shown as
@@ -96,7 +98,10 @@ pad, so no sound reaches a recognition service (`docs/adr/0025-answering-by-voic
   kid's name, never a nickname. No template in the workspace binds `innerHTML`, and no code
   bypasses Angular's sanitizer.
 - A nickname whose indexes are outside the lists is not shown: the backend refuses it
-  (`L2-044` criterion 1), and the device replaces a stored one (`L2-014` criterion 4).
+  (`L2-044` criterion 1), the device replaces a stored one (`L2-014` criterion 4), and a player
+  of a room whose nickname arrives as anything but two indexes inside the lists is shown by their
+  kid's name, so nothing of what arrived reaches the screen (`L2-040` criterion 3,
+  `docs/adr/0040-keeping-children-safe.md`).
 
 Each list holds ten words, so each index runs from 0 to 9 and 100 nicknames exist (`L2-014`).
 The adjectives are Speedy, Mighty, Clever, Bouncy, Sneaky, Brave, Zippy, Jolly, Cosmic and
@@ -145,13 +150,31 @@ number from 0 to 9, and only `NicknameGenerator` on the device turns the indexes
 - **No measurement code** — the workspace depends on no advertising or analytics package, and
   the frontend emits no telemetry. Backend telemetry holds nothing about a child (`L2-053`,
   designed in `docs/detailed-designs/platform/operate-backend/`).
-- **Content Security Policy** — response header on `index.html`. `default-src`, `script-src`,
-  `font-src` and `img-src` allow the own origin only. `connect-src` allows the own origin, the
-  backend's origin and the Azure SignalR Service endpoint. The browser blocks a request to any
-  other origin (`L2-041` criterion 2). The header is set by whatever serves `game`; that host
-  and the policy's full text are `<TO SUPPLY>`.
+- **Content Security Policy** — a `<meta http-equiv="Content-Security-Policy">` in `game`'s
+  `index.html`, so it travels with the build to whatever host serves it (`L2-041` criterion 5):
+  `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self';
+  font-src 'self'; media-src 'self'; connect-src 'self' https://*.service.signalr.net
+  wss://*.service.signalr.net; object-src 'none'; base-uri 'self'; form-action 'none'`. The
+  backend is on the own origin (`/api/`, `/hubs/`), so `connect-src` adds only Azure SignalR
+  Service's domain. Styles may be inline because Angular adds component styles at run time and a
+  static host cannot write a nonce; critical CSS is not inlined, so the build writes no inline
+  script. The browser refuses a request to any other origin before it leaves the device
+  (`L2-041` criterion 2). The host adds `frame-ancestors 'none'` as a header, which a meta
+  element cannot carry (`docs/operations/settings.md`, `docs/adr/0040-keeping-children-safe.md`).
 - **E2E fixture** — the shared Playwright fixture fails a spec on any request off localhost, so
-  a change that adds a third-party request fails its own acceptance test.
+  a change that adds a third-party request fails its own acceptance test. It also records every
+  frame the game sends on the room's connections, the recognition sessions started off the
+  device, the recorders made and what is given to speech synthesis, which the audits read.
+
+**The audits (journey 20).** `frontend/e2e/specs/keep-children-safe.spec.ts` proves each rule of
+`L1-012` by what the game does: the browser refuses another origin; a solo tour's files come
+from the own origin; a whole game with friends sends only closed values and the connection
+token, and nothing the child said or their nickname; shouted answers are heard on the device and
+never recorded, kept or sent; a nickname sent as markup is shown as the kid's name; no state of
+any screen has a field but the room code, nor a control asking for an account, a name, an age or
+money; and words in a model's reply are never shown, said, kept or sent. `StoredRoomTests` in the
+backend's acceptance tests read every stored column after a whole game with friends and after
+the room is gone (`L2-046`).
 
 The Azure SignalR Service endpoint, to which a player's connection goes in a deployed system
 (`L2-052` criterion 1), is part of the deployed backend and not a third-party origin under
@@ -172,7 +195,7 @@ level-1 (L1) requirement, cited by identifier.
 | L2 ID | Refines (L1) | Requirement |
 |-------|--------------|-------------|
 | `L2-040` | `L1-012` | Nothing a child types or says shall leave the device: a client message shall hold only a room code, a kid id, a nickname's two list indexes, an answer as a number, a sticker id, a setup value or the connection token the server gave it, and never free text; no audio shall be recorded, stored or sent to the backend; a nickname shall be built from the fixed lists by its indexes and rendered as text; no screen shall have a field for free text other than the room code. |
-| `L2-041` | `L1-012` | The game shall have no accounts, adverts, purchases or tracking of a child: no screen shall ask for an account, a sign-in, an email address, an age or a real name; no network request shall go to an advertising, analytics or other third-party origin; nothing shall be offered for sale; fonts, scripts and 3D assets shall come from the game's own origin. |
+| `L2-041` | `L1-012` | The game shall have no accounts, adverts, purchases or tracking of a child: no screen shall ask for an account, a sign-in, an email address, an age or a real name; no network request shall go to an advertising, analytics or other third-party origin; nothing shall be offered for sale; fonts, scripts and 3D assets shall come from the game's own origin; the game's page shall carry a Content Security Policy under which the browser refuses any other origin. |
 
 ## Diagrams
 
