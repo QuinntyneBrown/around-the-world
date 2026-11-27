@@ -4,6 +4,8 @@
 }
 
 .nickname {
+  --icon-size: 1.25rem;
+
   display: flex;
   align-items: center;
   gap: var(--space-3);

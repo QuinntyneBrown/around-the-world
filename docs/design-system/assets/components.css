@@ -55,7 +55,7 @@ a:hover { color: var(--color-fg-link-hover); }
   transition: top var(--duration-fast) var(--ease-standard);
 }
 .skip-link:focus-visible { top: var(--space-4); }
-.icon { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.icon { width: var(--icon-size, 1.5rem); height: var(--icon-size, 1.5rem); flex: none; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .icon--sm { width: 1.25rem; height: 1.25rem; }
 .icon--lg { width: 2rem; height: 2rem; }
 .icon--xl { width: 2.5rem; height: 2.5rem; }
@@ -222,7 +222,7 @@ a:hover { color: var(--color-fg-link-hover); }
 .kid-picker__option .icon { width: 1rem; height: 1rem; display: none; }
 .kid-picker__option[aria-pressed="true"] .icon { display: block; }
 @media (min-width: 36rem) { .kid-picker { gap: var(--space-4); } .kid-picker__option { padding: var(--space-2); font-size: var(--font-size-lg); } }
-.nickname { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+.nickname { --icon-size: 1.25rem; display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
 .nickname__value { flex: 1; min-width: 0; font: var(--text-h3); font-weight: var(--font-weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (min-width: 36rem) { .nickname__value { font: var(--text-h2); font-weight: var(--font-weight-semibold); } }
 
